@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-14T21:30:00Z",
+  "last_updated_utc": "2026-09-14T21:45:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -61,14 +61,14 @@
     {
       "id": 1,
       "name": "choose-slug-scaffold",
-      "status": "in_progress",
+      "status": "done",
       "notes": "Slug chosen: forgehouse50 (no collision with existing apps/: calcom, clipforge-android, tapcounter). Engine copied to apps/forgehouse50/."
     },
     {
       "id": 2,
       "name": "identity",
-      "status": "pending",
-      "notes": "namespace/applicationId com.forgebuild.forgehouse50, app_name ForgeHouse 50."
+      "status": "done",
+      "notes": "Done: namespace/applicationId = com.forgebuild.forgehouse50 (MainActivity moved to matching package), app_name = \"ForgeHouse 50\"."
     },
     {
       "id": 3,

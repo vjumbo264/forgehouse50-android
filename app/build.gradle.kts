@@ -6,11 +6,11 @@ plugins {
 
 android {
     // FORGEBUILD: the generating AI replaces the namespace/applicationId per app.
-    namespace = "com.forgebuild.app"
+    namespace = "com.forgebuild.forgehouse50"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.forgebuild.app"
+        applicationId = "com.forgebuild.forgehouse50"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
