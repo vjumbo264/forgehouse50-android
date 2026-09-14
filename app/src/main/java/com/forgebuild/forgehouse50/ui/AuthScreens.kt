@@ -48,14 +48,14 @@ fun AuthScreen(
     registrationOpen: Boolean,
     onAuthenticated: () -> Unit,
 ) {
-    var mode by remember { mutableStateOf(Mode.Login) }
-    when (mode) {
+    var mode by remember { mutableStateOf<Mode>(Mode.Login) }
+    when (val m = mode) {
         Mode.Login -> LoginForm(repo, registrationOpen,
             onSignup = { mode = Mode.Signup },
             onNeedsVerification = { mode = Mode.Otp(it) },
             onAuthenticated = onAuthenticated)
         Mode.Signup -> SignupForm(repo, onBack = { mode = Mode.Login }, onNeedsVerification = { mode = Mode.Otp(it) })
-        is Mode.Otp -> OtpForm(repo, (mode as Mode.Otp).email, onAuthenticated, onBack = { mode = Mode.Login })
+        is Mode.Otp -> OtpForm(repo, m.email, onAuthenticated, onBack = { mode = Mode.Login })
     }
 }
 

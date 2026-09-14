@@ -98,7 +98,7 @@ private fun InProgressBoard(repo: Repository) {
         }?.let { data = it; loading = false }
         runCatching { repo.api.leaderboard(category) }.onSuccess {
             data = it
-            prefs.edit().putString("leaderboard_$category", AppJson.encodeToString(it)).apply()
+            prefs.edit().putString("leaderboard_$category", AppJson.encodeToString(LeaderboardResponse.serializer(), it)).apply()
         }
         loading = false
     }

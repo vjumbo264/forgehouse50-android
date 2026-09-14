@@ -54,7 +54,7 @@ fun ProgressScreen(repo: Repository, onOpenDay: (Int) -> Unit) {
         }?.let { progress = it }
         runCatching { repo.api.progress() }.onSuccess {
             progress = it
-            prefs.edit().putString("progress", AppJson.encodeToString(it)).apply()
+            prefs.edit().putString("progress", AppJson.encodeToString(ProgressResponse.serializer(), it)).apply()
         }
     }
 

@@ -76,7 +76,7 @@ fun HomeScreen(
         refreshing = true
         runCatching { repo.api.today() }.onSuccess { fresh ->
             today = fresh
-            prefs.edit().putString("today", AppJson.encodeToString(fresh)).apply()
+            prefs.edit().putString("today", AppJson.encodeToString(TodayResponse.serializer(), fresh)).apply()
         }
         runCatching { repo.api.me() }.onSuccess {
             me = it

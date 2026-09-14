@@ -74,7 +74,7 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
         runCatching { repo.api.notes(q = query, type = typeFilter) }.onSuccess {
             notes = it.notes
             if (query.isBlank() && typeFilter.isBlank()) {
-                prefs.edit().putString("notes", AppJson.encodeToString(it)).apply()
+                prefs.edit().putString("notes", AppJson.encodeToString(NotesResponse.serializer(), it)).apply()
             }
         }
         loading = false
