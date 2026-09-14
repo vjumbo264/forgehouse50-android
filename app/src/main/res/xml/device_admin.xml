@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Used only by apps that enable DEVICE_ADMIN. Point a DeviceAdminReceiver at this. -->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <lock-screen />
+    </uses-policies>
+</device-admin>

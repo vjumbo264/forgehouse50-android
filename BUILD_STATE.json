@@ -1,0 +1,112 @@
+{
+  "slug": "forgehouse50",
+  "app_name": "ForgeHouse 50",
+  "app_folder": "apps/forgehouse50/",
+  "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
+  "build_complete": false,
+  "last_updated_utc": "2026-09-14T21:30:00Z",
+  "backend": {
+    "base_url": "https://forgehouse50.pages.dev",
+    "api_prefix": "/api",
+    "auth": "email/password signup -> 6-digit OTP via Brevo -> verify -> fh50_session cookie (HttpOnly, 30d). Android client stores token in EncryptedSharedPreferences and sends it as Cookie header fh50_session=<token>.",
+    "endpoints": {
+      "public": [
+        "GET /api/config",
+        "GET /api/programme",
+        "GET /api/translations"
+      ],
+      "auth": [
+        "POST /api/auth/signup {email,password,name,avatar_id}",
+        "POST /api/auth/verify {email,code}",
+        "POST /api/auth/login {email,password}",
+        "POST /api/auth/logout",
+        "POST /api/auth/resend {email}",
+        "GET /api/auth/me",
+        "POST /api/auth/avatar {avatar_id}"
+      ],
+      "reading": [
+        "GET /api/today",
+        "GET /api/read/day?n=",
+        "GET /api/read/passage?book=&chapter_start=&chapter_end=&translation=",
+        "GET /api/read/audio_availability?book=&chapter_start=&chapter_end=&translation=",
+        "POST /api/read/complete {day_number}",
+        "POST /api/read/audio {day_number}",
+        "POST /api/read/time {day_number,seconds}",
+        "GET/POST/DELETE /api/read/bookmark(s)"
+      ],
+      "quiz": [
+        "GET /api/quiz/{day}",
+        "POST /api/quiz/submit {day_number, answers[]}"
+      ],
+      "notes": [
+        "GET/POST /api/notes",
+        "PUT/DELETE /api/notes/{id}"
+      ],
+      "progress_leaderboard": [
+        "GET /api/progress",
+        "GET /api/leaderboard?category=",
+        "GET/POST /api/final_results"
+      ],
+      "admin": [
+        "GET /api/admin/participants",
+        "GET /api/admin/stats",
+        "POST /api/admin/manage",
+        "POST /api/admin/adjust",
+        "POST /api/admin/programme"
+      ]
+    },
+    "key_rules": "Quiz: ONE attempt, no gate, no timer, proportional points (score/total)*5. Completion: POST /api/read/complete (sequential days, max 1 day read-ahead). Leaderboard eligibility: elapsed_days>=3 on user's own calendar; overall uses damped score (raw_avg*elapsed)/(elapsed+7). Admin accounts cannot participate. Translations served by VerseWell mirror only."
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "name": "choose-slug-scaffold",
+      "status": "in_progress",
+      "notes": "Slug chosen: forgehouse50 (no collision with existing apps/: calcom, clipforge-android, tapcounter). Engine copied to apps/forgehouse50/."
+    },
+    {
+      "id": 2,
+      "name": "identity",
+      "status": "pending",
+      "notes": "namespace/applicationId com.forgebuild.forgehouse50, app_name ForgeHouse 50."
+    },
+    {
+      "id": 3,
+      "name": "adaptive-icon",
+      "status": "pending",
+      "notes": "Use public/branding/forgehouse50-logo-source.png from web repo as foreground artwork via tools/make_adaptive_icon.py."
+    },
+    {
+      "id": 4,
+      "name": "confirm-signing-secrets",
+      "status": "pending",
+      "notes": "Verify KEYSTORE_BASE64/KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD exist on repo; do not regenerate."
+    },
+    {
+      "id": 5,
+      "name": "implement-app",
+      "status": "pending",
+      "notes": "One feature per commit: auth flow (signup/OTP/login, EncryptedSharedPreferences token), cache-first data layer + Room for scripture text/audio persistent offline store, Home/Today, Read screen (clipped chapter pane, audio player w/ foreground service + notification, downloads), Notes, Quiz (FLAG_SECURE, confetti on day completion), Progress, Leaderboard (top-3 distinct treatment, final results), Profile (avatar picker, downloaded-content manager), Admin dashboard, daily reminder notification (WorkManager + completion check), in-app update prompt w/ supersession."
+    },
+    {
+      "id": 6,
+      "name": "validate-and-release-v1",
+      "status": "pending",
+      "notes": "Validate build config, dispatch release.yml with app_path=apps/forgehouse50, verify forgehouse50-v1 release + APK asset via GitHub Releases API."
+    },
+    {
+      "id": 7,
+      "name": "mark-build-complete",
+      "status": "pending",
+      "notes": "Set build_complete=true only after forgehouse50-v1 verified live."
+    }
+  ],
+  "session_history": [
+    {
+      "session": 1,
+      "date": "2026-09-14",
+      "did": "Read operator contract; chose slug forgehouse50; studied forgehouse50 web repo (BUILD_STATE.json + all functions/api + functions/lib source); copied engine/ into apps/forgehouse50/; seeded BUILD_STATE.json + PROMPT_HISTORY.",
+      "next": "Task 2: identity (namespace/applicationId, app_name)."
+    }
+  ]
+}

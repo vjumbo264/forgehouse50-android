@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.ForgeBuild" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">?android:attr/isLightTheme</item>
+    </style>
+</resources>

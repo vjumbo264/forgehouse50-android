@@ -1,0 +1,25 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!--
+      FORGEBUILD PERMISSION MODEL: no sensitive permission is declared here by
+      default. The generating AI enables ONLY what the app needs by setting the
+      corresponding flags in permissions.gradle (applied by
+      com.forgebuild.engine.permissions.PermissionWiring) and, where Android
+      requires it, adding the manifest entry below. See ENGINE_ARCHITECTURE.md.
+    -->
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Theme.ForgeBuild"
+        android:supportsRtl="true"
+        tools:targetApi="34">
+        <activity android:name=".MainActivity" android:exported="true"
+            android:configChanges="orientation|screenSize|uiMode">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
