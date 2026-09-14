@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-14T23:10:00Z",
+  "last_updated_utc": "2026-09-14T23:20:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -85,14 +85,14 @@
     {
       "id": 5,
       "name": "implement-app",
-      "status": "in_progress",
-      "notes": "Sub-step 5.1 done: build config (deps justified: ktor/okhttp REST, kotlinx-serialization JSON DTOs, security-crypto EncryptedSharedPreferences session token, Room persistent scripture/audio store, Media3 ExoPlayer+session background audio w/ notification, WorkManager daily reminder, Coil avatar PNGs, navigation-compose). Data layer: Models.kt (DTOs matching functions/api/*.mjs exactly), SessionStore (encrypted token, cookie header fh50_session), ApiClient (all endpoints, Set-Cookie capture, backend error passthrough), AppDatabase (scripture_chapters + downloaded_audio tables), Repository (persistent offline passage/audio store, clear-content). Media: AudioService (MediaSessionService, seek +/-5s, audio focus), AudioPlayerManager (StateFlow UI state). Work: ReminderWorker (18:00 daily, checks completion+quiz at delivery, cancels on logout). Update: UpdateChecker (version.json manifest supersession, per-day snooze). UI: AppTheme (system day/night, muted-blue #3a5f8a/#7f9fc4 accent, PodiumColors), AuthScreens (login/signup/OTP). | Sub-step 5.2 done: full feature layer + navigation. AppNavHost (tabs Today/Leaderboard/Progress/Profile, routes read/quiz/notes/note_edit/admin, per-route FLAG_SECURE on quiz ONLY via Engine ScreenSecurity, in-app update prompt dialog), MainActivity (lifecycle-bound MediaController, POST_NOTIFICATIONS request, ReminderWorker schedule on login / cancel on logout). HomeScreen (cache-first today card, stats, notes entry, admin entry). ReadScreen (fixed-height clipped chapter pane, seek/skip-5s, audio-synced auto-scroll, single-chapter + download-all-for-today persistence via the Room/file store, completion + reading-time tracking). QuizScreen (one attempt, no timer, proportional score shown, confetti on full day completion). Notes (5 types, search/filter/edit/delete, private). Progress (50-day list, cache-first). Leaderboard (6 categories incl. damped overall; top-3 podium treatment: 1st glow+crown, 2nd/3rd tinted cards, 4th+ plain; final-results screen with same treatment + celebration ack). Profile (stats/badges, avatar picker over the web repo's 30 illustration PNGs, Downloaded-content manager with clear-cache). Admin (stats, participants + points adjust, Start Programme). Manifest: INTERNET/POST_NOTIFICATIONS/FOREGROUND_SERVICE(_MEDIA_PLAYBACK) + MediaSessionService. Also fixed latent compile gaps in 5.1 layer: explicit kotlinx.serialization encode/decode imports in Repository/ApiClient, public AudioPlayerManager.refresh() position pusher. Added version.json update manifest for the update checker."
+      "status": "done",
+      "notes": "Sub-step 5.1 done: build config (deps justified: ktor/okhttp REST, kotlinx-serialization JSON DTOs, security-crypto EncryptedSharedPreferences session token, Room persistent scripture/audio store, Media3 ExoPlayer+session background audio w/ notification, WorkManager daily reminder, Coil avatar PNGs, navigation-compose). Data layer: Models.kt (DTOs matching functions/api/*.mjs exactly), SessionStore (encrypted token, cookie header fh50_session), ApiClient (all endpoints, Set-Cookie capture, backend error passthrough), AppDatabase (scripture_chapters + downloaded_audio tables), Repository (persistent offline passage/audio store, clear-content). Media: AudioService (MediaSessionService, seek +/-5s, audio focus), AudioPlayerManager (StateFlow UI state). Work: ReminderWorker (18:00 daily, checks completion+quiz at delivery, cancels on logout). Update: UpdateChecker (version.json manifest supersession, per-day snooze). UI: AppTheme (system day/night, muted-blue #3a5f8a/#7f9fc4 accent, PodiumColors), AuthScreens (login/signup/OTP). | Sub-step 5.2 done: full feature layer + navigation. AppNavHost (tabs Today/Leaderboard/Progress/Profile, routes read/quiz/notes/note_edit/admin, per-route FLAG_SECURE on quiz ONLY via Engine ScreenSecurity, in-app update prompt dialog), MainActivity (lifecycle-bound MediaController, POST_NOTIFICATIONS request, ReminderWorker schedule on login / cancel on logout). HomeScreen (cache-first today card, stats, notes entry, admin entry). ReadScreen (fixed-height clipped chapter pane, seek/skip-5s, audio-synced auto-scroll, single-chapter + download-all-for-today persistence via the Room/file store, completion + reading-time tracking). QuizScreen (one attempt, no timer, proportional score shown, confetti on full day completion). Notes (5 types, search/filter/edit/delete, private). Progress (50-day list, cache-first). Leaderboard (6 categories incl. damped overall; top-3 podium treatment: 1st glow+crown, 2nd/3rd tinted cards, 4th+ plain; final-results screen with same treatment + celebration ack). Profile (stats/badges, avatar picker over the web repo's 30 illustration PNGs, Downloaded-content manager with clear-cache). Admin (stats, participants + points adjust, Start Programme). Manifest: INTERNET/POST_NOTIFICATIONS/FOREGROUND_SERVICE(_MEDIA_PLAYBACK) + MediaSessionService. Also fixed latent compile gaps in 5.1 layer: explicit kotlinx.serialization encode/decode imports in Repository/ApiClient, public AudioPlayerManager.refresh() position pusher. Added version.json update manifest for the update checker. | Sub-step 5.3 done: fixed R8 release build — slf4j-api (transitive via ktor-client-okhttp) has no Android backend; added -dontwarn org.slf4j.** to proguard-rules.pro. CI run 34907203396 failed only at minifyReleaseWithR8 with missing org.slf4j.impl.StaticLoggerBinder; Kotlin compile (kspReleaseKotlin/compileReleaseKotlin) already passed on commit 242bafd."
     },
     {
       "id": 6,
       "name": "validate-and-release-v1",
-      "status": "pending",
-      "notes": "Validate build config, dispatch release.yml with app_path=apps/forgehouse50, verify forgehouse50-v1 release + APK asset via GitHub Releases API."
+      "status": "in_progress",
+      "notes": "Validate build config, dispatch release.yml with app_path=apps/forgehouse50, verify forgehouse50-v1 release + APK asset via GitHub Releases API. Session 3: root-caused CI failure (R8 missing slf4j classes), applied proguard fix, dispatching release."
     },
     {
       "id": 7,
@@ -113,6 +113,12 @@
       "date": "2026-09-14",
       "did": "Implemented the complete feature layer (5.2): navigation + all screens + manifest wiring + update manifest; fixed latent 5.1 compile gaps.",
       "next": "Validate build config (task 6), then dispatch release forgehouse50-v1 and verify live."
+    },
+    {
+      "session": 3,
+      "date": "2026-09-14",
+      "did": "Diagnosed CI failure on latest commit: Kotlin compile passed; minifyReleaseWithR8 failed on missing org.slf4j.impl.StaticLoggerBinder (transitive slf4j-api without backend). Added -dontwarn org.slf4j.** to proguard-rules.pro. Marked task 5 done.",
+      "next": "Dispatch release.yml for apps/forgehouse50; verify forgehouse50-v1 release + APK asset via Releases API; then set build_complete=true (task 7)."
     }
   ]
 }
