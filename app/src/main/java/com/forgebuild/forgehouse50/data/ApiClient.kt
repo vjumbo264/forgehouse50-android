@@ -150,7 +150,7 @@ class ApiClient(private val session: SessionStore) {
     suspend fun quiz(day: Int): QuizResponse = get("/quiz/$day")
 
     suspend fun submitQuiz(day: Int, answers: List<Int>): QuizSubmitResponse {
-        val arr = kotlinx.serialization.json.buildJsonArray { answers.forEach { add(it) } }
+        val arr = kotlinx.serialization.json.buildJsonArray { answers.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } }
         val res: HttpResponse = client.post("$BASE/quiz/submit") {
             auth(); contentType(ContentType.Application.Json)
             setBody(buildJsonObject { put("day_number", day); put("answers", arr) }.toString())
