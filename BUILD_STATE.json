@@ -3,7 +3,7 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": false,
+  "build_complete": true,
   "last_updated_utc": "2026-09-14T23:20:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
@@ -91,14 +91,14 @@
     {
       "id": 6,
       "name": "validate-and-release-v1",
-      "status": "in_progress",
-      "notes": "Validate build config, dispatch release.yml with app_path=apps/forgehouse50, verify forgehouse50-v1 release + APK asset via GitHub Releases API. Session 3: root-caused CI failure (R8 missing slf4j classes), applied proguard fix, dispatching release."
+      "status": "done",
+      "notes": "Validate build config, dispatch release.yml with app_path=apps/forgehouse50, verify forgehouse50-v1 release + APK asset via GitHub Releases API. Session 3: root-caused CI failure (R8 missing slf4j classes), applied proguard fix, dispatching release. | Release forgehouse50-v1 verified live: CI run 34907611281 success on commit 00f91351; release has assets app-forgehouse50-v1.apk (3,404,398 bytes) + forgebuild-manifest.json. Non-draft, public."
     },
     {
       "id": 7,
       "name": "mark-build-complete",
-      "status": "pending",
-      "notes": "Set build_complete=true only after forgehouse50-v1 verified live."
+      "status": "done",
+      "notes": "build_complete set true after forgehouse50-v1 verified live on the GitHub Releases API (APK + manifest assets present)."
     }
   ],
   "session_history": [
@@ -119,6 +119,12 @@
       "date": "2026-09-14",
       "did": "Diagnosed CI failure on latest commit: Kotlin compile passed; minifyReleaseWithR8 failed on missing org.slf4j.impl.StaticLoggerBinder (transitive slf4j-api without backend). Added -dontwarn org.slf4j.** to proguard-rules.pro. Marked task 5 done.",
       "next": "Dispatch release.yml for apps/forgehouse50; verify forgehouse50-v1 release + APK asset via Releases API; then set build_complete=true (task 7)."
+    },
+    {
+      "session": 3,
+      "date": "2026-09-14",
+      "did": "... (see previous entry) Released forgehouse50-v1 and verified it live; set build_complete=true.",
+      "next": "None — build complete. Future sessions: feature requests/fixes only; next release tag would be forgehouse50-v2."
     }
   ]
 }
