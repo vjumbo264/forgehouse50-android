@@ -76,6 +76,9 @@ class AudioPlayerManager(private val context: Context) {
     fun skipBack5s() { controller?.seekBack(); push() }
     fun skipForward5s() { controller?.seekForward(); push() }
 
+    /** Push the current position/state once (slider + auto-scroll ticker). */
+    fun refresh() = push()
+
     /** Poll position while playing so the slider and auto-scroll stay live. */
     suspend fun tickPosition() {
         while (true) {

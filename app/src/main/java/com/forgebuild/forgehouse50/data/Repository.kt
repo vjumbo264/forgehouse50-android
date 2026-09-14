@@ -7,6 +7,8 @@ import com.forgebuild.forgehouse50.data.local.ScriptureChapter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 import java.io.File
 import java.net.URL
 
