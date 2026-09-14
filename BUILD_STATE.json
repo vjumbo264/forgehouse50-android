@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-14T22:00:00Z",
+  "last_updated_utc": "2026-09-14T22:10:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -79,8 +79,8 @@
     {
       "id": 4,
       "name": "confirm-signing-secrets",
-      "status": "pending",
-      "notes": "Verify KEYSTORE_BASE64/KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD exist on repo; do not regenerate."
+      "status": "done",
+      "notes": "Confirmed via GitHub API: KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD all exist as repo Actions secrets. Not regenerated. Release workflow .github/workflows/release.yml confirmed present (workflow_dispatch, app_path input, auto <slug>-vN tags)."
     },
     {
       "id": 5,
