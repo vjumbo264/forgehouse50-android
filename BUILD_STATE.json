@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-14T21:45:00Z",
+  "last_updated_utc": "2026-09-14T22:00:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -73,8 +73,8 @@
     {
       "id": 3,
       "name": "adaptive-icon",
-      "status": "pending",
-      "notes": "Use public/branding/forgehouse50-logo-source.png from web repo as foreground artwork via tools/make_adaptive_icon.py."
+      "status": "done",
+      "notes": "Done: adaptive icon generated from the web repo's public/branding/forgehouse50-logo-source.png (1024x1024, full-bleed blue #0154D8). Exterior rounded-corner white flood-filled with the logo blue first to eliminate corner artifacts, then tools/make_adaptive_icon.py produced background/foreground/monochrome layers for mdpi..xxxhdpi + adaptive-icon XML. Preview verified: artwork inside 72dp safe zone, no white corners."
     },
     {
       "id": 4,
