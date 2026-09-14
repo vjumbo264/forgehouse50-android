@@ -26,7 +26,7 @@ import kotlinx.serialization.json.put
 /**
  * Thin typed client for the existing ForgeHouse 50 Cloudflare Pages
  * Functions API (base https://forgehouse50.pages.dev/api). Route paths,
- * field names and error shapes match functions/api/*.mjs in the web repo
+ * field names and error shapes match the functions API sources in the web repo
  * exactly — this client reimplements none of the backend logic.
  *
  * Auth: the backend issues an HttpOnly `fh50_session` cookie; the Android
