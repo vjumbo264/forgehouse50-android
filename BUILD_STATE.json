@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-14T22:10:00Z",
+  "last_updated_utc": "2026-09-14T22:40:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -85,8 +85,8 @@
     {
       "id": 5,
       "name": "implement-app",
-      "status": "pending",
-      "notes": "One feature per commit: auth flow (signup/OTP/login, EncryptedSharedPreferences token), cache-first data layer + Room for scripture text/audio persistent offline store, Home/Today, Read screen (clipped chapter pane, audio player w/ foreground service + notification, downloads), Notes, Quiz (FLAG_SECURE, confetti on day completion), Progress, Leaderboard (top-3 distinct treatment, final results), Profile (avatar picker, downloaded-content manager), Admin dashboard, daily reminder notification (WorkManager + completion check), in-app update prompt w/ supersession."
+      "status": "in_progress",
+      "notes": "Sub-step 5.1 done: build config (deps justified: ktor/okhttp REST, kotlinx-serialization JSON DTOs, security-crypto EncryptedSharedPreferences session token, Room persistent scripture/audio store, Media3 ExoPlayer+session background audio w/ notification, WorkManager daily reminder, Coil avatar PNGs, navigation-compose). Data layer: Models.kt (DTOs matching functions/api/*.mjs exactly), SessionStore (encrypted token, cookie header fh50_session), ApiClient (all endpoints, Set-Cookie capture, backend error passthrough), AppDatabase (scripture_chapters + downloaded_audio tables), Repository (persistent offline passage/audio store, clear-content). Media: AudioService (MediaSessionService, seek +/-5s, audio focus), AudioPlayerManager (StateFlow UI state). Work: ReminderWorker (18:00 daily, checks completion+quiz at delivery, cancels on logout). Update: UpdateChecker (version.json manifest supersession, per-day snooze). UI: AppTheme (system day/night, muted-blue #3a5f8a/#7f9fc4 accent, PodiumColors), AuthScreens (login/signup/OTP)."
     },
     {
       "id": 6,

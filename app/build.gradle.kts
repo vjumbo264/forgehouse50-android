@@ -2,6 +2,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.devtools.ksp")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -45,7 +47,7 @@ android {
     }
     buildTypes { release { if (rootProject.file("keystore/release.jks").exists()) signingConfig = signingConfigs.getByName("release") } }
 
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 }
@@ -67,5 +69,20 @@ dependencies {
     // layer (com.forgebuild.engine.data.CacheFirstStore) — justified engine-level
     // dependency, do not remove even though the starter UI itself is coroutine-free.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    // --- forgehouse50 app dependencies (justified per feature; see BUILD_STATE notes) ---
+    implementation("androidx.compose.material:material-icons-extended") // Material Symbols coverage for the full feature set (read/notes/quiz/leaderboard/admin icons)
+    implementation("io.ktor:ktor-client-okhttp:2.3.12")                  // REST client against the existing Cloudflare Pages Functions API
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // typed JSON for API DTOs
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")     // EncryptedSharedPreferences for the session token (operator requirement)
+    implementation("androidx.room:room-runtime:2.6.1")                    // persistent offline store for scripture text + downloaded content index
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.media3:media3-exoplayer:1.4.1")              // audio playback
+    implementation("androidx.media3:media3-session:1.4.1")                // MediaSessionService: background playback + media notification
+    implementation("androidx.media3:media3-ui:1.4.1")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")                // daily reminder worker + background sync
+    implementation("io.coil-kt:coil-compose:2.6.0")                       // load the web repo's avatar illustration PNGs (same asset set as web app)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5")
+    implementation("androidx.navigation:navigation-compose:2.8.0")        // screen navigation
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
