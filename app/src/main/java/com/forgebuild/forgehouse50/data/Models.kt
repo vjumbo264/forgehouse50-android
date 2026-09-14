@@ -3,7 +3,7 @@ package com.forgebuild.forgehouse50.data
 import kotlinx.serialization.Serializable
 
 // DTOs matching the ForgeHouse 50 Pages Functions API exactly
-// (source of truth: github.com/vjumbo264/forgehouse50, functions/api/*.mjs).
+// (source of truth: github.com/vjumbo264/forgehouse50, functions-api sources).
 
 @Serializable
 data class ProgrammeInfo(
