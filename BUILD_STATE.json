@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-15T01:45:00Z",
+  "last_updated_utc": "2026-09-15T00:39:45Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -140,7 +140,7 @@
     }
   ],
   "combined_fixes_v1": {
-    "status": "in_progress",
+    "status": "release_in_flight",
     "seeded_utc": "2026-09-15T00:00:00Z",
     "scope_note": "Backend/site tasks live in github.com/vjumbo264/forgehouse50 (BUILD_STATE.json there is authoritative for web scope); app tasks live here.",
     "tasks": [
@@ -237,8 +237,8 @@
       {
         "id": 16,
         "name": "cf1-release-v2",
-        "status": "pending",
-        "notes": "After all fixes committed: dispatch release.yml (app_path=apps/forgehouse50) -> tag auto-increments forgehouse50-v2; never overwrite v1; verify release + APK live via GitHub Releases API. Web-side deploys via push to vjumbo264/forgehouse50 (Cloudflare Pages)."
+        "status": "in_progress",
+        "notes": "After all fixes committed: dispatch release.yml (app_path=apps/forgehouse50) -> tag auto-increments forgehouse50-v2; never overwrite v1; verify release + APK live via GitHub Releases API. Web-side deploys via push to vjumbo264/forgehouse50 (Cloudflare Pages). | Dispatch accepted; CI not finished in window (run 34913996136 failure). NEXT: poll Actions, then GET /releases/tags/forgehouse50-v2."
       },
       {
         "id": 17,
