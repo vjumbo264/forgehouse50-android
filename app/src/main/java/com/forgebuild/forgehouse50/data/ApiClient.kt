@@ -39,6 +39,15 @@ class ApiClient(private val session: SessionStore) {
 
     private val client = HttpClient(OkHttp) {
         expectSuccess = false
+        // leaderboard_scripture_icon_fix_v1 / ISSUE 2: bounded timeouts so a
+        // genuinely hung/slow request fails fast and the UI shows a clear error
+        // instead of an infinite loading spinner. 25s request ceiling is ample
+        // for the largest multi-chapter passage responses (~1.5s live median).
+        install(io.ktor.client.plugins.HttpTimeout) {
+            requestTimeoutMillis = 25_000
+            connectTimeoutMillis = 10_000
+            socketTimeoutMillis = 25_000
+        }
         engine { config { followRedirects(true) } }
     }
 

@@ -82,11 +82,18 @@ fun ReadScreen(
     val playback by player.state.collectAsState()
 
     var dayData by remember { mutableStateOf<DayResponse?>(null) }
+    // leaderboard_scripture_icon_fix_v1 / ISSUE 2: the passage spinner must
+    // only show while the day response is still in flight or a passage fetch
+    // is actually running. Previously loadingPassage initialised to true while
+    // the passage effect early-returned until day data arrived — so if the
+    // /read/day call ever failed, nothing ever flipped the flag false and the
+    // screen spun forever ("stuck on loading").
+    var dayLoaded by remember { mutableStateOf(false) }
     var translation by remember { mutableStateOf(repo.session.translationId ?: "versewell-kjv") }
     var selected by remember { mutableIntStateOf(0) }
     var passage by remember { mutableStateOf<PassageResponse?>(null) }
     var audio by remember { mutableStateOf<AudioAvailability?>(null) }
-    var loadingPassage by remember { mutableStateOf(true) }
+    var loadingPassage by remember { mutableStateOf(false) }
     var completed by remember { mutableStateOf(false) }
     var downloaded by remember { mutableStateOf<Set<String>>(emptySet()) }
     var downloading by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -97,6 +104,7 @@ fun ReadScreen(
             dayData = it
             completed = it.progress.completed
         }.onFailure { error = it.message }
+        dayLoaded = true
         // Default translation: first VerseWell translation from the API.
         runCatching { repo.api.translations() }.onSuccess { t ->
             t.translations.firstOrNull { it.versewell }?.let { vw ->
@@ -114,6 +122,7 @@ fun ReadScreen(
 
     // Passage: persistent offline store — no network call once on-device.
     LaunchedEffect(day, selected, translation) {
+        if (!dayLoaded) return@LaunchedEffect // spinner is gated on !dayLoaded below
         val a = current ?: return@LaunchedEffect
         loadingPassage = true
         runCatching { repo.getPassage(a.book, a.chapter_start, a.chapter_end, translation) }
@@ -202,7 +211,7 @@ fun ReadScreen(
                     .clipToBounds()
                     .padding(horizontal = 24.dp),
             ) {
-                if (loadingPassage && passage == null) {
+                if (!dayLoaded || (loadingPassage && passage == null)) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
