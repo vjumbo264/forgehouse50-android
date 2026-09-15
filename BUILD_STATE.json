@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": true,
-  "last_updated_utc": "2026-09-14T23:20:00Z",
+  "build_complete": false,
+  "last_updated_utc": "2026-09-15T00:20:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -86,7 +86,7 @@
       "id": 5,
       "name": "implement-app",
       "status": "done",
-      "notes": "Sub-step 5.1 done: build config (deps justified: ktor/okhttp REST, kotlinx-serialization JSON DTOs, security-crypto EncryptedSharedPreferences session token, Room persistent scripture/audio store, Media3 ExoPlayer+session background audio w/ notification, WorkManager daily reminder, Coil avatar PNGs, navigation-compose). Data layer: Models.kt (DTOs matching functions/api/*.mjs exactly), SessionStore (encrypted token, cookie header fh50_session), ApiClient (all endpoints, Set-Cookie capture, backend error passthrough), AppDatabase (scripture_chapters + downloaded_audio tables), Repository (persistent offline passage/audio store, clear-content). Media: AudioService (MediaSessionService, seek +/-5s, audio focus), AudioPlayerManager (StateFlow UI state). Work: ReminderWorker (18:00 daily, checks completion+quiz at delivery, cancels on logout). Update: UpdateChecker (version.json manifest supersession, per-day snooze). UI: AppTheme (system day/night, muted-blue #3a5f8a/#7f9fc4 accent, PodiumColors), AuthScreens (login/signup/OTP). | Sub-step 5.2 done: full feature layer + navigation. AppNavHost (tabs Today/Leaderboard/Progress/Profile, routes read/quiz/notes/note_edit/admin, per-route FLAG_SECURE on quiz ONLY via Engine ScreenSecurity, in-app update prompt dialog), MainActivity (lifecycle-bound MediaController, POST_NOTIFICATIONS request, ReminderWorker schedule on login / cancel on logout). HomeScreen (cache-first today card, stats, notes entry, admin entry). ReadScreen (fixed-height clipped chapter pane, seek/skip-5s, audio-synced auto-scroll, single-chapter + download-all-for-today persistence via the Room/file store, completion + reading-time tracking). QuizScreen (one attempt, no timer, proportional score shown, confetti on full day completion). Notes (5 types, search/filter/edit/delete, private). Progress (50-day list, cache-first). Leaderboard (6 categories incl. damped overall; top-3 podium treatment: 1st glow+crown, 2nd/3rd tinted cards, 4th+ plain; final-results screen with same treatment + celebration ack). Profile (stats/badges, avatar picker over the web repo's 30 illustration PNGs, Downloaded-content manager with clear-cache). Admin (stats, participants + points adjust, Start Programme). Manifest: INTERNET/POST_NOTIFICATIONS/FOREGROUND_SERVICE(_MEDIA_PLAYBACK) + MediaSessionService. Also fixed latent compile gaps in 5.1 layer: explicit kotlinx.serialization encode/decode imports in Repository/ApiClient, public AudioPlayerManager.refresh() position pusher. Added version.json update manifest for the update checker. | Sub-step 5.3 done: fixed R8 release build — slf4j-api (transitive via ktor-client-okhttp) has no Android backend; added -dontwarn org.slf4j.** to proguard-rules.pro. CI run 34907203396 failed only at minifyReleaseWithR8 with missing org.slf4j.impl.StaticLoggerBinder; Kotlin compile (kspReleaseKotlin/compileReleaseKotlin) already passed on commit 242bafd."
+      "notes": "Sub-step 5.1 done: build config (deps justified: ktor/okhttp REST, kotlinx-serialization JSON DTOs, security-crypto EncryptedSharedPreferences session token, Room persistent scripture/audio store, Media3 ExoPlayer+session background audio w/ notification, WorkManager daily reminder, Coil avatar PNGs, navigation-compose). Data layer: Models.kt (DTOs matching functions/api/*.mjs exactly), SessionStore (encrypted token, cookie header fh50_session), ApiClient (all endpoints, Set-Cookie capture, backend error passthrough), AppDatabase (scripture_chapters + downloaded_audio tables), Repository (persistent offline passage/audio store, clear-content). Media: AudioService (MediaSessionService, seek +/-5s, audio focus), AudioPlayerManager (StateFlow UI state). Work: ReminderWorker (18:00 daily, checks completion+quiz at delivery, cancels on logout). Update: UpdateChecker (version.json manifest supersession, per-day snooze). UI: AppTheme (system day/night, muted-blue #3a5f8a/#7f9fc4 accent, PodiumColors), AuthScreens (login/signup/OTP). | Sub-step 5.2 done: full feature layer + navigation. AppNavHost (tabs Today/Leaderboard/Progress/Profile, routes read/quiz/notes/note_edit/admin, per-route FLAG_SECURE on quiz ONLY via Engine ScreenSecurity, in-app update prompt dialog), MainActivity (lifecycle-bound MediaController, POST_NOTIFICATIONS request, ReminderWorker schedule on login / cancel on logout). HomeScreen (cache-first today card, stats, notes entry, admin entry). ReadScreen (fixed-height clipped chapter pane, seek/skip-5s, audio-synced auto-scroll, single-chapter + download-all-for-today persistence via the Room/file store, completion + reading-time tracking). QuizScreen (one attempt, no timer, proportional score shown, confetti on full day completion). Notes (5 types, search/filter/edit/delete, private). Progress (50-day list, cache-first). Leaderboard (6 categories incl. damped overall; top-3 podium treatment: 1st glow+crown, 2nd/3rd tinted cards, 4th+ plain; final-results screen with same treatment + celebration ack). Profile (stats/badges, avatar picker over the web repo's 30 illustration PNGs, Downloaded-content manager with clear-cache). Admin (stats, participants + points adjust, Start Programme). Manifest: INTERNET/POST_NOTIFICATIONS/FOREGROUND_SERVICE(_MEDIA_PLAYBACK) + MediaSessionService. Also fixed latent compile gaps in 5.1 layer: explicit kotlinx.serialization encode/decode imports in Repository/ApiClient, public AudioPlayerManager.refresh() position pusher. Added version.json update manifest for the update checker. | Sub-step 5.3 done: fixed R8 release build \u2014 slf4j-api (transitive via ktor-client-okhttp) has no Android backend; added -dontwarn org.slf4j.** to proguard-rules.pro. CI run 34907203396 failed only at minifyReleaseWithR8 with missing org.slf4j.impl.StaticLoggerBinder; Kotlin compile (kspReleaseKotlin/compileReleaseKotlin) already passed on commit 242bafd."
     },
     {
       "id": 6,
@@ -124,7 +124,122 @@
       "session": 3,
       "date": "2026-09-14",
       "did": "... (see previous entry) Released forgehouse50-v1 and verified it live; set build_complete=true.",
-      "next": "None — build complete. Future sessions: feature requests/fixes only; next release tag would be forgehouse50-v2."
+      "next": "None \u2014 build complete. Future sessions: feature requests/fixes only; next release tag would be forgehouse50-v2."
+    },
+    {
+      "session": 4,
+      "date": "2026-09-15",
+      "did": "Operator EXTEND/UPDATE contract: 10 combined site+app issues + leaderboard-immediacy/7x-points addendum. Appended instruction to PROMPT_HISTORY (credentials redacted); seeded combined_fixes_v1 task list (17 tasks).",
+      "next": "cf1-issue1-backend-surname: clone/read web repo, D1 schema + signup API surname requirement."
     }
-  ]
+  ],
+  "combined_fixes_v1": {
+    "status": "in_progress",
+    "seeded_utc": "2026-09-15T00:00:00Z",
+    "scope_note": "Backend/site tasks live in github.com/vjumbo264/forgehouse50 (BUILD_STATE.json there is authoritative for web scope); app tasks live here.",
+    "tasks": [
+      {
+        "id": 1,
+        "name": "cf1-prompt-history-append",
+        "status": "done",
+        "notes": "Operator instruction (combined site+app fixes, issues 1-10 + leaderboard immediacy/7x points) appended to PROMPT_HISTORY/forgehouse50.md on 2026-09-15 with credential values redacted per contract."
+      },
+      {
+        "id": 2,
+        "name": "cf1-build-state-seed",
+        "status": "done",
+        "notes": "This combined_fixes_v1 section seeded 2026-09-15. Web-side scope lives in vjumbo264/forgehouse50 (functions/api backend + site frontend); app-side scope lives here in apps/forgehouse50/."
+      },
+      {
+        "id": 3,
+        "name": "cf1-issue1-backend-surname",
+        "status": "pending",
+        "notes": "WEB REPO: add required surname/last_name column to profiles in D1 (check whether any existing users remain post-launch-wipe first; backfill placeholder or force set-on-next-login, document choice); registration API requires surname, clear validation error; API contract: POST /api/auth/signup gains required surname field. ANDROID app must send it (task 5)."
+      },
+      {
+        "id": 4,
+        "name": "cf1-issue1-website-surname-ui",
+        "status": "pending",
+        "notes": "WEB REPO: surname input on registration form (required, beside given name); display 'Given name Surname' on Profile/admin participant list and full-results/celebration screen; 'Given name S.' acceptable on tight leaderboard rows."
+      },
+      {
+        "id": 5,
+        "name": "cf1-issue1-android-surname",
+        "status": "pending",
+        "notes": "APP: required surname input on registration screen calling updated signup API; name displays updated (Profile, Leaderboard, celebration/final results)."
+      },
+      {
+        "id": 6,
+        "name": "cf1-issue2-avatars-bundled",
+        "status": "pending",
+        "notes": "APP: one-time copy of the full illustration avatar asset set from web repo (committed during earlier avatar-import work) into app resources/assets; fix registration-flow avatar picker wiring bug (diagnose actual cause first: missing UI wiring vs swallowed failed fetch); still send only avatar_id to backend."
+      },
+      {
+        "id": 7,
+        "name": "cf1-issue3-read-200-parse-bug",
+        "status": "pending",
+        "notes": "APP: 'Request failed (200)' on scripture/audio load = app-side response-handling bug (successful HTTP 200 mislabeled as failure). Reproduce against live API, inspect real 200 body, find JSON-shape/null/wrapper-check mismatch, fix parsing AND fix error path to report the real status code; review same pattern on other endpoints. Verify Day 1 scripture+audio loads."
+      },
+      {
+        "id": 8,
+        "name": "cf1-issue4-icon-regen",
+        "status": "pending",
+        "notes": "APP: regenerate adaptive icon from web repo's public/branding/forgehouse50-logo-source.png with correct foreground/background separation, safe-zone padding, corner-artifact discipline (same as PWA icon fix), all densities + legacy fallback; verify installed icon visually."
+      },
+      {
+        "id": 9,
+        "name": "cf1-issue5-theme-unchanged",
+        "status": "done",
+        "notes": "NO-OP by operator decision: keep existing simplified calm restrained-blue-accent design system exactly as built. Do not adopt Material dynamic color."
+      },
+      {
+        "id": 10,
+        "name": "cf1-issue6-foreground-service",
+        "status": "pending",
+        "notes": "APP: proper foreground service with low-importance silent persistent notification (app name/icon only, no sound/vibration) to keep process alive so daily reading reminder reliably fires; tap opens app; one-time explanation; one-time battery-optimization exemption prompt during onboarding with clear explanation."
+      },
+      {
+        "id": 11,
+        "name": "cf1-issue7-wat-timezone",
+        "status": "pending",
+        "notes": "WEB+APP: audit every 'what day is it' concept against explicit WAT (UTC+1): per-user calendar generation (Tue/Fri exclusion, day boundaries), quiz day boundary, 1-day read-ahead boundary, admin Start Programme + 10-day join window, programme-end calc, Android daily reminder scheduling. Fix any UTC/device-local/default usage. Verify a known day-boundary case on both surfaces."
+      },
+      {
+        "id": 12,
+        "name": "cf1-issue8-quiz-ui-polish",
+        "status": "pending",
+        "notes": "APP: redesign quiz screen within existing (unchanged) design system: question hierarchy, spaced MC options with proper selected state, weighted submit action, existing type/spacing/color tokens only."
+      },
+      {
+        "id": 13,
+        "name": "cf1-issue9-flag-secure-real",
+        "status": "pending",
+        "notes": "APP: operator could screenshot quiz despite spec. Find why FLAG_SECURE ineffective (wrong window/activity, lifecycle timing, cleared, or false guard), make it genuinely active only while quiz visible and removed on navigate-away; verify by actual on-device/emulator screenshot attempt."
+      },
+      {
+        "id": 14,
+        "name": "cf1-issue10-confetti-return-home",
+        "status": "pending",
+        "notes": "APP: confetti on full day completion (reading + one quiz attempt) \u2014 verify whether ever implemented; fix trigger/race or build per original spec; add prominent 'Return Home' action on completion screen."
+      },
+      {
+        "id": 15,
+        "name": "cf1-issue11-leaderboard-immediate-7x",
+        "status": "pending",
+        "notes": "OPERATOR ADDENDUM: leaderboards immediate, not locked to day 3 (remove elapsed_days>=3 eligibility gate on web backend + app copy); multiply every points allocation by 7 (quiz proportional points, completion points, any other award) so scoring is 7x more encouraging. Apply consistently backend + any app-side display/derivation."
+      },
+      {
+        "id": 16,
+        "name": "cf1-release-v2",
+        "status": "pending",
+        "notes": "After all fixes committed: dispatch release.yml (app_path=apps/forgehouse50) -> tag auto-increments forgehouse50-v2; never overwrite v1; verify release + APK live via GitHub Releases API. Web-side deploys via push to vjumbo264/forgehouse50 (Cloudflare Pages)."
+      },
+      {
+        "id": 17,
+        "name": "cf1-final-verify-complete",
+        "status": "pending",
+        "notes": "Mark combined_fixes_v1 complete only when every issue is genuinely verified (live API / on-device evidence), then set build_complete true."
+      }
+    ]
+  }
 }
