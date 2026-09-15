@@ -90,7 +90,7 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit) {
             )
             Spacer(Modifier.width(16.dp))
             Column {
-                Text(me?.name ?: repo.session.userName ?: "", style = MaterialTheme.typography.titleLarge,
+                Text((listOfNotNull(me?.name, me?.surname?.takeIf { it.isNotBlank() }).joinToString(" ")).ifBlank { repo.session.userName ?: "" }, style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold)
                 Text(me?.email ?: "", style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)

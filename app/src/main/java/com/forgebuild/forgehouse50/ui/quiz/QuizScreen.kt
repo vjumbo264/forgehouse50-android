@@ -46,7 +46,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.data.QuizResponse
 import com.forgebuild.engine.security.ScreenSecurity
-import com.forgebuild.forgehouse50.data.QuizResponse
 import com.forgebuild.forgehouse50.data.QuizSubmitResponse
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.ui.ConfettiOverlay
