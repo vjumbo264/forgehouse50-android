@@ -3,8 +3,8 @@
  "app_name": "ForgeHouse 50",
  "app_folder": "apps/forgehouse50/",
  "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
- "build_complete": false,
- "last_updated_utc": "2026-09-15T12:00:00Z",
+ "build_complete": true,
+ "last_updated_utc": "2026-09-15T10:14:30Z",
  "backend": {
   "base_url": "https://forgehouse50.pages.dev",
   "api_prefix": "/api",
@@ -380,7 +380,7 @@
   "completed_utc": "2026-09-15T09:50:00Z"
  },
  "scripture_audio_rewire_v1": {
-  "status": "in_progress",
+  "status": "done",
   "seeded_utc": "2026-09-15T12:00:00Z",
   "scope_note": "Operator follow-up after v5: scripture/audio still not visible; leaderboard still showing /day. Rewire the app's entire scripture/audio load function; harden leaderboard to raw total_points + cache invalidation.",
   "tasks": [
@@ -393,21 +393,23 @@
    {
     "id": 2,
     "name": "sr-rewire-readscreen-load",
-    "status": "in_progress",
-    "notes": "Rewire passage+audio load: key effect on the assignment identity (book:cs:ce) + translation + reloadToken so it provably fires when day data arrives; always clear loading in every path; dedicated retryable error view in the pane (no silent blank); validate stored translation id against live /translations list with fallback to first versewell id; audio fetch failure degrades to no-audio-bar without touching passage."
+    "status": "done",
+    "notes": "DONE. ReadScreen.kt rewired: passage+audio effect now keyed on the assignment identity (book:chapter_start:chapter_end) + the validated translation + a manual reload token, so it ALWAYS re-fires when day data lands / chip switch / translation change / Retry. The previous never-firing effect (keyed without dayLoaded, early-returning before day data arrived) is gone. loadingPassage is cleared on every path; passage failure renders a dedicated, retryable error view in the pane (no silent blank / no endless spinner); stored translation id is validated against live /translations with fallback to the first versewell id; an audio-availability failure now only hides the audio bar and never takes the passage down."
    },
    {
     "id": 3,
     "name": "sr-leaderboard-raw-total-cache-bust",
-    "status": "pending",
-    "notes": "LeaderboardScreen: overall value = total_points ?: value (raw cumulative, never averaged); bump SharedPreferences cache key to lb2_ to invalidate any cached pre-fix payload."
+    "status": "done",
+    "notes": "DONE. LeaderboardScreen.kt overall value now prefers the explicit total_points field (raw cumulative) over value, and the per-category SharedPreferences cache key is bumped to lb2_ to invalidate any cached pre-fix payload. No '/day'/'pts/day' label remains anywhere in app source (grep-clean)."
    },
    {
     "id": 4,
     "name": "sr-validate-and-release-v6",
-    "status": "pending",
-    "notes": "Commit+push+verify push via GitHub API, dispatch release.yml (app_path=apps/forgehouse50), verify forgehouse50-v6 live on Releases API, then build_complete=true."
+    "status": "done",
+    "notes": "DONE. Committed + pushed (push verified via GitHub branches API); release.yml run 34956573775 completed success; forgehouse50-v6 verified live on the Releases API with assets app-forgehouse50-v6.apk + forgebuild-manifest.json. v1-v5 intact, never overwritten."
    }
-  ]
- }
+  ],
+  "completed_utc": "2026-09-15T10:14:30Z"
+ },
+ "current_release": "forgehouse50-v6"
 }
