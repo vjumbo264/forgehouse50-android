@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-15T02:00:00Z",
+  "last_updated_utc": "2026-09-15T02:45:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -281,38 +281,38 @@
       {
         "id": 3,
         "name": "lf1-issue1-backend-leaderboard-raw-points",
-        "status": "pending",
-        "notes": "WEB REPO (functions/api/leaderboard.mjs or lib): primary 'Overall Score' = raw cumulative total points (sum of ALL point sources: reading completion, quiz proportional, streaks, observations, questions, sharing, weekly targets, completion) — remove damped adjusted_score / per-day average as the primary value+rank. Damped view: keep only if clearly separate + labeled, else remove. Confirm final end-of-programme snapshot logic untouched (already raw totals). Verify live via API: a real user's overall = manual sum of their points history."
+        "status": "done",
+        "notes": "DONE (web repo vjumbo264/forgehouse50, commit eb7e598). leaderboard.mjs overall value = raw r.total_points; dampedScore removed from points.mjs; final snapshot already raw (untouched). Deploy run 34919135475 success. LIVE VERIFIED via lf1_verify.py: real user api_value=18 == manual SUM(points)=18 (damped would have been ~1.8); ranking sorted desc; scoring.formula now raw; all entries MATCH; PASS."
       },
       {
         "id": 4,
         "name": "lf1-issue1-app-leaderboard-verify",
-        "status": "pending",
-        "notes": "APP: after backend fix, verify Leaderboard 'overall' category reflects raw totals; if local caching masks the fix, invalidate/refetch cached leaderboard. Adjust app copy/DTOs if app derives or labels the damped score anywhere (Leaderboard screen shows 6 categories incl. damped overall per task 5 notes — update labels/remove damped primary)."
+        "status": "done",
+        "notes": "DONE. App LeaderboardScreen consumes /api/leaderboard?category=overall which now returns raw total_points as value. App does NOT locally derive/damp the score — it renders the backend value directly, so the backend fix propagates. Leaderboard data is fetched live (no long-lived local leaderboard cache that would mask the fix); the CacheFirstStore re-renders from network on each open. Web label changed avg->pts; app shows raw points value."
       },
       {
         "id": 5,
         "name": "lf1-issue2-scripture-loading-diagnose",
-        "status": "pending",
-        "notes": "Diagnose which surface(s) hang: check live site Read screen (https://forgehouse50.pages.dev) + app Read screen code paths. Observe real network requests to /api/read/passage (VerseWell proxy) — hung request, silent throw, or loading flag never cleared. Root cause with real evidence, not guesses."
+        "status": "done",
+        "notes": "DIAGNOSED: web read.html correct (loadPassage always clears loading state; live Day1=160 verses, Day2=222 verses). Root cause is the APP: ReadScreen.kt set loadingPassage=true at init while the passage LaunchedEffect early-returned until /read/day arrived — a failed/slow day call left the spinner forever (infinite \"Loading\"). Backend healthy."
       },
       {
         "id": 6,
         "name": "lf1-issue2-scripture-loading-fix",
-        "status": "pending",
-        "notes": "Fix the actual root cause (web and/or app as diagnosed); add timeout/error fallback so future failures show a clear error, not infinite spinner. Verify live: scripture text actually displays for >=2 reading days on affected surface(s)."
+        "status": "done",
+        "notes": "DONE (commit 777416b). ReadScreen.kt: added dayLoaded flag; spinner now shows only while !dayLoaded || (loadingPassage && passage==null); passage effect gated on dayLoaded; failed day call surfaces its error and the spinner clears. ApiClient: installed HttpTimeout (25s request/10s connect/25s socket) so hung requests fail fast with a clear error. Web defensive fallback also added (app.v7.js 25s AbortController). Live-verified content displays for Days 1 & 2."
       },
       {
         "id": 7,
         "name": "lf1-issue3-icon-web-pwa",
-        "status": "pending",
-        "notes": "WEB REPO: commit forgehouse50-icon-v3.png to public/branding/ as new master source (alongside/replacing forgehouse50-logo-source.png); regenerate PWA icon set (192/512 standard + maskable, favicon, apple-touch-icon) from it; verify live manifest icons render."
+        "status": "done",
+        "notes": "DONE (web repo). forgehouse50-icon-v3.png committed to public/branding/ as new master; PWA set regenerated via scripts/regen_icons_v3.py (192/512 transparent corners; maskable-192/512 + apple-touch full-bleed #0148E3). LIVE VERIFIED: live icons byte-identical (sha256) to repo; manifest serves new v3 artwork."
       },
       {
         "id": 8,
         "name": "lf1-issue3-icon-android-regen",
-        "status": "pending",
-        "notes": "APP: regenerate adaptive icon (foreground/background/monochrome layers, safe zone, all densities) + legacy fallbacks from forgehouse50-icon-v3.png via tools/make_adaptive_icon.py; pixel-verify no corner artifacts. Update BUILD_STATE backend notes if icon source path changes."
+        "status": "done",
+        "notes": "DONE. Adaptive icon regenerated from forgehouse50-icon-v3.png across all 5 densities: foreground = badge scaled to 72/108 safe zone, centered, transparent corners; background = badge edge blue #0148E3; monochrome = alpha silhouette; legacy ic_launcher + ic_launcher_round rebuilt full-bleed. PIXEL-VERIFIED: every density fg/mono corners alpha==0, legacy centers opaque; no white/opaque corner artifacts. anydpi-v26 XML already references the layers (unchanged)."
       },
       {
         "id": 9,
