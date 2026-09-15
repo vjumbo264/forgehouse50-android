@@ -3,8 +3,8 @@
  "app_name": "ForgeHouse 50",
  "app_folder": "apps/forgehouse50/",
  "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
- "build_complete": true,
- "last_updated_utc": "2026-09-15T09:50:00Z",
+ "build_complete": false,
+ "last_updated_utc": "2026-09-15T12:00:00Z",
  "backend": {
   "base_url": "https://forgehouse50.pages.dev",
   "api_prefix": "/api",
@@ -86,7 +86,7 @@
    "id": 5,
    "name": "implement-app",
    "status": "done",
-   "notes": "Sub-step 5.1 done: build config (deps justified: ktor/okhttp REST, kotlinx-serialization JSON DTOs, security-crypto EncryptedSharedPreferences session token, Room persistent scripture/audio store, Media3 ExoPlayer+session background audio w/ notification, WorkManager daily reminder, Coil avatar PNGs, navigation-compose). Data layer: Models.kt (DTOs matching functions/api/*.mjs exactly), SessionStore (encrypted token, cookie header fh50_session), ApiClient (all endpoints, Set-Cookie capture, backend error passthrough), AppDatabase (scripture_chapters + downloaded_audio tables), Repository (persistent offline passage/audio store, clear-content). Media: AudioService (MediaSessionService, seek +/-5s, audio focus), AudioPlayerManager (StateFlow UI state). Work: ReminderWorker (18:00 daily, checks completion+quiz at delivery, cancels on logout). Update: UpdateChecker (version.json manifest supersession, per-day snooze). UI: AppTheme (system day/night, muted-blue #3a5f8a/#7f9fc4 accent, PodiumColors), AuthScreens (login/signup/OTP). | Sub-step 5.2 done: full feature layer + navigation. AppNavHost (tabs Today/Leaderboard/Progress/Profile, routes read/quiz/notes/note_edit/admin, per-route FLAG_SECURE on quiz ONLY via Engine ScreenSecurity, in-app update prompt dialog), MainActivity (lifecycle-bound MediaController, POST_NOTIFICATIONS request, ReminderWorker schedule on login / cancel on logout). HomeScreen (cache-first today card, stats, notes entry, admin entry). ReadScreen (fixed-height clipped chapter pane, seek/skip-5s, audio-synced auto-scroll, single-chapter + download-all-for-today persistence via the Room/file store, completion + reading-time tracking). QuizScreen (one attempt, no timer, proportional score shown, confetti on full day completion). Notes (5 types, search/filter/edit/delete, private). Progress (50-day list, cache-first). Leaderboard (6 categories incl. damped overall; top-3 podium treatment: 1st glow+crown, 2nd/3rd tinted cards, 4th+ plain; final-results screen with same treatment + celebration ack). Profile (stats/badges, avatar picker over the web repo's 30 illustration PNGs, Downloaded-content manager with clear-cache). Admin (stats, participants + points adjust, Start Programme). Manifest: INTERNET/POST_NOTIFICATIONS/FOREGROUND_SERVICE(_MEDIA_PLAYBACK) + MediaSessionService. Also fixed latent compile gaps in 5.1 layer: explicit kotlinx.serialization encode/decode imports in Repository/ApiClient, public AudioPlayerManager.refresh() position pusher. Added version.json update manifest for the update checker. | Sub-step 5.3 done: fixed R8 release build — slf4j-api (transitive via ktor-client-okhttp) has no Android backend; added -dontwarn org.slf4j.** to proguard-rules.pro. CI run 34907203396 failed only at minifyReleaseWithR8 with missing org.slf4j.impl.StaticLoggerBinder; Kotlin compile (kspReleaseKotlin/compileReleaseKotlin) already passed on commit 242bafd."
+   "notes": "Sub-step 5.1 done: build config (deps justified: ktor/okhttp REST, kotlinx-serialization JSON DTOs, security-crypto EncryptedSharedPreferences session token, Room persistent scripture/audio store, Media3 ExoPlayer+session background audio w/ notification, WorkManager daily reminder, Coil avatar PNGs, navigation-compose). Data layer: Models.kt (DTOs matching functions/api/*.mjs exactly), SessionStore (encrypted token, cookie header fh50_session), ApiClient (all endpoints, Set-Cookie capture, backend error passthrough), AppDatabase (scripture_chapters + downloaded_audio tables), Repository (persistent offline passage/audio store, clear-content). Media: AudioService (MediaSessionService, seek +/-5s, audio focus), AudioPlayerManager (StateFlow UI state). Work: ReminderWorker (18:00 daily, checks completion+quiz at delivery, cancels on logout). Update: UpdateChecker (version.json manifest supersession, per-day snooze). UI: AppTheme (system day/night, muted-blue #3a5f8a/#7f9fc4 accent, PodiumColors), AuthScreens (login/signup/OTP). | Sub-step 5.2 done: full feature layer + navigation. AppNavHost (tabs Today/Leaderboard/Progress/Profile, routes read/quiz/notes/note_edit/admin, per-route FLAG_SECURE on quiz ONLY via Engine ScreenSecurity, in-app update prompt dialog), MainActivity (lifecycle-bound MediaController, POST_NOTIFICATIONS request, ReminderWorker schedule on login / cancel on logout). HomeScreen (cache-first today card, stats, notes entry, admin entry). ReadScreen (fixed-height clipped chapter pane, seek/skip-5s, audio-synced auto-scroll, single-chapter + download-all-for-today persistence via the Room/file store, completion + reading-time tracking). QuizScreen (one attempt, no timer, proportional score shown, confetti on full day completion). Notes (5 types, search/filter/edit/delete, private). Progress (50-day list, cache-first). Leaderboard (6 categories incl. damped overall; top-3 podium treatment: 1st glow+crown, 2nd/3rd tinted cards, 4th+ plain; final-results screen with same treatment + celebration ack). Profile (stats/badges, avatar picker over the web repo's 30 illustration PNGs, Downloaded-content manager with clear-cache). Admin (stats, participants + points adjust, Start Programme). Manifest: INTERNET/POST_NOTIFICATIONS/FOREGROUND_SERVICE(_MEDIA_PLAYBACK) + MediaSessionService. Also fixed latent compile gaps in 5.1 layer: explicit kotlinx.serialization encode/decode imports in Repository/ApiClient, public AudioPlayerManager.refresh() position pusher. Added version.json update manifest for the update checker. | Sub-step 5.3 done: fixed R8 release build \u2014 slf4j-api (transitive via ktor-client-okhttp) has no Android backend; added -dontwarn org.slf4j.** to proguard-rules.pro. CI run 34907203396 failed only at minifyReleaseWithR8 with missing org.slf4j.impl.StaticLoggerBinder; Kotlin compile (kspReleaseKotlin/compileReleaseKotlin) already passed on commit 242bafd."
   },
   {
    "id": 6,
@@ -124,7 +124,7 @@
    "session": 3,
    "date": "2026-09-14",
    "did": "... (see previous entry) Released forgehouse50-v1 and verified it live; set build_complete=true.",
-   "next": "None — build complete. Future sessions: feature requests/fixes only; next release tag would be forgehouse50-v2."
+   "next": "None \u2014 build complete. Future sessions: feature requests/fixes only; next release tag would be forgehouse50-v2."
   },
   {
    "session": 4,
@@ -141,13 +141,13 @@
   {
    "session": 4,
    "date": "2026-09-15",
-   "did": "Fixed CI compile error (duplicate QuizResponse import) + profile full-name display; re-ran release pipeline; final status: complete — forgehouse50-v2 verified live, build_complete.",
+   "did": "Fixed CI compile error (duplicate QuizResponse import) + profile full-name display; re-ran release pipeline; final status: complete \u2014 forgehouse50-v2 verified live, build_complete.",
    "next": "Operator installs v2 APK for on-device checks (Day-1 read/audio, quiz screenshot attempt, icon, confetti)."
   },
   {
    "session": 5,
    "date": "2026-09-15",
-   "did": "Operator EXTEND/UPDATE contract: 3 fixes — leaderboard raw-total-points regression (backend, fixes site+app), Bible/scripture screen stuck loading (diagnose surface), new icon v3 (Android adaptive + web PWA). Appended instruction to PROMPT_HISTORY (credentials redacted); seeded leaderboard_scripture_icon_fix_v1 task list.",
+   "did": "Operator EXTEND/UPDATE contract: 3 fixes \u2014 leaderboard raw-total-points regression (backend, fixes site+app), Bible/scripture screen stuck loading (diagnose surface), new icon v3 (Android adaptive + web PWA). Appended instruction to PROMPT_HISTORY (credentials redacted); seeded leaderboard_scripture_icon_fix_v1 task list.",
    "next": "lf1-issue1-backend-leaderboard-raw-points: clone/read web repo vjumbo264/forgehouse50, find where adjusted_score/per-day average feeds the Overall leaderboard, restore raw cumulative total."
   },
   {
@@ -214,7 +214,7 @@
     "id": 8,
     "name": "cf1-issue4-icon-regen",
     "status": "done",
-    "notes": "APP: regenerate adaptive icon from web repo's public/branding/forgehouse50-logo-source.png with correct foreground/background separation, safe-zone padding, corner-artifact discipline (same as PWA icon fix), all densities + legacy fallback; verify installed icon visually. | DONE: icons regenerated from forgehouse50-logo-source.png, all densities + monochrome + adaptive XML + MISSING legacy fallbacks (ic_launcher.png/_round) added — the on-device defect. Corner pixel verified opaque brand blue."
+    "notes": "APP: regenerate adaptive icon from web repo's public/branding/forgehouse50-logo-source.png with correct foreground/background separation, safe-zone padding, corner-artifact discipline (same as PWA icon fix), all densities + legacy fallback; verify installed icon visually. | DONE: icons regenerated from forgehouse50-logo-source.png, all densities + monochrome + adaptive XML + MISSING legacy fallbacks (ic_launcher.png/_round) added \u2014 the on-device defect. Corner pixel verified opaque brand blue."
    },
    {
     "id": 9,
@@ -250,7 +250,7 @@
     "id": 14,
     "name": "cf1-issue10-confetti-return-home",
     "status": "done",
-    "notes": "APP: confetti on full day completion (reading + one quiz attempt) — verify whether ever implemented; fix trigger/race or build per original spec; add prominent 'Return Home' action on completion screen. | DONE: confetti existed but its readingCompleted trigger was silently broken by the Issue-3 parse bug (now fixed at serializer) so it fires on full completion; prominent 'Return Home' added to result + existing-attempt views."
+    "notes": "APP: confetti on full day completion (reading + one quiz attempt) \u2014 verify whether ever implemented; fix trigger/race or build per original spec; add prominent 'Return Home' action on completion screen. | DONE: confetti existed but its readingCompleted trigger was silently broken by the Issue-3 parse bug (now fixed at serializer) so it fires on full completion; prominent 'Return Home' added to result + existing-attempt views."
    },
    {
     "id": 15,
@@ -268,7 +268,7 @@
     "id": 17,
     "name": "cf1-final-verify-complete",
     "status": "done",
-    "notes": "Mark combined_fixes_v1 complete only when every issue is genuinely verified (live API / on-device evidence), then set build_complete true. | All fixes committed/pushed/verified; live D1 migration PRAGMA-verified; release verified live. On-device checks (Day-1 read/audio, quiz screenshot attempt, installed icon, confetti) require operator install of the v2 APK — no emulator in the build environment; documented boundary."
+    "notes": "Mark combined_fixes_v1 complete only when every issue is genuinely verified (live API / on-device evidence), then set build_complete true. | All fixes committed/pushed/verified; live D1 migration PRAGMA-verified; release verified live. On-device checks (Day-1 read/audio, quiz screenshot attempt, installed icon, confetti) require operator install of the v2 APK \u2014 no emulator in the build environment; documented boundary."
    }
   ]
  },
@@ -276,7 +276,7 @@
   "status": "complete",
   "seeded_utc": "2026-09-15T02:00:00Z",
   "scope_note": "Backend/site tasks live in github.com/vjumbo264/forgehouse50 (BUILD_STATE.json there is authoritative for web scope); app tasks live here. Site + app share one backend at https://forgehouse50.pages.dev.",
-  "attached_asset": "forgehouse50-icon-v3.png (1024x1024 RGBA, rounded-square glossy blue flame/house/globe/50 mark, transparent clean corners) — new master icon source; replaces forgehouse50-logo-source.png references. To be committed to web repo public/branding/ (the established source-asset location) and used for both PWA + Android regeneration.",
+  "attached_asset": "forgehouse50-icon-v3.png (1024x1024 RGBA, rounded-square glossy blue flame/house/globe/50 mark, transparent clean corners) \u2014 new master icon source; replaces forgehouse50-logo-source.png references. To be committed to web repo public/branding/ (the established source-asset location) and used for both PWA + Android regeneration.",
   "tasks": [
    {
     "id": 1,
@@ -300,13 +300,13 @@
     "id": 4,
     "name": "lf1-issue1-app-leaderboard-verify",
     "status": "done",
-    "notes": "DONE. App LeaderboardScreen consumes /api/leaderboard?category=overall which now returns raw total_points as value. App does NOT locally derive/damp the score — it renders the backend value directly, so the backend fix propagates. Leaderboard data is fetched live (no long-lived local leaderboard cache that would mask the fix); the CacheFirstStore re-renders from network on each open. Web label changed avg->pts; app shows raw points value."
+    "notes": "DONE. App LeaderboardScreen consumes /api/leaderboard?category=overall which now returns raw total_points as value. App does NOT locally derive/damp the score \u2014 it renders the backend value directly, so the backend fix propagates. Leaderboard data is fetched live (no long-lived local leaderboard cache that would mask the fix); the CacheFirstStore re-renders from network on each open. Web label changed avg->pts; app shows raw points value."
    },
    {
     "id": 5,
     "name": "lf1-issue2-scripture-loading-diagnose",
     "status": "done",
-    "notes": "DIAGNOSED: web read.html correct (loadPassage always clears loading state; live Day1=160 verses, Day2=222 verses). Root cause is the APP: ReadScreen.kt set loadingPassage=true at init while the passage LaunchedEffect early-returned until /read/day arrived — a failed/slow day call left the spinner forever (infinite \"Loading\"). Backend healthy."
+    "notes": "DIAGNOSED: web read.html correct (loadPassage always clears loading state; live Day1=160 verses, Day2=222 verses). Root cause is the APP: ReadScreen.kt set loadingPassage=true at init while the passage LaunchedEffect early-returned until /read/day arrived \u2014 a failed/slow day call left the spinner forever (infinite \"Loading\"). Backend healthy."
    },
    {
     "id": 6,
@@ -336,7 +336,7 @@
     "id": 10,
     "name": "lf1-final-verify-complete",
     "status": "done",
-    "notes": "ALL THREE ISSUES GENUINELY VERIFIED: (1) live /api/leaderboard?category=overall returns raw totals matching manual D1 SUM(points) for every listed user (e.g. 18==18; damped would have been ~1.8) with ranking sorted desc — web label now \"pts\", app renders backend value directly; (2) scripture loading root-caused to the app ReadScreen loading-flag bug, fixed (dayLoaded gate + 25s HttpTimeout) plus web defensive AbortController timeout, and live-verified content displays for Day 1 (Matthew 1-6, 160 verses) and Day 2 (Matthew 7-12, 222 verses); (3) icons regenerated from forgehouse50-icon-v3.png on BOTH surfaces — web PWA icons live-verified byte-identical (sha256) to repo, Android adaptive+legacy icons pixel-verified with no corner artifacts on any density. On-device install check of the v4 APK requires the operator (no emulator in the build environment) — same documented boundary as v2."
+    "notes": "ALL THREE ISSUES GENUINELY VERIFIED: (1) live /api/leaderboard?category=overall returns raw totals matching manual D1 SUM(points) for every listed user (e.g. 18==18; damped would have been ~1.8) with ranking sorted desc \u2014 web label now \"pts\", app renders backend value directly; (2) scripture loading root-caused to the app ReadScreen loading-flag bug, fixed (dayLoaded gate + 25s HttpTimeout) plus web defensive AbortController timeout, and live-verified content displays for Day 1 (Matthew 1-6, 160 verses) and Day 2 (Matthew 7-12, 222 verses); (3) icons regenerated from forgehouse50-icon-v3.png on BOTH surfaces \u2014 web PWA icons live-verified byte-identical (sha256) to repo, Android adaptive+legacy icons pixel-verified with no corner artifacts on any density. On-device install check of the v4 APK requires the operator (no emulator in the build environment) \u2014 same documented boundary as v2."
    }
   ],
   "completed_utc": "2026-09-15T02:55:00Z"
@@ -350,7 +350,7 @@
     "id": 1,
     "name": "lf2-diagnose",
     "status": "done",
-    "notes": "DIAGNOSED with live evidence. (a) Leaderboard /day: backend already returns raw total_points (web label fixed in lf1) — residual defect is APP-side LeaderboardScreen.kt valueLabel(): overall formatted as '%.1f pts/day'. (b) Scripture text: VerseWell mirror JSON healthy (kjv/matthew/1.json = 25 verses, 200 application/json) — text outage on app was downstream of audio+load path, not upstream. (c) AUDIO root cause: vjumbo264/versewell m4a files EXIST in git (28/28 Matthew chapters) but the last 'deploy' workflow run 34596865127 (2026-09-11) FAILED at 'Deploy reading site to Pages' (exit 1) — so audio was committed but never published; live HEAD returns the Pages SPA fallback text/html, versewellProvider.headExists() correctly rejects it, audio_availability returns empty."
+    "notes": "DIAGNOSED with live evidence. (a) Leaderboard /day: backend already returns raw total_points (web label fixed in lf1) \u2014 residual defect is APP-side LeaderboardScreen.kt valueLabel(): overall formatted as '%.1f pts/day'. (b) Scripture text: VerseWell mirror JSON healthy (kjv/matthew/1.json = 25 verses, 200 application/json) \u2014 text outage on app was downstream of audio+load path, not upstream. (c) AUDIO root cause: vjumbo264/versewell m4a files EXIST in git (28/28 Matthew chapters) but the last 'deploy' workflow run 34596865127 (2026-09-11) FAILED at 'Deploy reading site to Pages' (exit 1) \u2014 so audio was committed but never published; live HEAD returns the Pages SPA fallback text/html, versewellProvider.headExists() correctly rejects it, audio_availability returns empty."
    },
    {
     "id": 2,
@@ -378,5 +378,36 @@
    }
   ],
   "completed_utc": "2026-09-15T09:50:00Z"
+ },
+ "scripture_audio_rewire_v1": {
+  "status": "in_progress",
+  "seeded_utc": "2026-09-15T12:00:00Z",
+  "scope_note": "Operator follow-up after v5: scripture/audio still not visible; leaderboard still showing /day. Rewire the app's entire scripture/audio load function; harden leaderboard to raw total_points + cache invalidation.",
+  "tasks": [
+   {
+    "id": 1,
+    "name": "sr-diagnose-root-cause",
+    "status": "done",
+    "notes": "ROOT CAUSE (source-level, conclusive): ReadScreen.kt passage/audio LaunchedEffect keyed on (day, selected, translation) with `if (!dayLoaded) return@LaunchedEffect`. dayLoaded is NOT a key, so for any returning user (stored translationId set -> translation state never changes) the effect runs exactly once at composition, early-returns before day data arrives, and NEVER re-fires. getPassage() and audioAvailability() are simply never called -> blank pane, no audio bar, forever. v5 only gated the spinner on dayLoaded, converting an infinite spinner into a silent permanent blank. Secondary defects: stale/invalid stored translation id never validated against live /translations; passage failure surfaces only as a tiny top banner with no retry; leaderboard app reads e.value (potentially averaged) instead of explicit total_points; SharedPreferences leaderboard cache can serve pre-fix payloads."
+   },
+   {
+    "id": 2,
+    "name": "sr-rewire-readscreen-load",
+    "status": "in_progress",
+    "notes": "Rewire passage+audio load: key effect on the assignment identity (book:cs:ce) + translation + reloadToken so it provably fires when day data arrives; always clear loading in every path; dedicated retryable error view in the pane (no silent blank); validate stored translation id against live /translations list with fallback to first versewell id; audio fetch failure degrades to no-audio-bar without touching passage."
+   },
+   {
+    "id": 3,
+    "name": "sr-leaderboard-raw-total-cache-bust",
+    "status": "pending",
+    "notes": "LeaderboardScreen: overall value = total_points ?: value (raw cumulative, never averaged); bump SharedPreferences cache key to lb2_ to invalidate any cached pre-fix payload."
+   },
+   {
+    "id": 4,
+    "name": "sr-validate-and-release-v6",
+    "status": "pending",
+    "notes": "Commit+push+verify push via GitHub API, dispatch release.yml (app_path=apps/forgehouse50), verify forgehouse50-v6 live on Releases API, then build_complete=true."
+   }
+  ]
  }
 }
