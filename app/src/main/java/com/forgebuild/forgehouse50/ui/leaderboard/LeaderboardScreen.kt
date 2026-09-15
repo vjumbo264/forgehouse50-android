@@ -138,7 +138,11 @@ private fun InProgressBoard(repo: Repository) {
 
 private fun valueLabel(category: String, e: LeaderboardEntry): String = when (category) {
     "reading_time" -> formatDurationShort(e.value.toLong())
-    "overall" -> "%.1f pts/day".format(e.value)
+    // Overall Score = raw cumulative total points (backend value is total_points
+    // since leaderboard_scripture_icon_fix_v1). The old "%.1f pts/day" label was a
+    // leftover from the damped-average era and mis-presented the raw total as a
+    // per-day average — fixed here so the app matches the site exactly.
+    "overall" -> "%.0f pts".format(e.value)
     else -> "%.0f".format(e.value)
 }
 
