@@ -93,12 +93,14 @@ private fun InProgressBoard(repo: Repository) {
     var loading by remember { mutableStateOf(true) }
 
     LaunchedEffect(category) {
-        prefs.getString("leaderboard_$category", null)?.let { c ->
+        // scripture_audio_rewire_v1: lb2_ cache key — invalidates any cached
+        // pre-fix leaderboard payload (raw total points, never pts/day).
+        prefs.getString("lb2_$category", null)?.let { c ->
             runCatching { AppJson.decodeFromString<LeaderboardResponse>(c) }.getOrNull()
         }?.let { data = it; loading = false }
         runCatching { repo.api.leaderboard(category) }.onSuccess {
             data = it
-            prefs.edit().putString("leaderboard_$category", AppJson.encodeToString(LeaderboardResponse.serializer(), it)).apply()
+            prefs.edit().putString("lb2_$category", AppJson.encodeToString(LeaderboardResponse.serializer(), it)).apply()
         }
         loading = false
     }
@@ -142,7 +144,10 @@ private fun valueLabel(category: String, e: LeaderboardEntry): String = when (ca
     // since leaderboard_scripture_icon_fix_v1). The old "%.1f pts/day" label was a
     // leftover from the damped-average era and mis-presented the raw total as a
     // per-day average — fixed here so the app matches the site exactly.
-    "overall" -> "%.0f pts".format(e.value)
+    // scripture_audio_rewire_v1: prefer the explicit total_points field (raw
+    // cumulative) over `value`, so the app can NEVER render a per-day average
+    // here again even if the backend's value field ever regresses.
+    "overall" -> "%.0f pts".format(e.total_points?.toDouble() ?: e.value)
     else -> "%.0f".format(e.value)
 }
 

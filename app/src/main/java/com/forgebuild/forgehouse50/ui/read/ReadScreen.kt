@@ -89,7 +89,13 @@ fun ReadScreen(
     // /read/day call ever failed, nothing ever flipped the flag false and the
     // screen spun forever ("stuck on loading").
     var dayLoaded by remember { mutableStateOf(false) }
-    var translation by remember { mutableStateOf(repo.session.translationId ?: "versewell-kjv") }
+    // scripture_audio_rewire_v1: starts blank (or from a stored id) and is
+    // VALIDATED against the live /translations list in the day-load effect
+    // below — a stale/unknown stored id used to be trusted blindly here and
+    // could silently break every passage + audio fetch.
+    var translation by remember { mutableStateOf(repo.session.translationId ?: "") }
+    var passageError by remember { mutableStateOf<String?>(null) }
+    var reloadToken by remember { mutableIntStateOf(0) }
     var selected by remember { mutableIntStateOf(0) }
     var passage by remember { mutableStateOf<PassageResponse?>(null) }
     var audio by remember { mutableStateOf<AudioAvailability?>(null) }
@@ -100,34 +106,53 @@ fun ReadScreen(
     var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(day) {
+        // scripture_audio_rewire_v1: resolve a VALID translation id first —
+        // never trust a stale/blank stored id — then load the day, then flip
+        // dayLoaded. The passage effect below keys on the resolved values, so
+        // it provably re-fires once everything it needs is ready.
+        runCatching { repo.api.translations() }.onSuccess { t ->
+            val valid = t.translations.filter { it.versewell }.map { it.id }
+            val resolved = when {
+                translation.isNotBlank() && translation in valid -> translation
+                valid.isNotEmpty() -> valid.first()
+                translation.isNotBlank() -> translation
+                else -> "versewell-kjv"
+            }
+            translation = resolved
+            repo.session.translationId = resolved
+        }.onFailure {
+            if (translation.isBlank()) translation = "versewell-kjv"
+        }
         runCatching { repo.api.day(day) }.onSuccess {
             dayData = it
             completed = it.progress.completed
         }.onFailure { error = it.message }
         dayLoaded = true
-        // Default translation: first VerseWell translation from the API.
-        runCatching { repo.api.translations() }.onSuccess { t ->
-            t.translations.firstOrNull { it.versewell }?.let { vw ->
-                if (repo.session.translationId == null) {
-                    translation = vw.id
-                    repo.session.translationId = vw.id
-                }
-            }
-        }
     }
 
     val assignments = dayData?.assignments ?: emptyList()
     val current: Assignment? = assignments.getOrNull(selected)
     val scroll = rememberScrollState()
 
-    // Passage: persistent offline store — no network call once on-device.
-    LaunchedEffect(day, selected, translation) {
-        if (!dayLoaded) return@LaunchedEffect // spinner is gated on !dayLoaded below
+    // Passage + audio — REWIRED (scripture_audio_rewire_v1). The old effect
+    // was keyed on (day, selected, translation) and early-returned while the
+    // day response was still in flight; for a returning user none of those
+    // keys ever changed afterwards, so the passage + audio were fetched
+    // exactly never (permanent blank pane, no audio bar). This version keys
+    // on the ASSIGNMENT IDENTITY (book:cs:ce) plus the validated translation
+    // plus a manual reload token, so the load ALWAYS runs: when the day data
+    // lands, on chapter-chip switch, on translation change, and on Retry.
+    val assignmentKey = current?.let { "${it.book}:${it.chapter_start}:${it.chapter_end}" } ?: ""
+    LaunchedEffect(assignmentKey, translation, reloadToken) {
         val a = current ?: return@LaunchedEffect
+        if (translation.isBlank()) return@LaunchedEffect
         loadingPassage = true
+        passageError = null
         runCatching { repo.getPassage(a.book, a.chapter_start, a.chapter_end, translation) }
-            .onSuccess { passage = it; error = null }
-            .onFailure { error = it.message }
+            .onSuccess { passage = it }
+            .onFailure { passage = null; passageError = it.message ?: "Could not load this passage." }
+        // Audio availability is independent: a failure here only hides the
+        // audio bar — it must never take the passage down with it.
         runCatching { repo.api.audioAvailability(a.book, a.chapter_start, a.chapter_end, translation) }
             .onSuccess { av ->
                 audio = av
@@ -138,6 +163,7 @@ fun ReadScreen(
                 }
                 downloaded = keys intersect present
             }
+            .onFailure { audio = null }
         loadingPassage = false
     }
 
@@ -211,11 +237,34 @@ fun ReadScreen(
                     .clipToBounds()
                     .padding(horizontal = 24.dp),
             ) {
-                if (!dayLoaded || (loadingPassage && passage == null)) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                when {
+                    !dayLoaded || (loadingPassage && passage == null) -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
                     }
-                } else {
+                    current == null -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No reading assigned for day $day yet.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    passage == null -> {
+                        // Genuine failure: a clear, retryable error — never a
+                        // silent blank pane or an endless spinner.
+                        Column(
+                            Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(passageError ?: "Could not load this passage.",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium)
+                            Spacer(Modifier.height(12.dp))
+                            FilledTonalButton(onClick = { reloadToken++ }) { Text("Retry") }
+                        }
+                    }
+                    else -> {
                     Column(Modifier.fillMaxSize().verticalScroll(scroll)) {
                         val p = passage
                         if (p != null) {
@@ -250,6 +299,7 @@ fun ReadScreen(
                             }
                             Spacer(Modifier.height(24.dp))
                         }
+                    }
                     }
                 }
             }
