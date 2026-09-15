@@ -83,12 +83,19 @@ class ApiClient(private val session: SessionStore) {
                 session.sessionToken = it
             }
         }
-        if (res.status.value in 200..299 && parsed.isSuccess) return parsed.getOrThrow()
-        // Surface the backend's own error message verbatim where present.
+        if (res.status.value in 200..299) {
+            if (parsed.isSuccess) return parsed.getOrThrow()
+            // combined_fixes_v1 / Issue 3: a 2xx that failed to decode is a
+            // RESPONSE-SHAPE problem, reported as such — never mislabeled as
+            // a failed request carrying the success status code.
+            throw ApiException(res.status.value,
+                "Could not read the server response (HTTP ${res.status.value}). Please update the app if this persists.")
+        }
+        // Genuine failure: surface the backend's own message + the REAL status.
         val msg = runCatching {
             json.decodeFromString<GenericOk>(text).error
         }.getOrNull()
-        throw ApiException(res.status.value, msg ?: "Request failed (${res.status.value})")
+        throw ApiException(res.status.value, msg ?: "Request failed (HTTP ${res.status.value})")
     }
 
     class ApiException(val status: Int, message: String) : Exception(message)
@@ -99,9 +106,9 @@ class ApiClient(private val session: SessionStore) {
     suspend fun translations(): TranslationsResponse = get("/translations")
 
     // ── Auth ──────────────────────────────────────────────────────────────
-    suspend fun signup(email: String, password: String, name: String, avatarId: String): SignupResponse =
+    suspend fun signup(email: String, password: String, name: String, surname: String, avatarId: String): SignupResponse =
         post("/auth/signup", buildJsonObject {
-            put("email", email); put("password", password); put("name", name); put("avatar_id", avatarId)
+            put("email", email); put("password", password); put("name", name); put("surname", surname); put("avatar_id", avatarId)
         })
 
     suspend fun verify(email: String, code: String): GenericOk =

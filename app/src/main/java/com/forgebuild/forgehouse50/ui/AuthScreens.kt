@@ -33,6 +33,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import com.forgebuild.forgehouse50.data.Repository
 import kotlinx.coroutines.launch
 
@@ -175,14 +185,23 @@ private fun SignupForm(
 ) {
     val scope = rememberCoroutineScope()
     var name by remember { mutableStateOf("") }
+    var surname by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    // combined_fixes_v1 Issue 2: avatar picker is part of registration again and
+    // renders from BUNDLED assets (the v1 wiring bug hardcoded avatar-01, no picker).
+    var avatarId by remember { mutableStateOf(AvatarAssets.IDS.first()) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     AuthScaffold("Create your account — a verification code will be emailed to you.") {
         OutlinedTextField(
-            value = name, onValueChange = { name = it }, label = { Text("Name") },
+            value = name, onValueChange = { name = it }, label = { Text("Given name") },
+            singleLine = true, modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = surname, onValueChange = { surname = it }, label = { Text("Surname (last name)") },
             singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(12.dp))
@@ -199,6 +218,34 @@ private fun SignupForm(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         )
+        Spacer(Modifier.height(16.dp))
+        Text("Choose your avatar", style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(8.dp))
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(5),
+            modifier = Modifier.fillMaxWidth().height(220.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            items(AvatarAssets.IDS) { id ->
+                val selected = id == avatarId
+                Image(
+                    painter = painterResource(AvatarAssets.resFor(id)),
+                    contentDescription = id,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .border(
+                            width = if (selected) 3.dp else 1.dp,
+                            color = if (selected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outlineVariant,
+                            shape = CircleShape,
+                        )
+                        .clickable { avatarId = id },
+                )
+            }
+        }
         error?.let {
             Spacer(Modifier.height(12.dp))
             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -209,13 +256,13 @@ private fun SignupForm(
                 scope.launch {
                     busy = true; error = null
                     try {
-                        val res = repo.api.signup(email.trim(), password, name.trim(), "avatar-01")
+                        val res = repo.api.signup(email.trim(), password, name.trim(), surname.trim(), avatarId)
                         if (res.ok) onNeedsVerification(email.trim())
                         else error = res.error ?: "Could not create the account"
                     } catch (e: Exception) { error = e.message } finally { busy = false }
                 }
             },
-            enabled = !busy && name.isNotBlank() && email.isNotBlank() && password.length >= 8,
+            enabled = !busy && name.isNotBlank() && surname.isNotBlank() && email.isNotBlank() && password.length >= 8,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)

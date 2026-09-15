@@ -57,6 +57,10 @@ class SessionStore(context: Context) {
         get() = prefs.getLong(KEY_UPDATE_SHOWN_AT, 0L)
         set(value) = prefs.edit().putLong(KEY_UPDATE_SHOWN_AT, value).apply()
 
+    var keepAliveExplained: Boolean
+        get() = prefs.getBoolean(KEY_KEEPALIVE_EXPLAINED, false)
+        set(value) = prefs.edit().putBoolean(KEY_KEEPALIVE_EXPLAINED, value).apply()
+
     val isLoggedIn: Boolean get() = !sessionToken.isNullOrBlank()
     val isAdmin: Boolean get() = userRole == "admin"
 
@@ -69,5 +73,6 @@ class SessionStore(context: Context) {
         const val KEY_TRANSLATION = "translation_id"
         const val KEY_UPDATE_PROMPTED = "update_prompted_for"
         const val KEY_UPDATE_SHOWN_AT = "update_prompt_shown_at"
+        const val KEY_KEEPALIVE_EXPLAINED = "keepalive_explained"
     }
 }

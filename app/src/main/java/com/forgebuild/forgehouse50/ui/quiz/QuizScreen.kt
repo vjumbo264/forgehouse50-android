@@ -1,5 +1,6 @@
 package com.forgebuild.forgehouse50.ui.quiz
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
@@ -29,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -38,8 +41,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.forgebuild.forgehouse50.data.QuizResponse
+import com.forgebuild.engine.security.ScreenSecurity
 import com.forgebuild.forgehouse50.data.QuizResponse
 import com.forgebuild.forgehouse50.data.QuizSubmitResponse
 import com.forgebuild.forgehouse50.data.Repository
@@ -58,6 +64,7 @@ fun QuizScreen(
     repo: Repository,
     day: Int,
     onBack: () -> Unit,
+    onHome: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var quiz by remember { mutableStateOf<QuizResponse?>(null) }
@@ -68,6 +75,14 @@ fun QuizScreen(
     var showConfetti by remember { mutableStateOf(false) }
     var readingCompleted by remember { mutableStateOf(false) }
     val answers = remember { mutableStateMapOf<Int, Int>() }
+
+    // combined_fixes_v1 Issue 9: FLAG_SECURE for exactly as long as the quiz is
+    // composed — applied here, cleared on dispose; never races NavHost, never leaks.
+    val secureActivity = LocalContext.current as? android.app.Activity
+    DisposableEffect(Unit) {
+        secureActivity?.let { ScreenSecurity.apply(it) }
+        onDispose { secureActivity?.let { ScreenSecurity.clear(it) } }
+    }
 
     LaunchedEffect(day) {
         runCatching { repo.api.day(day) }.onSuccess { readingCompleted = it.progress.completed }
@@ -97,8 +112,8 @@ fun QuizScreen(
                         CircularProgressIndicator()
                     }
                     error != null -> Text(error!!, color = MaterialTheme.colorScheme.error)
-                    result != null -> ResultView(result!!, dayFullyComplete = readingCompleted)
-                    quiz?.attempt != null -> ExistingAttemptView(quiz!!)
+                    result != null -> ResultView(result!!, dayFullyComplete = readingCompleted, onHome = onHome)
+                    quiz?.attempt != null -> ExistingAttemptView(quiz!!, onHome = onHome)
                     quiz != null && quiz!!.can_attempt -> {
                         Text(
                             "One attempt — take your time, there is no timer.",
@@ -107,24 +122,38 @@ fun QuizScreen(
                         )
                         Spacer(Modifier.height(16.dp))
                         quiz!!.questions.forEach { q ->
-                            Text("${q.index + 1}. ${q.q}", style = MaterialTheme.typography.titleSmall,
+                            // combined_fixes_v1 Issue 8: hierarchy + card options, real selected state.
+                            Text(
+                                "Question ${q.index + 1} of ${quiz!!.questions.size}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(q.q, style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold)
-                            Spacer(Modifier.height(6.dp))
+                            Spacer(Modifier.height(10.dp))
                             q.options.forEachIndexed { oi, option ->
-                                Row(
-                                    Modifier.fillMaxWidth()
-                                        .selectable(
-                                            selected = answers[q.index] == oi,
-                                            onClick = { answers[q.index] = oi },
-                                        )
-                                        .padding(vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
+                                val selected = answers[q.index] == oi
+                                Card(
+                                    onClick = { answers[q.index] = oi },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer
+                                                         else MaterialTheme.colorScheme.surfaceVariant,
+                                    ),
+                                    border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
                                 ) {
-                                    RadioButton(selected = answers[q.index] == oi, onClick = { answers[q.index] = oi })
-                                    Text(option, style = MaterialTheme.typography.bodyLarge)
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        RadioButton(selected = selected, onClick = { answers[q.index] = oi })
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(option, style = MaterialTheme.typography.bodyLarge)
+                                    }
                                 }
                             }
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(20.dp))
                         }
                         Button(
                             onClick = {
@@ -166,7 +195,7 @@ fun QuizScreen(
 }
 
 @Composable
-private fun ResultView(res: QuizSubmitResponse, dayFullyComplete: Boolean) {
+private fun ResultView(res: QuizSubmitResponse, dayFullyComplete: Boolean, onHome: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Spacer(Modifier.height(24.dp))
         Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary,
@@ -191,11 +220,14 @@ private fun ResultView(res: QuizSubmitResponse, dayFullyComplete: Boolean) {
                 )
             }
         }
+        // combined_fixes_v1 Issue 10: the obvious next action after completion.
+        Spacer(Modifier.height(20.dp))
+        Button(onClick = onHome, modifier = Modifier.fillMaxWidth()) { Text("Return Home") }
     }
 }
 
 @Composable
-private fun ExistingAttemptView(quiz: QuizResponse) {
+private fun ExistingAttemptView(quiz: QuizResponse, onHome: () -> Unit) {
     val a = quiz.attempt ?: return
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Spacer(Modifier.height(24.dp))
@@ -209,5 +241,7 @@ private fun ExistingAttemptView(quiz: QuizResponse) {
         Spacer(Modifier.height(4.dp))
         Text("Each day's quiz allows exactly one attempt.", style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(20.dp))
+        Button(onClick = onHome, modifier = Modifier.fillMaxWidth()) { Text("Return Home") }
     }
 }

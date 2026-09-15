@@ -45,6 +45,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.forgebuild.forgehouse50.ui.AvatarAssets
+import com.forgebuild.forgehouse50.work.KeepAliveService
 import com.forgebuild.forgehouse50.data.MeResponse
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.ui.formatBytes
@@ -53,8 +57,8 @@ import com.forgebuild.forgehouse50.work.ReminderWorker
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 
-private val AVATAR_IDS = (1..30).map { "avatar-%02d".format(it) }
-private fun avatarUrl(id: String) = "https://forgehouse50.pages.dev/avatars/$id.png"
+// combined_fixes_v1 Issue 2: bundled avatar assets — all 41, offline, no fetch.
+private val AVATAR_IDS = AvatarAssets.IDS
 
 /** Profile: stats, badges, illustration avatar picker (same asset set as the
  *  web app), downloaded-content manager, sign out. */
@@ -78,8 +82,8 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit) {
         Text("Profile", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
-                model = me?.avatar_id?.let { avatarUrl(it) },
+            Image(
+                painter = painterResource(AvatarAssets.resFor(me?.avatar_id)),
                 contentDescription = "Avatar",
                 modifier = Modifier.size(64.dp).clip(CircleShape).clickable { pickingAvatar = true },
                 contentScale = ContentScale.Crop,
@@ -134,6 +138,7 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit) {
             scope.launch {
                 runCatching { repo.api.logout() }
                 ReminderWorker.cancel(context)
+                KeepAliveService.stop(context)
                 repo.session.clear()
                 onSignedOut()
             }
@@ -150,7 +155,7 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(AVATAR_IDS) { id ->
-                        AsyncImage(model = avatarUrl(id), contentDescription = id,
+                        Image(painter = painterResource(AvatarAssets.resFor(id)), contentDescription = id,
                             modifier = Modifier.size(48.dp).clip(CircleShape).clickable {
                                 scope.launch {
                                     runCatching { repo.api.setAvatar(id) }.onSuccess {

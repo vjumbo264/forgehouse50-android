@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-15T00:20:00Z",
+  "last_updated_utc": "2026-09-15T01:45:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -131,6 +131,12 @@
       "date": "2026-09-15",
       "did": "Operator EXTEND/UPDATE contract: 10 combined site+app issues + leaderboard-immediacy/7x-points addendum. Appended instruction to PROMPT_HISTORY (credentials redacted); seeded combined_fixes_v1 task list (17 tasks).",
       "next": "cf1-issue1-backend-surname: clone/read web repo, D1 schema + signup API surname requirement."
+    },
+    {
+      "session": 4,
+      "date": "2026-09-15",
+      "did": "combined_fixes_v1 implemented (Issues 1-4,6-11; Issue 5 no-op). D1 surname migration applied live + PRAGMA-verified. App: bundled avatars+registration picker, IntBooleanSerializer read-flow fix, regenerated icons+legacy fallbacks, KeepAliveService, WAT reminder, quiz UI, QuizScreen-owned FLAG_SECURE, Return Home, immediate leaderboard + 7x points.",
+      "next": "Dispatch release.yml -> forgehouse50-v2; verify live; operator on-device checks (Day-1 read/audio, quiz screenshot, icon, confetti) on v2 APK."
     }
   ],
   "combined_fixes_v1": {
@@ -153,38 +159,38 @@
       {
         "id": 3,
         "name": "cf1-issue1-backend-surname",
-        "status": "pending",
-        "notes": "WEB REPO: add required surname/last_name column to profiles in D1 (check whether any existing users remain post-launch-wipe first; backfill placeholder or force set-on-next-login, document choice); registration API requires surname, clear validation error; API contract: POST /api/auth/signup gains required surname field. ANDROID app must send it (task 5)."
+        "status": "done",
+        "notes": "WEB REPO: add required surname/last_name column to profiles in D1 (check whether any existing users remain post-launch-wipe first; backfill placeholder or force set-on-next-login, document choice); registration API requires surname, clear validation error; API contract: POST /api/auth/signup gains required surname field. ANDROID app must send it (task 5). | DONE web: surname column added LIVE to D1 (PRAGMA-verified); signup.mjs requires non-empty surname (400). Post-wipe: 0 verified non-admin participants; DEFAULT '' covers admin rows."
       },
       {
         "id": 4,
         "name": "cf1-issue1-website-surname-ui",
-        "status": "pending",
-        "notes": "WEB REPO: surname input on registration form (required, beside given name); display 'Given name Surname' on Profile/admin participant list and full-results/celebration screen; 'Given name S.' acceptable on tight leaderboard rows."
+        "status": "done",
+        "notes": "WEB REPO: surname input on registration form (required, beside given name); display 'Given name Surname' on Profile/admin participant list and full-results/celebration screen; 'Given name S.' acceptable on tight leaderboard rows. | DONE web: signup.html required surname input; profile/admin full 'Given Surname'; leaderboard 'Given S.'; final snapshot full name; me.mjs returns surname."
       },
       {
         "id": 5,
         "name": "cf1-issue1-android-surname",
-        "status": "pending",
-        "notes": "APP: required surname input on registration screen calling updated signup API; name displays updated (Profile, Leaderboard, celebration/final results)."
+        "status": "done",
+        "notes": "APP: required surname input on registration screen calling updated signup API; name displays updated (Profile, Leaderboard, celebration/final results). | DONE: signup has required surname field calling updated API; Profile shows full name."
       },
       {
         "id": 6,
         "name": "cf1-issue2-avatars-bundled",
-        "status": "pending",
-        "notes": "APP: one-time copy of the full illustration avatar asset set from web repo (committed during earlier avatar-import work) into app resources/assets; fix registration-flow avatar picker wiring bug (diagnose actual cause first: missing UI wiring vs swallowed failed fetch); still send only avatar_id to backend."
+        "status": "done",
+        "notes": "APP: one-time copy of the full illustration avatar asset set from web repo (committed during earlier avatar-import work) into app resources/assets; fix registration-flow avatar picker wiring bug (diagnose actual cause first: missing UI wiring vs swallowed failed fetch); still send only avatar_id to backend. | DONE: 41 avatars bundled in drawable-nodpi + AvatarAssets; registration picker restored (v1 bug was hardcoded avatar-01, no picker UI); Profile picker bundled. Only avatar_id sent to backend."
       },
       {
         "id": 7,
         "name": "cf1-issue3-read-200-parse-bug",
-        "status": "pending",
-        "notes": "APP: 'Request failed (200)' on scripture/audio load = app-side response-handling bug (successful HTTP 200 mislabeled as failure). Reproduce against live API, inspect real 200 body, find JSON-shape/null/wrapper-check mismatch, fix parsing AND fix error path to report the real status code; review same pattern on other endpoints. Verify Day 1 scripture+audio loads."
+        "status": "done",
+        "notes": "APP: 'Request failed (200)' on scripture/audio load = app-side response-handling bug (successful HTTP 200 mislabeled as failure). Reproduce against live API, inspect real 200 body, find JSON-shape/null/wrapper-check mismatch, fix parsing AND fix error path to report the real status code; review same pattern on other endpoints. Verify Day 1 scripture+audio loads. | ROOT CAUSE: D1 returns SQLite 0/1 for reading_progress.completed but DayProgress.completed was Boolean -> successful HTTP 200 failed kotlinx decode -> mislabeled 'Request failed (200)'. FIX: IntBooleanSerializer on all D1-row booleans + decode() reports 2xx parse failures as response-shape errors and real status on genuine failures (shared decode path reviewed). On-device Day-1 check pending v2 install."
       },
       {
         "id": 8,
         "name": "cf1-issue4-icon-regen",
-        "status": "pending",
-        "notes": "APP: regenerate adaptive icon from web repo's public/branding/forgehouse50-logo-source.png with correct foreground/background separation, safe-zone padding, corner-artifact discipline (same as PWA icon fix), all densities + legacy fallback; verify installed icon visually."
+        "status": "done",
+        "notes": "APP: regenerate adaptive icon from web repo's public/branding/forgehouse50-logo-source.png with correct foreground/background separation, safe-zone padding, corner-artifact discipline (same as PWA icon fix), all densities + legacy fallback; verify installed icon visually. | DONE: icons regenerated from forgehouse50-logo-source.png, all densities + monochrome + adaptive XML + MISSING legacy fallbacks (ic_launcher.png/_round) added \u2014 the on-device defect. Corner pixel verified opaque brand blue."
       },
       {
         "id": 9,
@@ -195,38 +201,38 @@
       {
         "id": 10,
         "name": "cf1-issue6-foreground-service",
-        "status": "pending",
-        "notes": "APP: proper foreground service with low-importance silent persistent notification (app name/icon only, no sound/vibration) to keep process alive so daily reading reminder reliably fires; tap opens app; one-time explanation; one-time battery-optimization exemption prompt during onboarding with clear explanation."
+        "status": "done",
+        "notes": "APP: proper foreground service with low-importance silent persistent notification (app name/icon only, no sound/vibration) to keep process alive so daily reading reminder reliably fires; tap opens app; one-time explanation; one-time battery-optimization exemption prompt during onboarding with clear explanation. | DONE: KeepAliveService (dataSync FGS, IMPORTANCE_MIN silent ongoing, tap opens app, START_STICKY) start-on-login/stop-on-logout; one-time explainer + one-time battery-exemption prompt."
       },
       {
         "id": 11,
         "name": "cf1-issue7-wat-timezone",
-        "status": "pending",
-        "notes": "WEB+APP: audit every 'what day is it' concept against explicit WAT (UTC+1): per-user calendar generation (Tue/Fri exclusion, day boundaries), quiz day boundary, 1-day read-ahead boundary, admin Start Programme + 10-day join window, programme-end calc, Android daily reminder scheduling. Fix any UTC/device-local/default usage. Verify a known day-boundary case on both surfaces."
+        "status": "done",
+        "notes": "WEB+APP: audit every 'what day is it' concept against explicit WAT (UTC+1): per-user calendar generation (Tue/Fri exclusion, day boundaries), quiz day boundary, 1-day read-ahead boundary, admin Start Programme + 10-day join window, programme-end calc, Android daily reminder scheduling. Fix any UTC/device-local/default usage. Verify a known day-boundary case on both surfaces. | DONE web: utcToday()->watToday() (UTC+1) across calendar/quiz/read-ahead/leaderboard/join-window/end; verify.mjs anchor WAT. DONE app: reminder at 18:00 Africa/Lagos; day boundaries server-authoritative."
       },
       {
         "id": 12,
         "name": "cf1-issue8-quiz-ui-polish",
-        "status": "pending",
-        "notes": "APP: redesign quiz screen within existing (unchanged) design system: question hierarchy, spaced MC options with proper selected state, weighted submit action, existing type/spacing/color tokens only."
+        "status": "done",
+        "notes": "APP: redesign quiz screen within existing (unchanged) design system: question hierarchy, spaced MC options with proper selected state, weighted submit action, existing type/spacing/color tokens only. | DONE: question counter caption + titleMedium question + card options with primaryContainer fill and 2dp primary border selected state; existing tokens only."
       },
       {
         "id": 13,
         "name": "cf1-issue9-flag-secure-real",
-        "status": "pending",
-        "notes": "APP: operator could screenshot quiz despite spec. Find why FLAG_SECURE ineffective (wrong window/activity, lifecycle timing, cleared, or false guard), make it genuinely active only while quiz visible and removed on navigate-away; verify by actual on-device/emulator screenshot attempt."
+        "status": "done",
+        "notes": "APP: operator could screenshot quiz despite spec. Find why FLAG_SECURE ineffective (wrong window/activity, lifecycle timing, cleared, or false guard), make it genuinely active only while quiz visible and removed on navigate-away; verify by actual on-device/emulator screenshot attempt. | ROOT CAUSE: FLAG_SECURE toggled at NavHost keyed on route matching, raced the screen composition. FIX: QuizScreen owns FLAG_SECURE via DisposableEffect (apply on entry, clear on dispose). On-device screenshot attempt pending v2 install."
       },
       {
         "id": 14,
         "name": "cf1-issue10-confetti-return-home",
-        "status": "pending",
-        "notes": "APP: confetti on full day completion (reading + one quiz attempt) \u2014 verify whether ever implemented; fix trigger/race or build per original spec; add prominent 'Return Home' action on completion screen."
+        "status": "done",
+        "notes": "APP: confetti on full day completion (reading + one quiz attempt) \u2014 verify whether ever implemented; fix trigger/race or build per original spec; add prominent 'Return Home' action on completion screen. | DONE: confetti existed but its readingCompleted trigger was silently broken by the Issue-3 parse bug (now fixed at serializer) so it fires on full completion; prominent 'Return Home' added to result + existing-attempt views."
       },
       {
         "id": 15,
         "name": "cf1-issue11-leaderboard-immediate-7x",
-        "status": "pending",
-        "notes": "OPERATOR ADDENDUM: leaderboards immediate, not locked to day 3 (remove elapsed_days>=3 eligibility gate on web backend + app copy); multiply every points allocation by 7 (quiz proportional points, completion points, any other award) so scoring is 7x more encouraging. Apply consistently backend + any app-side display/derivation."
+        "status": "done",
+        "notes": "OPERATOR ADDENDUM: leaderboards immediate, not locked to day 3 (remove elapsed_days>=3 eligibility gate on web backend + app copy); multiply every points allocation by 7 (quiz proportional points, completion points, any other award) so scoring is 7x more encouraging. Apply consistently backend + any app-side display/derivation. | DONE: LEADERBOARD_MIN_ELAPSED_DAYS 3->0 (immediate); POINT_VALUES all x7, QUIZ_POINTS_PER_DAY 5->35; app DTO defaults 35."
       },
       {
         "id": 16,

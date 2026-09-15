@@ -1,6 +1,30 @@
 package com.forgebuild.forgehouse50.data
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonTransformingSerializer
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.intOrNull
+
+/**
+ * combined_fixes_v1 / Issue 3 (root cause of "Request failed (200)"): rows
+ * returned straight from D1 (reading_progress, etc.) carry SQLite INTEGER
+ * 0/1 for booleans, not JSON true/false. kotlinx.serialization refuses 0/1
+ * for Boolean, so a SUCCESSFUL HTTP 200 body failed to decode and the old
+ * error path re-labeled that parse failure as "Request failed (200)". This
+ * serializer accepts both shapes.
+ */
+object IntBooleanSerializer : JsonTransformingSerializer<Boolean>(Boolean.serializer()) {
+    override fun transformDeserialize(element: JsonElement): JsonElement {
+        if (element is JsonPrimitive) {
+            element.booleanOrNull?.let { return JsonPrimitive(it) }
+            element.intOrNull?.let { return JsonPrimitive(it != 0) }
+        }
+        return element
+    }
+}
 
 // DTOs matching the ForgeHouse 50 Pages Functions API exactly
 // (source of truth: github.com/vjumbo264/forgehouse50, functions-api sources).
@@ -59,6 +83,7 @@ data class SignupResponse(
 data class LoginResponse(
     val ok: Boolean = false,
     val name: String? = null,
+    val surname: String? = null,
     val role: String? = null,
     val error: String? = null,
     val needs_verification: Boolean = false,
@@ -99,6 +124,7 @@ data class MeResponse(
     val id: String,
     val email: String = "",
     val name: String = "",
+    val surname: String = "",
     val avatar_url: String? = null,
     val avatar_id: String? = null,
     val role: String = "member",
@@ -130,7 +156,7 @@ data class DayAssignment(
 @Serializable
 data class TodayBlock(
     val day_number: Int,
-    val completed: Boolean = false,
+    @Serializable(with = IntBooleanSerializer::class) val completed: Boolean = false,
     val reading_seconds: Long = 0,
     val assignment: DayAssignment? = null,
 )
@@ -160,7 +186,7 @@ data class ProgrammeTotals(val total_days: Int = 50, val total_chapters: Int = 2
 
 @Serializable
 data class DayProgress(
-    val completed: Boolean = false,
+    @Serializable(with = IntBooleanSerializer::class) val completed: Boolean = false,
     val completed_at: String? = null,
     val reading_seconds: Long = 0,
     val chapters_read: Int = 0,
@@ -232,7 +258,7 @@ data class QuizResponse(
     val date: String? = null,
     val questions: List<QuizQuestion> = emptyList(),
     val total: Int = 0,
-    val quiz_points_possible: Int = 5,
+    val quiz_points_possible: Int = 35, // combined_fixes_v1 Issue 11: ×7
     val info_only: Boolean = true,
     val completed: Boolean = false,
     val prev_completed: Boolean = false,
@@ -251,7 +277,7 @@ data class QuizSubmitResponse(
     val passed: Boolean = false,
     val final: Boolean = true,
     val quiz_points: Int = 0,
-    val quiz_points_possible: Int = 5,
+    val quiz_points_possible: Int = 35, // combined_fixes_v1 Issue 11: ×7
     val message: String = "",
     val error: String? = null,
 )
@@ -278,7 +304,7 @@ data class ProgressDay(
     val date: String = "",
     val assignment: String = "",
     val chapter_count: Int = 0,
-    val completed: Boolean = false,
+    @Serializable(with = IntBooleanSerializer::class) val completed: Boolean = false,
     val quiz_taken: Boolean = false,
     val quiz_score: Int? = null,
     val quiz_total: Int? = null,
@@ -359,6 +385,7 @@ data class FinalResultsResponse(
 data class Participant(
     val id: String,
     val name: String = "",
+    val surname: String = "",
     val email: String = "",
     val role: String = "member",
     val avatar_id: String? = null,

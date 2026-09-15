@@ -13,6 +13,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.forgebuild.forgehouse50.data.Repository
 import java.util.Calendar
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 /**
@@ -86,7 +87,8 @@ class ReminderWorker(
 
         /** Schedule (idempotently) the once-daily reminder at 18:00 local. */
         fun schedule(context: Context) {
-            val now = Calendar.getInstance()
+            val wat = TimeZone.getTimeZone("Africa/Lagos")
+            val now = Calendar.getInstance(wat)
             val next = (now.clone() as Calendar).apply {
                 set(Calendar.HOUR_OF_DAY, REMINDER_HOUR)
                 set(Calendar.MINUTE, 0)

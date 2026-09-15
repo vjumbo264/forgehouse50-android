@@ -25,6 +25,12 @@ import com.forgebuild.forgehouse50.media.AudioPlayerManager
 import com.forgebuild.forgehouse50.ui.AppNavHost
 import com.forgebuild.forgehouse50.ui.ForgeHouseTheme
 import com.forgebuild.forgehouse50.work.ReminderWorker
+import com.forgebuild.forgehouse50.work.KeepAliveService
+import android.os.PowerManager
+import android.provider.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,8 +78,22 @@ private fun App(repo: Repository, player: AudioPlayerManager) {
                 notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             ReminderWorker.schedule(context)
+            KeepAliveService.start(context)
         } else {
             ReminderWorker.cancel(context)
+            KeepAliveService.stop(context)
+        }
+    }
+
+    // combined_fixes_v1 Issue 6: one-time explanation + one-time battery-exemption prompt.
+    val batteryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { }
+    var showKeepAliveInfo by remember { mutableStateOf(false) }
+    LaunchedEffect(loggedIn) {
+        if (loggedIn && !repo.session.keepAliveExplained) {
+            repo.session.keepAliveExplained = true
+            showKeepAliveInfo = true
         }
     }
 
@@ -87,4 +107,31 @@ private fun App(repo: Repository, player: AudioPlayerManager) {
             authenticatedTick++
         },
     )
+
+    if (showKeepAliveInfo) {
+        AlertDialog(
+            onDismissRequest = { showKeepAliveInfo = false },
+            title = { Text("Daily reminders stay reliable") },
+            text = {
+                Text(
+                    "ForgeHouse 50 keeps a silent, low-priority notification running so your daily reading reminder still arrives even if Android puts the app to sleep. It makes no sound and never interrupts you — tapping it simply opens the app.\n\nFor the best reliability, allow ForgeHouse 50 to ignore battery optimization when asked next."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showKeepAliveInfo = false
+                    if (Build.VERSION.SDK_INT >= 23) {
+                        val pm = context.getSystemService(android.content.Context.POWER_SERVICE) as PowerManager
+                        if (!pm.isIgnoringBatteryOptimizations(context.packageName)) {
+                            val intent = android.content.Intent(
+                                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                android.net.Uri.parse("package:" + context.packageName),
+                            )
+                            runCatching { batteryLauncher.launch(intent) }
+                        }
+                    }
+                }) { Text("Got it") }
+            },
+        )
+    }
 }

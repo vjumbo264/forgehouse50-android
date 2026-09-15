@@ -131,12 +131,10 @@ fun AppNavHost(
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
 
-    // Screenshot blocking during the quiz ONLY — per-screen FLAG_SECURE via
-    // the Engine helper; cleared the moment the user leaves the quiz route.
-    val quizRouteActive = currentRoute == Routes.QUIZ
-    LaunchedEffect(quizRouteActive) {
-        (context as? android.app.Activity)?.let { ScreenSecurity.setSecure(it, quizRouteActive) }
-    }
+    // combined_fixes_v1 Issue 9: FLAG_SECURE is owned by QuizScreen's own
+    // DisposableEffect (apply on entry, clear on dispose). The NavHost route-keyed
+    // toggle that lived here raced and could clear the flag while the quiz was
+    // visible — why screenshots still succeeded in v1.
     DisposableEffect(Unit) {
         onDispose { (context as? android.app.Activity)?.let { ScreenSecurity.clear(it) } }
     }
@@ -208,6 +206,7 @@ fun AppNavHost(
                     repo = repo,
                     day = entry.arguments?.getInt("day") ?: 1,
                     onBack = { nav.popBackStack() },
+                    onHome = { nav.popBackStack(Routes.HOME, inclusive = false) },
                 )
             }
             composable(Routes.NOTES) {
