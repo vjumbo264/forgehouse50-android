@@ -20,10 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -57,6 +55,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import com.forgebuild.forgehouse50.ui.ExpressiveLoading
+import com.forgebuild.forgehouse50.ui.ExpressiveButton
 
 /** Notes: create/edit/delete/search/filter, five types, private by default. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -123,7 +123,7 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
             }
             Spacer(Modifier.height(8.dp))
             if (loading && notes.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ExpressiveLoading() }
             } else if (notes.isEmpty()) {
                 Spacer(Modifier.height(40.dp))
                 Text("No notes yet — your notes are private to you.",
@@ -200,7 +200,7 @@ fun NoteEditScreen(repo: Repository, noteId: String?, dayNumber: Int?, onBack: (
         },
     ) { padding ->
         if (!loaded) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ExpressiveLoading() }
             return@Scaffold
         }
         Column(
@@ -238,7 +238,7 @@ fun NoteEditScreen(repo: Repository, noteId: String?, dayNumber: Int?, onBack: (
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
             Spacer(Modifier.height(20.dp))
-            Button(
+            ExpressiveButton(
                 onClick = {
                     scope.launch {
                         busy = true; error = null

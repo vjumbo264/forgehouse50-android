@@ -12,7 +12,6 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -53,6 +52,7 @@ import com.forgebuild.forgehouse50.ui.quiz.QuizScreen
 import com.forgebuild.forgehouse50.ui.read.ReadScreen
 import com.forgebuild.forgehouse50.ui.read.TranslationsScreen
 import com.forgebuild.forgehouse50.update.UpdateChecker
+import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 
 object Routes {
     const val HOME = "home"
@@ -139,7 +139,23 @@ fun AppNavHost(
     Scaffold(
         bottomBar = {
             if (currentRoute in Tabs.map { it.route }) {
-                NavigationBar {
+                // M3 Expressive floating pill navigation: inset, rounded card.
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                        .clip(RoundedCornerShape(28.dp)),
+                    shape = RoundedCornerShape(28.dp),
+                    tonalElevation = 3.dp,
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ) {
+                    NavigationBar(
+                        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                        tonalElevation = 0.dp,
+                        windowInsets = WindowInsets(0, 0, 0, 0),
+                    ) {
                     Tabs.forEach { tab ->
                         val selected = currentRoute == tab.route
                         NavigationBarItem(
@@ -154,6 +170,7 @@ fun AppNavHost(
                             icon = { Icon(if (selected) tab.selectedIcon else tab.icon, tab.label) },
                             label = { Text(tab.label) },
                         )
+                    }
                     }
                 }
             }

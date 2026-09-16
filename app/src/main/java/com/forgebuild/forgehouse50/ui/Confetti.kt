@@ -18,48 +18,66 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * Confetti celebration — the one deliberate moment of visual delight in an
- * otherwise restrained app. Shown briefly when a day is fully complete
- * (reading + quiz done), then settles back into the calm UI.
+ * Material 3 Expressive celebration: a genuine multi-particle confetti burst.
+ * Varied shapes (rect / circle), theme-derived + warm palette, gravity with
+ * flutter, rotation per piece, and a comfortable ~3.2s lifetime. Rendered as
+ * a non-interactive overlay (does not block taps on the completion CTA).
  */
+private enum class Shape { RECT, CIRCLE }
+
 private data class Particle(
     val x: Float, val y: Float, val vx: Float, val vy: Float,
     val color: Color, val size: Float, val angle: Float, val spin: Float,
-)
-
-private val Palette = listOf(
-    Color(0xFF3A5F8A), Color(0xFF7F9FC4), Color(0xFFC9A227),
-    Color(0xFF5F8A6B), Color(0xFF8A5A6B), Color(0xFF8A6D1F),
+    val shape: Shape, val flutter: Float, val phase: Float,
 )
 
 @Composable
-fun ConfettiOverlay(visible: Boolean, onFinished: () -> Unit) {
+fun ConfettiOverlay(
+    visible: Boolean,
+    onFinished: () -> Unit,
+    accent: Color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+    accent2: Color = androidx.compose.material3.MaterialTheme.colorScheme.tertiary,
+) {
     if (!visible) return
+    val palette = remember(accent, accent2) {
+        listOf(
+            accent, accent2,
+            Color(0xFFC9A227), Color(0xFF5F8A6B),
+            Color(0xFF8A5A6B), Color(0xFFE0B84C), Color(0xFF7F9FC4),
+        )
+    }
     var particles by remember { mutableStateOf<List<Particle>>(emptyList()) }
 
     LaunchedEffect(visible) {
-        var current = List(110) {
+        var current = List(160) {
             val a = Random.nextDouble(0.0, Math.PI * 2)
-            val speed = Random.nextFloat() * 15f + 7f
+            val speed = Random.nextFloat() * 16f + 6f
             Particle(
-                x = 0.5f + (Random.nextFloat() * 0.12f - 0.06f),
-                y = 0.30f,
+                x = 0.5f + (Random.nextFloat() * 0.16f - 0.08f),
+                y = 0.34f,
                 vx = (cos(a) * speed).toFloat(),
-                vy = (sin(a) * speed).toFloat() - 11f,
-                color = Palette[Random.nextInt(Palette.size)],
-                size = Random.nextFloat() * 13f + 8f,
+                vy = (sin(a) * speed).toFloat() - 13f,
+                color = palette[Random.nextInt(palette.size)],
+                size = Random.nextFloat() * 14f + 7f,
                 angle = Random.nextFloat() * 360f,
-                spin = Random.nextFloat() * 14f - 7f,
+                spin = Random.nextFloat() * 16f - 8f,
+                shape = if (Random.nextFloat() < 0.6f) Shape.RECT else Shape.CIRCLE,
+                flutter = Random.nextFloat() * 0.9f + 0.4f,
+                phase = Random.nextFloat() * 6.28f,
             )
         }
         val start = System.nanoTime()
-        while (System.nanoTime() - start < 2_400_000_000L) {
-            withFrameMillis()
+        var frame = 0
+        while (System.nanoTime() - start < 3_200_000_000L) {
+            kotlinx.coroutines.android.awaitFrame()
+            frame++
             current = current.map { p ->
                 p.copy(
-                    x = p.x + p.vx / 900f,
-                    y = p.y + (p.vy + 24f) / 900f,
-                    vy = p.vy + 0.9f,
+                    x = p.x + (p.vx + sin(frame * 0.15f + p.phase) * p.flutter) / 900f,
+                    y = p.y + (p.vy + 26f) / 900f,
+                    // gravity with a terminal-velocity-ish clamp for graceful fall
+                    vy = (p.vy + 0.85f).coerceAtMost(38f),
+                    vx = p.vx * 0.992f,
                     angle = p.angle + p.spin,
                 )
             }
@@ -73,12 +91,11 @@ fun ConfettiOverlay(visible: Boolean, onFinished: () -> Unit) {
         val h = size.height
         particles.forEach { p ->
             rotate(p.angle, Offset(p.x * w, p.y * h)) {
-                drawRect(p.color, Offset(p.x * w, p.y * h), Size(p.size, p.size * 0.62f))
+                when (p.shape) {
+                    Shape.RECT -> drawRect(p.color, Offset(p.x * w, p.y * h), Size(p.size, p.size * 0.62f))
+                    Shape.CIRCLE -> drawCircle(p.color, p.size * 0.45f, Offset(p.x * w, p.y * h))
+                }
             }
         }
     }
-}
-
-private suspend fun withFrameMillis() {
-    kotlinx.coroutines.android.awaitFrame()
 }

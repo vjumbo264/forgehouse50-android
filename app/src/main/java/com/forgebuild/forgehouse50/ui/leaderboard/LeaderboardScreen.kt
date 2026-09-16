@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
@@ -53,6 +52,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 
 private val CATEGORIES = listOf(
     "overall" to "Overall", "consistency" to "Consistency", "chapters" to "Chapters",
@@ -116,7 +116,7 @@ private fun InProgressBoard(repo: Repository) {
             }
         }
         if (loading && data == null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ExpressiveLoading() }
         } else {
             val entries = data?.entries ?: emptyList()
             if (entries.isEmpty()) {
@@ -180,6 +180,15 @@ private fun PodiumRow(rank: Int, name: String, avatarId: String?, valueText: Str
             Text("$rank", style = if (rank <= 3) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
                 fontWeight = if (rank <= 3) FontWeight.Bold else FontWeight.Normal,
                 color = accent, modifier = Modifier.width(if (rank == 1) 28.dp else 36.dp))
+            // B1: bundled illustration avatar per entry avatar_id.
+            Image(
+                painter = painterResource(AvatarAssets.resFor(avatarId)),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(if (rank <= 3) 44.dp else 34.dp)
+                    .clip(CircleShape),
+            )
+            Spacer(Modifier.width(if (rank <= 3) 12.dp else 10.dp))
             Column(Modifier.weight(1f)) {
                 Text(name, style = if (rank <= 3) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
                     fontWeight = if (rank <= 3) FontWeight.SemiBold else FontWeight.Normal)

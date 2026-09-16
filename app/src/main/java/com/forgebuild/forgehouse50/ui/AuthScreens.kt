@@ -14,7 +14,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -46,6 +45,7 @@ import androidx.compose.ui.res.painterResource
 import com.forgebuild.forgehouse50.data.Repository
 import java.net.UnknownHostException
 import kotlinx.coroutines.launch
+import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 
 /**
  * Auth screens — the same email/password + OTP-via-Brevo flow as the web

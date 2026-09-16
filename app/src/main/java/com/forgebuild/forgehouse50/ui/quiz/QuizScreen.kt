@@ -18,10 +18,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +48,8 @@ import com.forgebuild.forgehouse50.data.QuizSubmitResponse
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.ui.ConfettiOverlay
 import kotlinx.coroutines.launch
+import com.forgebuild.forgehouse50.ui.ExpressiveLoading
+import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 
 /**
  * Quiz screen. ONE attempt, no gate, NO TIMER (operator decision) — the
@@ -108,7 +108,7 @@ fun QuizScreen(
             ) {
                 when {
                     loading -> Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        ExpressiveLoading()
                     }
                     error != null -> Text(error!!, color = MaterialTheme.colorScheme.error)
                     result != null -> ResultView(result!!, dayFullyComplete = readingCompleted, onHome = onHome)
@@ -154,7 +154,7 @@ fun QuizScreen(
                             }
                             Spacer(Modifier.height(20.dp))
                         }
-                        Button(
+                        ExpressiveButton(
                             onClick = {
                                 scope.launch {
                                     busy = true
@@ -171,7 +171,7 @@ fun QuizScreen(
                             enabled = !busy && answers.size == quiz!!.questions.size,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            if (busy) ExpressiveButtonLoader()
                             else Text("Submit (final attempt)")
                         }
                         Spacer(Modifier.height(8.dp))
@@ -221,7 +221,7 @@ private fun ResultView(res: QuizSubmitResponse, dayFullyComplete: Boolean, onHom
         }
         // combined_fixes_v1 Issue 10: the obvious next action after completion.
         Spacer(Modifier.height(20.dp))
-        Button(onClick = onHome, modifier = Modifier.fillMaxWidth()) { Text("Return Home") }
+        ExpressiveButton(onClick = onHome, modifier = Modifier.fillMaxWidth()) { Text("Return Home") }
     }
 }
 
@@ -241,6 +241,6 @@ private fun ExistingAttemptView(quiz: QuizResponse, onHome: () -> Unit) {
         Text("Each day's quiz allows exactly one attempt.", style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(20.dp))
-        Button(onClick = onHome, modifier = Modifier.fillMaxWidth()) { Text("Return Home") }
+        ExpressiveButton(onClick = onHome, modifier = Modifier.fillMaxWidth()) { Text("Return Home") }
     }
 }

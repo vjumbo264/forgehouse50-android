@@ -17,8 +17,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LibraryBooks
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -50,6 +48,8 @@ import com.forgebuild.forgehouse50.data.PassageResponse
 import com.forgebuild.forgehouse50.data.Repository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.forgebuild.forgehouse50.ui.ExpressiveLoading
+import com.forgebuild.forgehouse50.ui.ExpressiveButton
 
 /**
  * Read screen (leaderboard_audio_removal_offline_bible_v1).
@@ -232,7 +232,7 @@ fun ReadScreen(
                 when {
                     !dayLoaded || (loadingPassage && passage == null) -> {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
+                            ExpressiveLoading()
                         }
                     }
                     currentChapter == null -> {
@@ -305,9 +305,9 @@ fun ReadScreen(
                     Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(8.dp))
                     Text("Reading complete", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                    Button(onClick = { onOpenQuiz(day) }) { Text("Quiz") }
+                    ExpressiveButton(onClick = { onOpenQuiz(day) }) { Text("Quiz") }
                 } else {
-                    Button(
+                    ExpressiveButton(
                         onClick = {
                             scope.launch {
                                 error = null

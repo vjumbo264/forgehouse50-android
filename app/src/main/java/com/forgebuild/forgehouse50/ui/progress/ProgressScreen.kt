@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +39,7 @@ import com.forgebuild.forgehouse50.ui.AppJson
 import com.forgebuild.forgehouse50.ui.formatDurationShort
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 
 /** Progress: 50-day grid with completion + quiz state, cache-first. */
 @Composable
@@ -60,7 +60,7 @@ fun ProgressScreen(repo: Repository, onOpenDay: (Int) -> Unit) {
 
     val p = progress
     if (p == null) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ExpressiveLoading() }
         return
     }
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp)) {

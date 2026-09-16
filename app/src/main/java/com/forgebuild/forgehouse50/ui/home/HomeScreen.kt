@@ -20,10 +20,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Quiz
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -45,6 +43,7 @@ import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.data.TodayResponse
 import com.forgebuild.forgehouse50.ui.AppJson
 import com.forgebuild.forgehouse50.ui.formatDurationShort
+import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 
 /**
  * Home / Today dashboard. Cache-first per the Engine pattern: renders
@@ -114,7 +113,7 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (refreshing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            if (refreshing) ExpressiveButtonLoader()
         }
 
         Spacer(Modifier.height(20.dp))
@@ -173,14 +172,14 @@ fun HomeScreen(
                                 Text("Quiz done — day fully complete", style = MaterialTheme.typography.bodyLarge)
                             }
                         } else {
-                            Button(onClick = { onOpenQuiz(block.day_number) }, Modifier.fillMaxWidth()) {
+                            ExpressiveButton(onClick = { onOpenQuiz(block.day_number) }, Modifier.fillMaxWidth()) {
                                 Icon(Icons.Filled.Quiz, null, Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text("Take today's quiz")
                             }
                         }
                     } else {
-                        Button(onClick = { onOpenRead(block.day_number) }, Modifier.fillMaxWidth()) {
+                        ExpressiveButton(onClick = { onOpenRead(block.day_number) }, Modifier.fillMaxWidth()) {
                             Icon(Icons.Filled.MenuBook, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
                             Text(if ((block.reading_seconds) > 0) "Continue reading" else "Start reading")

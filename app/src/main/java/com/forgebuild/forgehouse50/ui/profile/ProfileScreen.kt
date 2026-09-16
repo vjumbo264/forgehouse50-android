@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -56,6 +55,7 @@ import com.forgebuild.forgehouse50.ui.formatDurationShort
 import com.forgebuild.forgehouse50.work.KeepAliveService
 import com.forgebuild.forgehouse50.work.ReminderWorker
 import kotlinx.coroutines.launch
+import com.forgebuild.forgehouse50.ui.ExpressiveButton
 
 // combined_fixes_v1 Issue 2: bundled avatar assets — all 41, offline, no fetch.
 private val AVATAR_IDS = AvatarAssets.IDS
@@ -169,13 +169,13 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
             }
         }
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onManageTranslations, modifier = Modifier.fillMaxWidth()) {
+        ExpressiveButton(onClick = onManageTranslations, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Filled.LibraryBooks, null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
             Text("Manage translations")
         }
         Spacer(Modifier.height(24.dp))
-        Button(onClick = {
+        ExpressiveButton(onClick = {
             scope.launch {
                 runCatching { repo.api.logout() }
                 ReminderWorker.cancel(context)

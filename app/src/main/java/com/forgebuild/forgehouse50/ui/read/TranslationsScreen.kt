@@ -16,10 +16,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +42,7 @@ import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.data.Translation
 import com.forgebuild.forgehouse50.ui.formatBytes
 import kotlinx.coroutines.launch
+import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 
 /**
  * leaderboard_audio_removal_offline_bible_v1 / ISSUE 5b (Android).
@@ -112,7 +111,7 @@ fun TranslationsScreen(repo: Repository, onBack: () -> Unit) {
 
             if (loading) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.width(20.dp), strokeWidth = 2.dp)
+                    ExpressiveButtonLoader()
                     Spacer(Modifier.width(8.dp))
                     Text("Loading available translations…", style = MaterialTheme.typography.bodySmall)
                 }
@@ -138,7 +137,7 @@ fun TranslationsScreen(repo: Repository, onBack: () -> Unit) {
                                         )
                                     }
                                     when {
-                                        isDownloading -> CircularProgressIndicator(Modifier.width(24.dp), strokeWidth = 2.dp)
+                                        isDownloading -> ExpressiveButtonLoader()
                                         isDownloaded -> IconButton(onClick = {
                                             scope.launch {
                                                 runCatching { repo.removeTranslation(t.id) }

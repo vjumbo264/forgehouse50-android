@@ -17,10 +17,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +48,8 @@ import com.forgebuild.forgehouse50.data.Participant
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.ui.formatDurationShort
 import kotlinx.coroutines.launch
+import com.forgebuild.forgehouse50.ui.ExpressiveLoading
+import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 
 /** Admin dashboard: stats, participants (points/completion), programme
  *  control (Start Programme). Rendered only for admin-flagged users. */
@@ -137,7 +137,7 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
                         }
                     },
                 ) {
-                    if (adjusting) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    if (adjusting) ExpressiveButtonLoader()
                     else Text("Apply")
                 }
             },
@@ -188,7 +188,7 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
 
 @Composable
 private fun StatsTab(stats: AdminStats?) {
-    if (stats == null) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }; return }
+    if (stats == null) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ExpressiveLoading() }; return }
     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Today: ${stats.today_date}", style = MaterialTheme.typography.bodyMedium)
         StatRow("Participants", "${stats.active_participants} active / ${stats.total_participants} total")
@@ -212,7 +212,7 @@ private fun StatRow(label: String, value: String) {
 
 @Composable
 private fun ParticipantsTab(participants: List<Participant>, onAdjust: (Participant) -> Unit) {
-    if (participants.isEmpty()) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }; return }
+    if (participants.isEmpty()) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ExpressiveLoading() }; return }
     LazyColumn(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items(participants, key = { it.id }) { p ->
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -232,7 +232,7 @@ private fun ParticipantsTab(participants: List<Participant>, onAdjust: (Particip
 
 @Composable
 private fun ProgrammeTab(programme: AdminProgramme?, onStart: () -> Unit, onEndTesting: () -> Unit) {
-    if (programme == null) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }; return }
+    if (programme == null) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ExpressiveLoading() }; return }
     Column(Modifier.padding(20.dp)) {
         StatRow("Status", when {
             programme.concluded -> "Concluded"
@@ -245,11 +245,11 @@ private fun ProgrammeTab(programme: AdminProgramme?, onStart: () -> Unit, onEndT
         programme.end_date_preview?.let { StatRow("Projected end", it) }
         Spacer(Modifier.height(16.dp))
         // Issue 1: explicit End Testing Phase control — separate from Start Programme.
-        Button(onClick = onEndTesting, modifier = Modifier.fillMaxWidth()) { Text("End Testing Phase & Reset") }
+        ExpressiveButton(onClick = onEndTesting, modifier = Modifier.fillMaxWidth()) { Text("End Testing Phase & Reset") }
         Spacer(Modifier.height(8.dp))
 
         if (!programme.started) {
-            Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) { Text("Start programme") }
+            ExpressiveButton(onClick = onStart, modifier = Modifier.fillMaxWidth()) { Text("Start programme") }
         }
     }
 }
