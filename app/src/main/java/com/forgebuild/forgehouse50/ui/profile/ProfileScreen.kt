@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
-import com.forgebuild.forgehouse50.data.DownloadedTranslation
+import com.forgebuild.forgehouse50.data.local.DownloadedTranslation
 import com.forgebuild.forgehouse50.data.MeResponse
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.ui.AvatarAssets

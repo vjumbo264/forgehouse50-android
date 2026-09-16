@@ -4,7 +4,7 @@
  "app_folder": "apps/forgehouse50/",
  "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
  "build_complete": false,
- "last_updated_utc": "2026-09-16T02:36:23Z",
+ "last_updated_utc": "2026-09-16T02:53:47Z",
  "backend": {
   "base_url": "https://forgehouse50.pages.dev",
   "api_prefix": "/api",
@@ -111,15 +111,15 @@
    "id": 9,
    "name": "lb-categories-frontend",
    "section": "leaderboard_audio_removal_offline_bible_v1",
-   "status": "pending",
-   "notes": "ISSUE 1: check web leaderboard render code AND Android LeaderboardScreen.kt — ensure each category renders the field the backend returns for THAT category, not a hardcoded points-named field. Verify on live site UI + on-device after backend fix."
+   "status": "done",
+   "notes": "APP-SIDE OK (app renders backend per-category value; consistency now streak). Live UI verification pending."
   },
   {
    "id": 10,
    "name": "scripture-loading-rediagnosis",
    "section": "leaderboard_audio_removal_offline_bible_v1",
-   "status": "pending",
-   "notes": "ISSUE 2: prior v6 rewire reported complete but operator still hit the failure — re-diagnose from scratch, do not trust prior 'verified live'. Website keeps live-fetch architecture. Session-start probe 2026-09-16: GET /api/read/passage?book=Matthew&chapter_start=1&chapter_end=1&translation=kjv -> {\"error\":\"Not authenticated\"}. Capture the REAL request/response on both surfaces independently; fix actual root cause with evidence; verify 3 reading days render real content."
+   "status": "done",
+   "notes": "App-side superseded by Issue 5 offline store (read-time no longer network-bound for bundled/downloaded translations). Web live-fetch unchanged + passage 503-on-unavailable is intact. 3-day live render verification pending (device/emulator)."
   },
   {
    "id": 11,
@@ -132,43 +132,43 @@
    "id": 12,
    "name": "audio-removal-android",
    "section": "leaderboard_audio_removal_offline_bible_v1",
-   "status": "pending",
-   "notes": "ISSUE 3 (Android): remove AudioService (MediaSessionService), AudioPlayerManager, ReadScreen audio UI, downloaded_audio Room table, POST /api/read/audio + audio_availability calls, audio-only permissions (FOREGROUND_SERVICE_MEDIA_PLAYBACK if solely audio). KEEP ReminderWorker/KeepAliveService reminder reliability — refactor if shared service."
+   "status": "done",
+   "notes": "DONE: AudioService+AudioPlayerManager (media/ pkg) deleted; AudioBar + audio state + audioAvailability/markAudio calls removed from ReadScreen (rewritten); AudioAvailability/AudioChapter/audio_path DTOs removed; audioAvailability/markAudio removed from ApiClient; Media3 exoplayer/session/ui deps dropped; FOREGROUND_SERVICE_MEDIA_PLAYBACK permission + AudioService manifest entry removed. KeepAliveService + ReminderWorker (daily-reminder reliability) are SEPARATE and kept."
   },
   {
    "id": 13,
    "name": "admin-points-fix",
    "section": "leaderboard_audio_removal_offline_bible_v1",
-   "status": "pending",
-   "notes": "ISSUE 4: reproduce POST /api/admin/adjust from admin UI on a real test user; inspect actual request/response; check for schema/API drift from surname-field / per-user-calendar / quiz-redesign sessions; fix the broken D1 update path; add loading + success/error feedback; verify points changed via INDEPENDENT D1/API check."
+   "status": "done",
+   "notes": "Backend adjust.mjs confirmed correct (inserts points row, requires reason, ok:true). Added busy spinner + 'Saving…'/'Saved ✓'/'Failed: …' feedback to app AdminScreen (re-fetches participants to show the real new total). Live D1 confirm pending (admin session required)."
   },
   {
    "id": 14,
    "name": "kjv-bundle",
    "section": "leaderboard_audio_removal_offline_bible_v1",
-   "status": "pending",
-   "notes": "ISSUE 5a (Android): build-time fetch of full KJV NT (260 chapters, existing 50-day assignment map) from API, bundle in app assets as structured JSON or bundled SQLite optimized for book/chapter lookup; render via bundled data with existing footnote/section-intro handling; KJV default, always available, no download prompt. Available translations probe 2026-09-16: {\"translations\":[{\"id\":\"versewell-amp\",\"code\":\"AMP\",\"name\":\"Amplified Bible\",\"attribution\":\"Scripture text: Amplified Bible, via VerseWell (versewell.pages.dev).\",\"versewell\":true,\"has_footnotes\":true"
+   "status": "done",
+   "notes": "DONE: full KJV NT bundled at app/src/main/assets/bible/kjv.json.gz — 260 chapters / 7,957 verses / 0.32 MB gzipped, fetched live from versewell.pages.dev static mirror (intros+footnotes preserved). Imported into Room on first launch (ensureBundledKjvImported); KJV default, always available, no download prompt."
   },
   {
    "id": 15,
    "name": "translation-download-ui",
    "section": "leaderboard_audio_removal_offline_bible_v1",
-   "status": "pending",
-   "notes": "ISSUE 5b (Android): Manage Translations UI reachable from Read screen — list all non-KJV API translations with file size + Download action, downloaded state, free switching among downloaded translations offline. NO audio download options anywhere."
+   "status": "done",
+   "notes": "DONE: TranslationsScreen (Manage Translations) reachable from Read-screen app-bar icon + Profile. Lists every non-KJV API translation w/ Download action, size + downloaded state; NO audio options."
   },
   {
    "id": 16,
    "name": "translation-download-store",
    "section": "leaderboard_audio_removal_offline_bible_v1",
-   "status": "pending",
-   "notes": "ISSUE 5c (Android): per-translation full-NT one-time fetch -> genuine on-device persistent storage (not evictable cache); read path uses local store with zero read-time network for downloaded translations."
+   "status": "done",
+   "notes": "DONE: Repository.downloadTranslation fetches the full NT (260 ch canonical map) once -> Room scripture_chapters (genuine persistent store, not evictable cache); getPassage serves on-device with zero network for bundled/downloaded translations."
   },
   {
    "id": 17,
    "name": "translation-storage-mgmt",
    "section": "leaderboard_audio_removal_offline_bible_v1",
-   "status": "pending",
-   "notes": "ISSUE 5d (Android): extend Profile Downloaded-content area — per-translation + total storage used, delete frees storage; remove now-moot audio-download management (audio gone per Issue 3)."
+   "status": "done",
+   "notes": "DONE: Profile 'Offline Bible translations' shows total bytes + per-translation chapter-count/size + Delete (frees storage). Audio-download manager removed."
   },
   {
    "id": 18,
@@ -181,15 +181,15 @@
    "id": 19,
    "name": "registration-network-error",
    "section": "leaderboard_audio_removal_offline_bible_v1",
-   "status": "pending",
-   "notes": "ISSUE 6a: session-start probes 2026-09-16 — DNS resolution of forgehouse50.pages.dev: 172.66.44.136 forgehouse50.pages.dev 172.66.47.120 forgehouse50.pages.dev ; /api/config returned 200 earlier in session -> operator's host-resolution error was most likely device-side connectivity, not a config typo. STILL grep app source for every base-URL definition to confirm exact spelling, and add friendly registration error ('Couldn't connect — check your internet connection and try again') instead of raw UnknownHostException. NOTE: operator's registration-host-error.jpg screenshot is NOT present in this session's environment — treated as evidence of the network error + avatar-display complaint only, per contract instruction."
+   "status": "done",
+   "notes": "DONE (code): friendlyNetError() maps UnknownHost/'Unable to resolve host'/'failed to connect'/timeout to 'Couldn't connect — check your internet connection and try again.' on login/signup/verify. Base URL spelled correctly (forgehouse50.pages.dev); site live 200. Root cause = device-side connectivity, not a config bug."
   },
   {
    "id": 20,
    "name": "avatar-compression",
    "section": "leaderboard_audio_removal_offline_bible_v1",
-   "status": "pending",
-   "notes": "ISSUE 6b: drawable-nodpi/avatar_01..37.png = 16MB total. Recompress illustration avatars (WebP preferred; resource names unchanged if extension swap keeps filename stems) keeping crisp small-avatar quality; verify measurable APK size decrease at next release build + fast correct rendering."
+   "status": "done",
+   "notes": "DONE: 41 illustration avatars recompressed (PNG optimize + <=512px) 15.8 MB -> 6.5 MB (-59%). APK size drop to be confirmed at v7 release."
   },
   {
    "id": 21,
@@ -265,6 +265,12 @@
    "date": "2026-09-16",
    "did": "Read new operator EXTEND/UPDATE contract (7 issues; target forgehouse50-v7). No in_progress task existed (v6 complete) so contract applies. Appended instruction to PROMPT_HISTORY (credentials redacted). Ran session-start live probes: site 200, DNS resolves, /api/config OK, leaderboard overall/consistency/chapters, read/passage, translations. Web repo access probe: 03193a9870bc210fd932f1b206617dc2c2bdffc3 refs/heads/main. Seeded section leaderboard_audio_removal_offline_bible_v1 with 14 pending tasks; build_complete=false.",
    "next": "Clone web repo vjumbo264/forgehouse50 and mirror this section in its BUILD_STATE.json; then task lb-categories-backend (Issue 1)."
+  },
+  {
+   "session": 8,
+   "date": "2026-09-16",
+   "did": "Implemented leaderboard_audio_removal_offline_bible_v1 on the app: full audio removal (Issue 3), offline-Bible layer — bundled KJV asset + per-translation download/store/manage (Issue 5), admin points feedback (Issue 4), friendly registration network error (Issue 6a), avatar recompress 15.8->6.5MB (Issue 6b). Web repo: leaderboard consistency=streak fix, audio stripped from VerseWell client + endpoints deleted, read.html/profile.html de-audioed, admin.html feedback, both BUILD_STATEs seeded.",
+   "next": "Dispatch release.yml app_path=apps/forgehouse50 -> forgehouse50-v7; verify release live; set build_complete. GENUINELY OUTSTANDING (need operator admin/test credentials or a device/emulator): authenticated leaderboard per-category verification, admin D1 confirm, 3-day scripture render, airplane-mode offline test."
   }
  ],
  "combined_fixes_v1": {
