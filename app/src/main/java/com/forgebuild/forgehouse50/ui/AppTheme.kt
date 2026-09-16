@@ -1,51 +1,90 @@
 package com.forgebuild.forgehouse50.ui
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.forgebuild.forgehouse50.R
 
 /**
- * ForgeHouse 50 app theme — mirrors the web app's established calm design
- * language (see DESIGN_SYSTEM.md in the web repo):
+ * ForgeHouse 50 app theme — Material 3 Expressive overhaul (session 2026-09-16).
  *
- *  - light/dark follows the ANDROID SYSTEM setting only (no in-app toggle),
- *    matching the web app's prefers-color-scheme approach;
- *  - ONE restrained muted-blue accent (#3a5f8a light / #7f9fc4 dark) on
- *    warm off-white / warm near-black surfaces;
- *  - generous whitespace, typographic hierarchy over borders and shadows.
+ * Operator decision (this session, Android-app-only): replace the previous
+ * fixed muted-blue accent with Android DYNAMIC COLOR (Material You) wherever
+ * the device supports it (API 31+), with the established warm static scheme
+ * kept as the fallback for older devices. Light/dark continues to follow the
+ * system setting. The web app keeps its own design system — this change is
+ * intentionally NOT ported back.
  *
- * Built on the same Material 3 foundation as the Engine's ForgeBuildTheme;
- * dynamic color is intentionally NOT used so the single restrained accent
- * stays consistent across devices (documented in BUILD_STATE notes).
+ * Typeface: the operator asked for "Google Sans Flex". That font is a
+ * proprietary Google brand typeface and is NOT distributed via Google Fonts,
+ * so it cannot be bundled legally. Substituted with Nunito (OFL-licensed
+ * rounded Google font, bundled as a variable TTF in res/font) — the closest
+ * licensable match to the requested rounded/friendly character.
  */
 
+private val Nunito = FontFamily(
+    Font(R.font.nunito, FontWeight.Normal),
+    Font(R.font.nunito, FontWeight.Medium),
+    Font(R.font.nunito, FontWeight.SemiBold),
+    Font(R.font.nunito, FontWeight.Bold),
+)
+
+private val AppTypography = Typography().run {
+    copy(
+        displayLarge = displayLarge.copy(fontFamily = Nunito),
+        displayMedium = displayMedium.copy(fontFamily = Nunito),
+        displaySmall = displaySmall.copy(fontFamily = Nunito),
+        headlineLarge = headlineLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
+        headlineMedium = headlineMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
+        headlineSmall = headlineSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
+        titleLarge = titleLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
+        titleMedium = titleMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
+        titleSmall = titleSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),
+        bodyLarge = bodyLarge.copy(fontFamily = Nunito, lineHeight = 24.sp),
+        bodyMedium = bodyMedium.copy(fontFamily = Nunito),
+        bodySmall = bodySmall.copy(fontFamily = Nunito),
+        labelLarge = labelLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
+        labelMedium = labelMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),
+        labelSmall = labelSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),
+    )
+}
+
+// Static fallback scheme (pre-overhaul warm scheme, retained for API < 31).
 private val LightScheme = lightColorScheme(
-    primary = Color(0xFF3A5F8A),          // --accent
-    onPrimary = Color(0xFFFFFFFF),        // --on-accent
-    primaryContainer = Color(0xFFD3E0F0), // accent-soft
+    primary = Color(0xFF3A5F8A),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFD3E0F0),
     onPrimaryContainer = Color(0xFF2D4E74),
     secondary = Color(0xFF53606F),
     onSecondary = Color(0xFFFFFFFF),
     secondaryContainer = Color(0xFFE6E9ED),
     onSecondaryContainer = Color(0xFF2C343D),
     tertiary = Color(0xFF6B5E54),
-    background = Color(0xFFFAFAF8),       // --bg
-    onBackground = Color(0xFF1F1E1C),     // --text
-    surface = Color(0xFFFFFFFF),          // --surface
+    background = Color(0xFFFAFAF8),
+    onBackground = Color(0xFF1F1E1C),
+    surface = Color(0xFFFFFFFF),
     onSurface = Color(0xFF1F1E1C),
-    surfaceVariant = Color(0xFFF2F2EF),   // --surface-2
+    surfaceVariant = Color(0xFFF2F2EF),
     onSurfaceVariant = Color(0xFF5A5751),
-    outline = Color(0xFFD4D4CD),          // --border-strong
-    outlineVariant = Color(0xFFE6E6E1),   // --border
+    outline = Color(0xFFD4D4CD),
+    outlineVariant = Color(0xFFE6E6E1),
 )
 
 private val DarkScheme = darkColorScheme(
-    primary = Color(0xFF7F9FC4),          // --accent (dark)
-    onPrimary = Color(0xFF101A26),        // --on-accent (dark)
+    primary = Color(0xFF7F9FC4),
+    onPrimary = Color(0xFF101A26),
     primaryContainer = Color(0xFF2C3E54),
     onPrimaryContainer = Color(0xFF9DB8D6),
     secondary = Color(0xFFB6BFC9),
@@ -53,11 +92,11 @@ private val DarkScheme = darkColorScheme(
     secondaryContainer = Color(0xFF353B43),
     onSecondaryContainer = Color(0xFFD5DBE2),
     tertiary = Color(0xFFC9B6A4),
-    background = Color(0xFF171614),       // --bg (dark)
-    onBackground = Color(0xFFEBE8E1),     // --text (dark)
-    surface = Color(0xFF201F1C),          // --surface (dark)
+    background = Color(0xFF171614),
+    onBackground = Color(0xFFEBE8E1),
+    surface = Color(0xFF201F1C),
     onSurface = Color(0xFFEBE8E1),
-    surfaceVariant = Color(0xFF2A2925),   // --surface-2 (dark)
+    surfaceVariant = Color(0xFF2A2925),
     onSurfaceVariant = Color(0xFFB5B1A8),
     outline = Color(0xFF48453F),
     outlineVariant = Color(0xFF353330),
@@ -81,9 +120,17 @@ fun ForgeHouseTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),   // system day/night only
     content: @Composable () -> Unit,
 ) {
+    val colorScheme = when {
+        // Material You dynamic color where the OS provides it (API 31+).
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        else -> if (darkTheme) DarkScheme else LightScheme
+    }
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkScheme else LightScheme,
-        typography = Typography(),
+        colorScheme = colorScheme,
+        typography = AppTypography,
         content = content,
     )
 }

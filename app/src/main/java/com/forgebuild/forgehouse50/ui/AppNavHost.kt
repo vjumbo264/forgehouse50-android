@@ -113,7 +113,7 @@ fun AppNavHost(
 
     if (!configLoaded) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            ExpressiveLoading()
         }
         return
     }

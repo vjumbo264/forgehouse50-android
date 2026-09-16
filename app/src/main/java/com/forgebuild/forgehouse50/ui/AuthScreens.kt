@@ -180,7 +180,7 @@ private fun LoginForm(
             enabled = !busy && email.isNotBlank() && password.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            if (busy) ExpressiveButtonLoader()
             else Text("Sign in")
         }
         if (registrationOpen) {
@@ -286,7 +286,7 @@ private fun SignupForm(
             enabled = !busy && name.isNotBlank() && surname.isNotBlank() && email.isNotBlank() && password.length >= 8,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            if (busy) ExpressiveButtonLoader()
             else Text("Create account")
         }
         Spacer(Modifier.height(8.dp))
@@ -337,7 +337,7 @@ private fun OtpForm(
             enabled = !busy && code.length == 6,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            if (busy) ExpressiveButtonLoader()
             else Text("Verify")
         }
         Spacer(Modifier.height(8.dp))

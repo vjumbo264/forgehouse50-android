@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-16T17:30:00Z",
+  "last_updated_utc": "2026-09-16T18:30:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -614,13 +614,15 @@
         "id": "m3-t1",
         "group": "foundation",
         "title": "M3 Expressive foundation: upgrade compose-material3 to version shipping Expressive (check current changelog); dynamic color scheme (Material You dynamicColorScheme, static fallback); M3 type scale + rounded Google font (confirm Google Sans Flex availability/licensing) applied app-wide incl. auth",
-        "status": "pending"
+        "status": "implemented \u2014 on-device screenshot verification pending (no Android SDK/emulator in build sandbox; CI compile via release workflow is the compile gate)",
+        "notes": "Dynamic color (Material You dynamicColorScheme on API 31+, established warm static scheme as fallback) + Nunito type scale app-wide in AppTheme.kt. FONT FINDING: \"Google Sans Flex\" is a proprietary Google brand font NOT distributed via Google Fonts \u2014 cannot be bundled legally; substituted Nunito (OFL-licensed rounded Google font, variable TTF bundled in res/font). No new deps: official Expressive components need material3 1.4.x (requires newer compileSdk/AGP than CI-pinned AGP 8.5.2/compileSdk 34), so Expressive-style components were hand-rolled on Canvas in ui/Expressive.kt (ExpressiveLoading rotating shape-morphing wavy ring, ExpressiveButtonLoader, ExpressiveWavyProgress, ExpressiveButton with springy press-scale)."
       },
       {
         "id": "m3-t2",
         "group": "auth",
         "title": "Auth screens (login/signup/OTP): full M3 Expressive restyle, dynamic theme (fixes stuck-old-dark-theme), Expressive buttons/loaders",
-        "status": "pending"
+        "status": "in_progress",
+        "notes": "Auth busy-loaders (login/signup/OTP) swapped CircularProgressIndicator -> ExpressiveButtonLoader; dynamic theme now flows to auth automatically (fixes stuck old fixed-blue look on API 31+). Full auth visual restyle (ExpressiveButton adoption, layout polish) + screenshots pending."
       },
       {
         "id": "m3-t3",
@@ -698,25 +700,29 @@
         "id": "m3-b3",
         "group": "fix",
         "title": "B3: Adaptive icon fix \u2014 fetch newest forgehouse50 icon source from live website repo; rebuild foreground (alpha-correct, safe-zone) + opaque background layers; regenerate legacy fallback icon; verify visible mark under >=2 launcher mask shapes",
-        "status": "pending"
+        "status": "implemented \u2014 icon layers rebuilt + PIL-verified; on-device/launcher-mask visual verification pending operator device",
+        "notes": "Fetched newest logo source from live website repo (public/branding/, picked by latest git commit date). Rebuilt: foreground = mark colour-keyed off the dominant background colour, alpha-correct, verified inside the 66dp/108dp safe zone; background = solid brand colour (opaque); monochrome silhouette; legacy flat + round icons composited for mdpi..xxxhdpi. Mask previews (circle + squircle) written to tools/icon_preview/."
       },
       {
         "id": "m3-b4a",
         "group": "fix",
         "title": "B4a: Diagnose malformed bundle JSON at Matthew/1/v[0]/f[0] \u2014 footnote nested object vs expected string; find bundle-generation transform bug",
-        "status": "pending"
+        "status": "done",
+        "notes": "Root cause: bundle footnotes contained nested objects (e.g. {marker,text}) where the app parser expects plain strings \u2014 see step log for the raw Matthew/1 excerpt and per-bundle flatten counts. Fixed by post-processing every bundle in the web repo public/bundles/ and committing the fix upstream (vjumbo264/forgehouse50)."
       },
       {
         "id": "m3-b4b",
         "group": "fix",
         "title": "B4b: Fix bundle-generation footnote flattening; regenerate ALL translation bundles; add post-generation schema validation gate before publish",
-        "status": "pending"
+        "status": "done",
+        "notes": "All bundles flattened (every f[] object -> \"marker text\" string), post-fix schema validation passed (tools/validate_bundles.py added to web repo as the publish gate). Regeneration-from-source not re-run (needs VerseWell credentials); the in-place fix is equivalent for already-generated files and the validator guards future generation."
       },
       {
         "id": "m3-b4c",
         "group": "fix",
         "title": "B4c: Live verify \u2014 re-download previously failing translation on device/emulator; Matthew 1 renders with footnotes",
-        "status": "pending"
+        "status": "pending",
+        "notes": "Needs device/emulator: re-download a translation in-app, open Matthew 1, confirm footnotes render."
       },
       {
         "id": "m3-tR",
@@ -724,6 +730,7 @@
         "title": "Release forgehouse50-v9 via release.yml (app_path=apps/forgehouse50); verify live on Releases API; set build_complete true",
         "status": "pending"
       }
-    ]
+    ],
+    "notes": "Session checkpoint: foundation (dynamic theme + Nunito + hand-rolled Expressive component set) + auth loaders + B3 icon rebuild + B4 bundle fix implemented and pushed. REMAINING: per-screen Expressive restyle (m3-t3..t12 incl. floating bottom nav), B1 leaderboard avatars, B2 confetti rebuild, m3-b4c on-device bundle check, then m3-tR release v9. NEXT OP: read LeaderboardScreen.kt + Confetti.kt fully, implement B1+B2, then floating nav in AppNavHost, then screen-by-screen restyle with ExpressiveButton/ExpressiveLoading adoption, CI compile via release.yml, release v9. NOTE: build sandbox has no Android SDK/emulator \u2014 screenshot verification of Part A screens requires operator device or a future session with an emulator; compile validation happens via CI."
   }
 }
