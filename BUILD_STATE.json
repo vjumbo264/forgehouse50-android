@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-16T18:30:00Z",
+  "last_updated_utc": "2026-09-16T19:00:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -700,8 +700,8 @@
         "id": "m3-b3",
         "group": "fix",
         "title": "B3: Adaptive icon fix \u2014 fetch newest forgehouse50 icon source from live website repo; rebuild foreground (alpha-correct, safe-zone) + opaque background layers; regenerate legacy fallback icon; verify visible mark under >=2 launcher mask shapes",
-        "status": "implemented \u2014 icon layers rebuilt + PIL-verified; on-device/launcher-mask visual verification pending operator device",
-        "notes": "Fetched newest logo source from live website repo (public/branding/, picked by latest git commit date). Rebuilt: foreground = mark colour-keyed off the dominant background colour, alpha-correct, verified inside the 66dp/108dp safe zone; background = solid brand colour (opaque); monochrome silhouette; legacy flat + round icons composited for mdpi..xxxhdpi. Mask previews (circle + squircle) written to tools/icon_preview/."
+        "status": "implemented \u2014 layers rebuilt + PIL safe-zone-verified (retry: first attempt failed safe-zone check at 160px vs 132px and was correctly aborted; re-generated with mark sized to 180px max side, worst opaque radius now inside limit); on-device launcher-mask verification pending operator device",
+        "notes": "Fetched newest logo source from live website repo (public/branding/, picked by latest git commit date). Rebuilt: foreground = mark colour-keyed off the dominant background colour, alpha-correct, verified inside the 66dp/108dp safe zone; background = solid brand colour (opaque); monochrome silhouette; legacy flat + round icons composited for mdpi..xxxhdpi. Mask previews (circle + squircle) written to tools/icon_preview/. | RETRY NOTE: icon source was forgehouse50-icon-v3.png (newest branding commit 2026-09-15), which has a TRANSPARENT/black-keyed background (not the blue of logo-source.png) \u2014 background layer set to the source corner colour, mark colour-keyed off it. Mask previews in tools/icon_preview/."
       },
       {
         "id": "m3-b4a",
@@ -731,6 +731,6 @@
         "status": "pending"
       }
     ],
-    "notes": "Session checkpoint: foundation (dynamic theme + Nunito + hand-rolled Expressive component set) + auth loaders + B3 icon rebuild + B4 bundle fix implemented and pushed. REMAINING: per-screen Expressive restyle (m3-t3..t12 incl. floating bottom nav), B1 leaderboard avatars, B2 confetti rebuild, m3-b4c on-device bundle check, then m3-tR release v9. NEXT OP: read LeaderboardScreen.kt + Confetti.kt fully, implement B1+B2, then floating nav in AppNavHost, then screen-by-screen restyle with ExpressiveButton/ExpressiveLoading adoption, CI compile via release.yml, release v9. NOTE: build sandbox has no Android SDK/emulator \u2014 screenshot verification of Part A screens requires operator device or a future session with an emulator; compile validation happens via CI."
+    "notes": "Session checkpoint: foundation (dynamic theme + Nunito + hand-rolled Expressive component set) + auth loaders + B3 icon rebuild + B4 bundle fix implemented and pushed. REMAINING: per-screen Expressive restyle (m3-t3..t12 incl. floating bottom nav), B1 leaderboard avatars, B2 confetti rebuild, m3-b4c on-device bundle check, then m3-tR release v9. NEXT OP: read LeaderboardScreen.kt + Confetti.kt fully, implement B1+B2, then floating nav in AppNavHost, then screen-by-screen restyle with ExpressiveButton/ExpressiveLoading adoption, CI compile via release.yml, release v9. NOTE: build sandbox has no Android SDK/emulator \u2014 screenshot verification of Part A screens requires operator device or a future session with an emulator; compile validation happens via CI. | CHECKPOINT 2: B3 icon retry PASSED safe-zone and layers+legacy+previews committed; web repo validate_bundles.py committed and passes on all 12 bundles. Compile validation of the Kotlin changes has NOT yet run (no Android SDK in sandbox) \u2014 the v9 release workflow is the compile gate and must be checked for failure before v9 is considered valid."
   }
 }
