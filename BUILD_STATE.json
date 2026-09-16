@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": false,
-  "last_updated_utc": "2026-09-16T18:07:54Z",
+  "build_complete": true,
+  "last_updated_utc": "2026-09-16T18:30:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -740,9 +740,11 @@
         "id": "m3-tR",
         "group": "release",
         "title": "Release forgehouse50-v9 via release.yml (app_path=apps/forgehouse50); verify live on Releases API; set build_complete true",
-        "status": "pending"
+        "status": "done \u2014 forgehouse50-v9 built successfully (CI run 35133604559) and verified live on Releases API with APK + manifest assets"
       }
     ],
-    "notes": "2026-09-16 session 3: final audit sweep complete. Auth screens' three primary Buttons + the resend-code OutlinedButton converted to ExpressiveButton (bouncy press-scale physics + integrated wavy busy loader); the manual `if (busy) ExpressiveButtonLoader()` content collapse removes double-loader risk. Audit justification for remaining standard M3 controls: AlertDialog TextButtons (Cancel/confirm), top-app-bar back-arrow IconButtons and small action IconButtons are canonical M3 idioms kept per Expressive guidance (Expressive press treatment applies to primary actionable buttons, which are now all ExpressiveButton); determinate LinearProgressIndicators (Progress screen, translation downloads) are progress bars not loading spinners \u2014 all indeterminate loading states app-wide use ExpressiveLoading/ExpressiveButtonLoader. Part A coverage: dynamic Material You color + static fallback (AppTheme), Nunito rounded type scale (Google Sans Flex is proprietary/non-redistributable \u2014 documented substitution), floating 28dp pill NavigationBar inset from edges (AppNavHost), hand-rolled Expressive component set in ui/Expressive.kt used on every screen incl. auth, B1 leaderboard avatars via AvatarAssets.resFor on all categories + final results, B2 multi-particle confetti (rect/circle pieces, gravity+flutter+spin, ~3.2s, non-interactive overlay), B3 adaptive icon rebuilt from newest web-repo logo with PIL-verified safe zone + legacy fallbacks, B4 bundle footnote flattening fixed + all bundles regenerated + post-generation schema validation added (m3-b4a/b done; m3-b4c on-device parse check pending operator device). REMAINING: m3-b4c (device), m3-tR release v9. NEXT OP: dispatch release.yml app_path=apps/forgehouse50, verify forgehouse50-v9 on Releases API, set build_complete."
-  }
+    "notes": "2026-09-16 session 3: final audit sweep complete. Auth screens' three primary Buttons + the resend-code OutlinedButton converted to ExpressiveButton (bouncy press-scale physics + integrated wavy busy loader); the manual `if (busy) ExpressiveButtonLoader()` content collapse removes double-loader risk. Audit justification for remaining standard M3 controls: AlertDialog TextButtons (Cancel/confirm), top-app-bar back-arrow IconButtons and small action IconButtons are canonical M3 idioms kept per Expressive guidance (Expressive press treatment applies to primary actionable buttons, which are now all ExpressiveButton); determinate LinearProgressIndicators (Progress screen, translation downloads) are progress bars not loading spinners \u2014 all indeterminate loading states app-wide use ExpressiveLoading/ExpressiveButtonLoader. Part A coverage: dynamic Material You color + static fallback (AppTheme), Nunito rounded type scale (Google Sans Flex is proprietary/non-redistributable \u2014 documented substitution), floating 28dp pill NavigationBar inset from edges (AppNavHost), hand-rolled Expressive component set in ui/Expressive.kt used on every screen incl. auth, B1 leaderboard avatars via AvatarAssets.resFor on all categories + final results, B2 multi-particle confetti (rect/circle pieces, gravity+flutter+spin, ~3.2s, non-interactive overlay), B3 adaptive icon rebuilt from newest web-repo logo with PIL-verified safe zone + legacy fallbacks, B4 bundle footnote flattening fixed + all bundles regenerated + post-generation schema validation added (m3-b4a/b done; m3-b4c on-device parse check pending operator device). REMAINING: m3-b4c (device), m3-tR release v9. NEXT OP: dispatch release.yml app_path=apps/forgehouse50, verify forgehouse50-v9 on Releases API, set build_complete. 2026-09-16 session 3 END: v9 released and verified live (tag forgehouse50-v9, APK+manifest assets present). build_complete set. m3-b4c on-device parse verification remains the single operator-side check (no SDK/emulator in build sandbox; requires operator device install).",
+    "complete": true
+  },
+  "latest_release": "forgehouse50-v9"
 }
