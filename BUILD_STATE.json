@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-16T00:20:00Z",
+  "last_updated_utc": "2026-09-16T00:25:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -597,7 +597,7 @@
         "id": "tR",
         "issue": null,
         "title": "Release forgehouse50-v8 via release.yml; verify live via GitHub Releases API; set build_complete true",
-        "status": "in_progress"
+        "status": "in_progress \u2014 release.yml run 35124693838 dispatched for apps/forgehouse50 (build running on GitHub Actions); next op: poll run, then verify forgehouse50-v8 on Releases API and set build_complete=true"
       }
     ]
   }
