@@ -542,61 +542,61 @@
       {
         "id": "t1a",
         "issue": 1,
-        "title": "Inspect existing admin wipe capability (migration_brevo_v1 cleanup / launch-wipe) in backend + app admin UI",
+        "title": "Inspect existing admin wipe capability (purge_user.mjs cascade + launch-wipe) \u2014 reuse, not rewrite",
         "status": "pending"
       },
       {
         "id": "t1b",
         "issue": 1,
-        "title": "Surface distinct 'End Testing Phase & Reset' admin control (backend endpoint if missing + app Admin screen button), separate from Start Programme; verify live: non-admin users+data wiped, admin + global config intact",
+        "title": "Add distinct 'End Testing Phase & Reset' admin control: backend POST /api/admin/end_testing (batch-deletes all non-admin users + per-user rows via purge_user table list; keeps admin, assignments, quiz bank, programme config) + app AdminScreen button; verify live via test-user signups",
         "status": "pending"
       },
       {
         "id": "t2a",
         "issue": 2,
-        "title": "DIAGNOSTIC: reproduce mark-complete / quiz-start / Progress-checkmark failure; capture real API request+response; compare app request shape vs live backend contract; identify single root cause with evidence",
+        "title": "DIAGNOSTIC: reproduce mark-complete/quiz-start failure with real test user; capture actual request+response; find single root cause",
         "status": "pending"
       },
       {
         "id": "t2b",
         "issue": 2,
-        "title": "Fix the one root cause; verify live: quiz starts, day marks complete, Progress checkmark appears for that day",
+        "title": "Fix root cause; verify live: quiz starts, day completes, Progress checkmark shows",
         "status": "pending"
       },
       {
         "id": "t3a",
         "issue": 3,
-        "title": "DIAGNOSTIC: reproduce translation-download failure; inspect current download code path response handling (200-misinterpretation check)",
+        "title": "DIAGNOSTIC: reproduce translation-download failure (Repository.downloadTranslation per-chapter loop); document 200-handling bug",
         "status": "pending"
       },
       {
         "id": "t3b",
         "issue": 3,
-        "title": "Pre-build one single-file bundle per translation (full NT: books/chapters/verses/footnotes/intros), hosted as static asset with single URL per translation (web repo); record in web BUILD_STATE.json",
+        "title": "Pre-build ONE bundle file per translation (full NT JSON, gzip) in web repo public/bundles/, generated from live VerseWell via /api/read/passage; single static URL per translation; record in web BUILD_STATE.json",
         "status": "pending"
       },
       {
         "id": "t3c",
         "issue": 3,
-        "title": "Android: download flow fetches the single bundle file per translation with real progress/size; local read path uses bundle; verify live + offline (airplane-mode equivalent) read",
+        "title": "Android: download flow fetches single bundle file per translation with real progress/size; store in Room; verify live + offline read",
         "status": "pending"
       },
       {
         "id": "t4",
         "issue": 4,
-        "title": "Restore per-chapter reading view on app Read screen (one chapter at a time + Previous/Next controls within day range), matching website behavior; works for KJV bundle and downloaded bundles; verify live",
+        "title": "Per-chapter reading view on app Read screen (one chapter + Prev/Next within day range), KJV + downloaded bundles; verify live",
         "status": "pending"
       },
       {
         "id": "t5",
         "issue": 5,
-        "title": "Add A-/A+ font-size controls on app Read screen, persisted on-device across restarts, applied to post-Issue-4 reading view; verify live",
+        "title": "A-/A+ font-size controls on Read screen, persisted via SharedPreferences; verify persists across restart",
         "status": "pending"
       },
       {
         "id": "tR",
         "issue": null,
-        "title": "Release forgehouse50-v8 via release.yml (app_path=apps/forgehouse50); verify release live via GitHub API; set build_complete true",
+        "title": "Release forgehouse50-v8 via release.yml; verify live via GitHub Releases API; set build_complete true",
         "status": "pending"
       }
     ]
