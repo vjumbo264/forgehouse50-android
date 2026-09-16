@@ -5,3 +5,9 @@
 # ships no logger backend on Android; these classes are referenced reflectively
 # from org.slf4j.LoggerFactory and are optional at runtime.
 -dontwarn org.slf4j.**
+
+# leaderboard_audio_removal_offline_bible_v1: removing Media3 pulled the
+# transitive com.google.errorprone:annotations artifact off the R8 classpath,
+# but Tink (via androidx security-crypto EncryptedSharedPreferences) still
+# references these annotation types. They are annotations only — safe to ignore.
+-dontwarn com.google.errorprone.annotations.**
