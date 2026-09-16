@@ -156,7 +156,7 @@ private fun LoginForm(
             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
         Spacer(Modifier.height(24.dp))
-        Button(
+        ExpressiveButton(
             onClick = {
                 scope.launch {
                     busy = true; error = null
@@ -178,10 +178,10 @@ private fun LoginForm(
                 }
             },
             enabled = !busy && email.isNotBlank() && password.isNotBlank(),
+            busy = busy,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (busy) ExpressiveButtonLoader()
-            else Text("Sign in")
+            Text("Sign in")
         }
         if (registrationOpen) {
             Spacer(Modifier.height(8.dp))
@@ -272,7 +272,7 @@ private fun SignupForm(
             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
         Spacer(Modifier.height(24.dp))
-        Button(
+        ExpressiveButton(
             onClick = {
                 scope.launch {
                     busy = true; error = null
@@ -284,10 +284,10 @@ private fun SignupForm(
                 }
             },
             enabled = !busy && name.isNotBlank() && surname.isNotBlank() && email.isNotBlank() && password.length >= 8,
+            busy = busy,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (busy) ExpressiveButtonLoader()
-            else Text("Create account")
+            Text("Create account")
         }
         Spacer(Modifier.height(8.dp))
         TextButton(onClick = onBack) { Text("Back to sign in") }
@@ -324,7 +324,7 @@ private fun OtpForm(
                 color = MaterialTheme.colorScheme.primary)
         }
         Spacer(Modifier.height(24.dp))
-        Button(
+        ExpressiveButton(
             onClick = {
                 scope.launch {
                     busy = true; error = null
@@ -335,13 +335,13 @@ private fun OtpForm(
                 }
             },
             enabled = !busy && code.length == 6,
+            busy = busy,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (busy) ExpressiveButtonLoader()
-            else Text("Verify")
+            Text("Verify")
         }
         Spacer(Modifier.height(8.dp))
-        OutlinedButton(
+        ExpressiveButton(
             onClick = {
                 scope.launch {
                     resent = false
