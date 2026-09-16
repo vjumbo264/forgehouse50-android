@@ -57,6 +57,11 @@ class SessionStore(context: Context) {
         get() = prefs.getLong(KEY_UPDATE_SHOWN_AT, 0L)
         set(value) = prefs.edit().putLong(KEY_UPDATE_SHOWN_AT, value).apply()
 
+    /** Reader font-size scale (0.85..1.6), persisted across app restarts. */
+    var fontScale: Float
+        get() = prefs.getFloat(KEY_FONT_SCALE, 1.0f)
+        set(value) = prefs.edit().putFloat(KEY_FONT_SCALE, value).apply()
+
     var keepAliveExplained: Boolean
         get() = prefs.getBoolean(KEY_KEEPALIVE_EXPLAINED, false)
         set(value) = prefs.edit().putBoolean(KEY_KEEPALIVE_EXPLAINED, value).apply()
@@ -74,5 +79,6 @@ class SessionStore(context: Context) {
         const val KEY_UPDATE_PROMPTED = "update_prompted_for"
         const val KEY_UPDATE_SHOWN_AT = "update_prompt_shown_at"
         const val KEY_KEEPALIVE_EXPLAINED = "keepalive_explained"
+        const val KEY_FONT_SCALE = "reader_font_scale"
     }
 }

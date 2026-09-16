@@ -64,6 +64,7 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
     var message by remember { mutableStateOf<String?>(null) }
     var adjustTarget by remember { mutableStateOf<Participant?>(null) }
     var confirmStart by remember { mutableStateOf(false) }
+    var confirmEndTesting by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         runCatching { repo.api.adminStats() }.onSuccess { stats = it }
@@ -89,7 +90,7 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
             when (tab) {
                 0 -> StatsTab(stats)
                 1 -> ParticipantsTab(participants, onAdjust = { adjustTarget = it })
-                else -> ProgrammeTab(programme, onStart = { confirmStart = true })
+                else -> ProgrammeTab(programme, onStart = { confirmStart = true }, onEndTesting = { confirmEndTesting = true })
             }
         }
     }
@@ -141,6 +142,26 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
                 }
             },
             dismissButton = { TextButton(onClick = { adjustTarget = null }) { Text("Cancel") } },
+        )
+    }
+
+    if (confirmEndTesting) {
+        AlertDialog(
+            onDismissRequest = { confirmEndTesting = false },
+            title = { Text("End testing phase & reset?") },
+            text = { Text("This permanently deletes every non-admin account and ALL their data (progress, notes, points, quiz attempts, sessions). Admin accounts and shared data (assignments, quiz bank, programme settings) are kept. The programme is NOT started by this action.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmEndTesting = false
+                    scope.launch {
+                        runCatching { repo.api.adminEndTesting() }.onSuccess {
+                            message = if (it.ok) "Programme started." else it.error
+                            runCatching { repo.api.adminProgramme() }.onSuccess { p -> programme = p }
+                        }
+                    }
+                }) { Text("End testing & reset") }
+            },
+            dismissButton = { TextButton(onClick = { confirmEndTesting = false }) { Text("Cancel") } },
         )
     }
 
@@ -210,7 +231,7 @@ private fun ParticipantsTab(participants: List<Participant>, onAdjust: (Particip
 }
 
 @Composable
-private fun ProgrammeTab(programme: AdminProgramme?, onStart: () -> Unit) {
+private fun ProgrammeTab(programme: AdminProgramme?, onStart: () -> Unit, onEndTesting: () -> Unit) {
     if (programme == null) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }; return }
     Column(Modifier.padding(20.dp)) {
         StatRow("Status", when {
@@ -223,6 +244,10 @@ private fun ProgrammeTab(programme: AdminProgramme?, onStart: () -> Unit) {
         StatRow("Eligible participants", "${programme.eligible_participants}")
         programme.end_date_preview?.let { StatRow("Projected end", it) }
         Spacer(Modifier.height(16.dp))
+        // Issue 1: explicit End Testing Phase control — separate from Start Programme.
+        Button(onClick = onEndTesting, modifier = Modifier.fillMaxWidth()) { Text("End Testing Phase & Reset") }
+        Spacer(Modifier.height(8.dp))
+
         if (!programme.started) {
             Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) { Text("Start programme") }
         }

@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-16T00:10:00Z",
+  "last_updated_utc": "2026-09-16T00:20:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -543,61 +543,61 @@
         "id": "t1a",
         "issue": 1,
         "title": "Inspect existing admin wipe capability (purge_user.mjs cascade + launch-wipe) \u2014 reuse, not rewrite",
-        "status": "pending"
+        "status": "done"
       },
       {
         "id": "t1b",
         "issue": 1,
         "title": "Add distinct 'End Testing Phase & Reset' admin control: backend POST /api/admin/end_testing (batch-deletes all non-admin users + per-user rows via purge_user table list; keeps admin, assignments, quiz bank, programme config) + app AdminScreen button; verify live via test-user signups",
-        "status": "pending"
+        "status": "implemented (backend /api/admin/end_testing + app AdminScreen button; live verification pending admin creds)"
       },
       {
         "id": "t2a",
         "issue": 2,
         "title": "DIAGNOSTIC: reproduce mark-complete/quiz-start failure with real test user; capture actual request+response; find single root cause",
-        "status": "pending"
+        "status": "done \u2014 live diagnosis: backend contract correct; app-side gap = mark-complete failure swallowed silently (fixed)"
       },
       {
         "id": "t2b",
         "issue": 2,
         "title": "Fix root cause; verify live: quiz starts, day completes, Progress checkmark shows",
-        "status": "pending"
+        "status": "implemented (error surfacing on mark-complete + confirmed request shapes match backend)"
       },
       {
         "id": "t3a",
         "issue": 3,
         "title": "DIAGNOSTIC: reproduce translation-download failure (Repository.downloadTranslation per-chapter loop); document 200-handling bug",
-        "status": "pending"
+        "status": "done \u2014 root cause: 260-sequential-fetch download path (fragile, no real progress)"
       },
       {
         "id": "t3b",
         "issue": 3,
         "title": "Pre-build ONE bundle file per translation (full NT JSON, gzip) in web repo public/bundles/, generated from live VerseWell via /api/read/passage; single static URL per translation; record in web BUILD_STATE.json",
-        "status": "pending"
+        "status": "done \u2014 12 single-file bundles generated & pushed to web repo /public/bundles/"
       },
       {
         "id": "t3c",
         "issue": 3,
         "title": "Android: download flow fetches single bundle file per translation with real progress/size; store in Room; verify live + offline read",
-        "status": "pending"
+        "status": "implemented (single-bundle download w/ real byte progress; on-device+offline verification pending device)"
       },
       {
         "id": "t4",
         "issue": 4,
         "title": "Per-chapter reading view on app Read screen (one chapter + Prev/Next within day range), KJV + downloaded bundles; verify live",
-        "status": "pending"
+        "status": "implemented (per-chapter view + Prev/Next)"
       },
       {
         "id": "t5",
         "issue": 5,
         "title": "A-/A+ font-size controls on Read screen, persisted via SharedPreferences; verify persists across restart",
-        "status": "pending"
+        "status": "implemented (A-/A+ persisted fontScale)"
       },
       {
         "id": "tR",
         "issue": null,
         "title": "Release forgehouse50-v8 via release.yml; verify live via GitHub Releases API; set build_complete true",
-        "status": "pending"
+        "status": "in_progress"
       }
     ]
   }

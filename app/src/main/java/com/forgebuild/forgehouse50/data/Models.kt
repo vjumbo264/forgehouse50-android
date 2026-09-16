@@ -431,3 +431,21 @@ data class BundledIntro(val s: Int = 0, val e: Int = 0, val t: String = "")
 
 @Serializable
 data class BundledChapter(val v: List<BundledVerse> = emptyList(), val i: List<BundledIntro> = emptyList())
+
+// ── testing_phase_and_reader_fixes_v1 / ISSUE 3: one-file-per-translation
+// scripture bundles hosted as static assets at {BASE}/bundles/<code>.json.gz ──
+@Serializable
+data class BundleEntry(
+    val id: String,
+    val code: String = "",
+    val name: String = "",
+    val url: String = "",
+    val bytes: Long = 0,
+    val chapters: Int = 0,
+)
+
+@Serializable
+data class BundleManifest(
+    val generated: String = "",
+    val bundles: List<BundleEntry> = emptyList(),
+)

@@ -64,23 +64,7 @@ class Repository(
             appContext.assets.open(KJV_ASSET).use { raw ->
                 GZIPInputStream(raw).bufferedReader().use { reader ->
                     val books = json.decodeFromString<Map<String, Map<String, BundledChapter>>>(reader.readText())
-                    val rows = mutableListOf<ScriptureChapter>()
-                    for ((book, chapters) in books) {
-                        for ((chStr, ch) in chapters) {
-                            val chNum = chStr.toIntOrNull() ?: continue
-                            rows.add(
-                                ScriptureChapter(
-                                    key = AppDatabase.chapterKey(KJV_ID, book, chNum),
-                                    translation = KJV_ID, book = book, chapter = chNum,
-                                    reference = "$book $chNum",
-                                    versesJson = json.encodeToString(ch.v.map { Verse(chNum, it.n, it.t, it.f) }),
-                                    introsJson = json.encodeToString(ch.i.map { Intro(chNum, it.s, it.e, it.t) }),
-                                    attribution = "Scripture text: King James Version, via VerseWell (versewell.pages.dev).",
-                                )
-                            )
-                        }
-                    }
-                    db.scriptureDao().putChapters(rows)
+                    importBundle(KJV_ID, books, "King James Version")
                 }
             }
         }
@@ -162,37 +146,45 @@ class Repository(
         (kjvBytes.toDouble() * verseCount / kjvVerses).toLong()
     }
 
+    /** Import one parsed bundle map (books -> chapter -> BundledChapter) into Room. */
+    private suspend fun importBundle(translation: String, books: Map<String, Map<String, BundledChapter>>, name: String) {
+        val rows = mutableListOf<ScriptureChapter>()
+        for ((book, chapters) in books) for ((chStr, ch) in chapters) {
+            val chNum = chStr.toIntOrNull() ?: continue
+            rows.add(ScriptureChapter(
+                key = AppDatabase.chapterKey(translation, book, chNum),
+                translation = translation, book = book, chapter = chNum,
+                reference = "$book $chNum",
+                versesJson = json.encodeToString(ch.v.map { Verse(chNum, it.n, it.t, it.f) }),
+                introsJson = json.encodeToString(ch.i.map { Intro(chNum, it.s, it.e, it.t) }),
+                attribution = "Scripture text: $name, via VerseWell (versewell.pages.dev).",
+            ))
+        }
+        db.scriptureDao().putChapters(rows)
+    }
+
     /**
-     * Download one translation's full New Testament once and store it
-     * permanently. Iterates the canonical NT book/chapter map so the fetch is
-     * complete regardless of the current 50-day assignment window. onProgress
-     * reports (chaptersDone, totalChapters). Throws on failure; partial
-     * chapters already stored are kept so a retry resumes cheaply.
+     * Download one translation as a SINGLE pre-built bundle file (Issue 3) —
+     * one HTTP request instead of 260 per-chapter fetches. The gzipped-JSON
+     * shape matches the bundled KJV asset, so the proven importer is reused.
+     * onProgress reports (bytesRead, totalBytes).
      */
     suspend fun downloadTranslation(
         translation: String,
         name: String,
         onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
     ): Unit = withContext(Dispatchers.IO) {
-        val total = KJV_TOTAL_CHAPTERS
-        var done = 0
-        for ((book, chapters) in NT_CHAPTERS) {
-            for (ch in 1..chapters) {
-                val key = AppDatabase.chapterKey(translation, book, ch)
-                if (db.scriptureDao().chapter(key) == null) {
-                    val p = api.passage(book, ch, ch, translation)
-                    storePassage(book, p)
-                }
-                done++
-                if (done % 5 == 0 || done == total) onProgress(done, total)
-            }
+        val code = translation.removePrefix("versewell-").lowercase()
+        val bytes = api.fetchBundleFile("/bundles/$code.json.gz") { r, t ->
+            onProgress(r.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), t.coerceAtLeast(0).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
         }
+        val books = java.util.zip.GZIPInputStream(bytes.inputStream()).bufferedReader().use {
+            json.decodeFromString<Map<String, Map<String, BundledChapter>>>(it.readText())
+        }
+        importBundle(translation, books, name)
         val size = db.scriptureDao().sizeBytesFor(translation)
         val count = db.scriptureDao().chapterCountFor(translation)
-        db.translationDao().put(
-            DownloadedTranslation(translation = translation, name = name,
-                chapterCount = count, sizeBytes = size)
-        )
+        db.translationDao().put(DownloadedTranslation(translation = translation, name = name, chapterCount = count, sizeBytes = size))
     }
 
     /** Remove a downloaded translation and free its storage. */

@@ -226,6 +226,35 @@ class ApiClient(private val session: SessionStore) {
     suspend fun adminStartProgramme(confirm: String = "START"): GenericOk =
         post("/admin/programme", buildJsonObject { put("action", "start"); put("confirm", confirm) })
 
+    // ── Scripture bundles (Issue 3) + admin end-testing (Issue 1) ─────────
+    suspend fun bundleManifest(): BundleManifest {
+        val res: HttpResponse = client.get("https://forgehouse50.pages.dev/bundles/manifest.json") {
+            header(HttpHeaders.Accept, "application/json")
+        }
+        return decode(res)
+    }
+
+    /** Download one translation's single bundle file; reports real bytes read. */
+    suspend fun fetchBundleFile(urlPath: String, onProgress: (read: Long, total: Long) -> Unit): ByteArray {
+        val res: HttpResponse = client.get("https://forgehouse50.pages.dev" + urlPath) { auth() }
+        if (res.status.value !in 200..299) throw ApiException(res.status.value, "Bundle download failed (HTTP ${res.status.value})")
+        val total = res.headers[HttpHeaders.ContentLength]?.toLongOrNull() ?: -1L
+        val buf = java.io.ByteArrayOutputStream(if (total > 0) total.toInt() else 1 shl 20)
+        var read = 0L
+        val ch: io.ktor.utils.io.ByteReadChannel = res.body()
+        val tmp = ByteArray(64 * 1024)
+        while (true) {
+            val n = ch.readAvailable(tmp, 0, tmp.size)
+            if (n == -1) break
+            if (n > 0) { buf.write(tmp, 0, n); read += n; onProgress(read, total) }
+        }
+        return buf.toByteArray()
+    }
+
+    /** Issue 1: End Testing Phase & Reset — wipes all non-admin users + data. */
+    suspend fun adminEndTesting(confirm: String = "END_TESTING"): GenericOk =
+        post("/admin/end_testing", buildJsonObject { put("confirm", confirm) })
+
     companion object {
         const val BASE = "https://forgehouse50.pages.dev/api"
     }

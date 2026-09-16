@@ -27,10 +27,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -85,6 +87,10 @@ fun ReadScreen(
     var loadingPassage by remember { mutableStateOf(false) }
     var completed by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Issue 5: reader font scale, persisted across restarts via SessionStore.
+    var fontScale by remember { mutableFloatStateOf(repo.session.fontScale) }
+    // Issue 4: index into the day's flattened chapter list (one chapter shown at a time).
+    var chapterIdx by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(day) {
         // Import bundled KJV + discover which translations are on-device.
@@ -108,22 +114,27 @@ fun ReadScreen(
     }
 
     val assignments = dayData?.assignments ?: emptyList()
-    val current: Assignment? = assignments.getOrNull(selected)
+    // Issue 4: flatten the day's assignments into an ordered (book, chapter) list;
+    // exactly ONE chapter is fetched and rendered at a time, matching the website.
+    val chapters = assignments.flatMap { a -> (a.chapter_start..a.chapter_end).map { a.book to it } }
+    if (chapters.isNotEmpty() && chapterIdx > chapters.lastIndex) chapterIdx = 0
+    val currentChapter: Pair<String, Int>? = chapters.getOrNull(chapterIdx)
     val scroll = rememberScrollState()
 
-    // Passage — keyed on the assignment identity + resolved translation, so it
-    // always re-fires when its inputs are ready. Served from the on-device
-    // store with no network call for bundled/downloaded translations.
-    val assignmentKey = current?.let { "${it.book}:${it.chapter_start}:${it.chapter_end}" } ?: ""
-    LaunchedEffect(assignmentKey, translation, reloadToken) {
-        val a = current ?: return@LaunchedEffect
+    // Passage — keyed on the current chapter + resolved translation. Served from
+    // the on-device store with no network call for bundled/downloaded translations.
+    val chapterKey = currentChapter?.let { "${it.first}:${it.second}" } ?: ""
+    LaunchedEffect(chapterKey, translation, reloadToken) {
+        val cc = currentChapter ?: return@LaunchedEffect
         if (translation.isBlank()) return@LaunchedEffect
         loadingPassage = true
         passageError = null
-        runCatching { repo.getPassage(a.book, a.chapter_start, a.chapter_end, translation) }
+        passage = null
+        runCatching { repo.getPassage(cc.first, cc.second, cc.second, translation) }
             .onSuccess { passage = it }
-            .onFailure { passage = null; passageError = it.message ?: "Could not load this passage." }
+            .onFailure { passage = null; passageError = it.message ?: "Could not load this chapter." }
         loadingPassage = false
+        scroll.scrollTo(0)
     }
 
     // Reading-time tracking: report 30s chunks while the screen is open.
@@ -144,6 +155,15 @@ fun ReadScreen(
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 },
                 actions = {
+                    // Issue 5: font-size controls (A-/A+), persisted per device.
+                    TextButton(onClick = {
+                        fontScale = (fontScale - 0.1f).coerceAtLeast(0.85f)
+                        repo.session.fontScale = fontScale
+                    }) { Text("A\u2212") }
+                    TextButton(onClick = {
+                        fontScale = (fontScale + 0.1f).coerceAtMost(1.6f)
+                        repo.session.fontScale = fontScale
+                    }) { Text("A+") }
                     IconButton(onClick = onManageTranslations) {
                         Icon(Icons.Filled.LibraryBooks, "Manage translations")
                     }
@@ -177,17 +197,26 @@ fun ReadScreen(
                 Spacer(Modifier.height(4.dp))
             }
 
-            // Chapter chips (one per assignment)
-            if (assignments.size > 1) {
+            // Issue 4: Previous/Next chapter navigation within this day's range.
+            if (chapters.size > 1) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    assignments.forEachIndexed { i, a ->
-                        val label = if (a.chapter_start == a.chapter_end) "${a.book} ${a.chapter_start}"
-                            else "${a.book} ${a.chapter_start}–${a.chapter_end}"
-                        FilterChip(selected = selected == i, onClick = { selected = i }, label = { Text(label) })
+                    TextButton(onClick = { if (chapterIdx > 0) chapterIdx-- }, enabled = chapterIdx > 0) {
+                        Text("Previous chapter")
                     }
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        currentChapter?.let { "${it.first} ${it.second}" } ?: "",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    TextButton(
+                        onClick = { if (chapterIdx < chapters.lastIndex) chapterIdx++ },
+                        enabled = chapterIdx < chapters.lastIndex,
+                    ) { Text("Next chapter") }
                 }
                 Spacer(Modifier.height(4.dp))
             }
@@ -206,7 +235,7 @@ fun ReadScreen(
                             CircularProgressIndicator()
                         }
                     }
-                    current == null -> {
+                    currentChapter == null -> {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text("No reading assigned for day $day yet.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -241,6 +270,7 @@ fun ReadScreen(
                                     p.intros.firstOrNull { it.chapter == v.chapter }?.let { intro ->
                                         Spacer(Modifier.height(4.dp))
                                         Text(intro.text, style = MaterialTheme.typography.bodySmall,
+                                            fontSize = MaterialTheme.typography.bodySmall.fontSize * fontScale,
                                             fontStyle = FontStyle.Italic,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
@@ -250,7 +280,8 @@ fun ReadScreen(
                                     Text("${v.verse}", style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.width(28.dp).padding(top = 3.dp))
-                                    Text(v.text, style = MaterialTheme.typography.bodyLarge)
+                                    Text(v.text, style = MaterialTheme.typography.bodyLarge,
+                                        fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale)
                                 }
                             }
                             if (p.attribution.isNotBlank()) {
@@ -279,7 +310,10 @@ fun ReadScreen(
                     Button(
                         onClick = {
                             scope.launch {
-                                runCatching { repo.api.completeDay(day) }.onSuccess { completed = true }
+                                error = null
+                                runCatching { repo.api.completeDay(day) }
+                                    .onSuccess { completed = true }
+                                    .onFailure { error = it.message ?: "Could not mark this day complete." }
                             }
                         },
                         Modifier.fillMaxWidth(),
