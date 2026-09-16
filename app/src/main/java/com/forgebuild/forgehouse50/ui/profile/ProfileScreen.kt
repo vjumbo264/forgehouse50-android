@@ -2,7 +2,6 @@ package com.forgebuild.forgehouse50.ui.profile
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,15 +19,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,38 +44,41 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
-import com.forgebuild.forgehouse50.ui.AvatarAssets
-import com.forgebuild.forgehouse50.work.KeepAliveService
+import androidx.compose.ui.platform.LocalContext
+import com.forgebuild.forgehouse50.data.DownloadedTranslation
 import com.forgebuild.forgehouse50.data.MeResponse
 import com.forgebuild.forgehouse50.data.Repository
+import com.forgebuild.forgehouse50.ui.AvatarAssets
 import com.forgebuild.forgehouse50.ui.formatBytes
 import com.forgebuild.forgehouse50.ui.formatDurationShort
+import com.forgebuild.forgehouse50.work.KeepAliveService
 import com.forgebuild.forgehouse50.work.ReminderWorker
-import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 
 // combined_fixes_v1 Issue 2: bundled avatar assets — all 41, offline, no fetch.
 private val AVATAR_IDS = AvatarAssets.IDS
 
 /** Profile: stats, badges, illustration avatar picker (same asset set as the
- *  web app), downloaded-content manager, sign out. */
+ *  web app), downloaded-translation manager, sign out. */
 @Composable
-fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit) {
+fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslations: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var me by remember { mutableStateOf<MeResponse?>(null) }
     var pickingAvatar by remember { mutableStateOf(false) }
-    var chaptersStored by remember { mutableStateOf(0) }
-    var audioBytes by remember { mutableStateOf(0L) }
-    var confirmClear by remember { mutableStateOf(false) }
+    var translations by remember { mutableStateOf<List<DownloadedTranslation>>(emptyList()) }
+    var totalBytes by remember { mutableStateOf(0L) }
+
+    suspend fun refreshTranslations() {
+        translations = repo.downloadedTranslations()
+        totalBytes = repo.translationsTotalSizeBytes()
+    }
 
     LaunchedEffect(Unit) {
         runCatching { repo.api.me() }.onSuccess { me = it }
-        chaptersStored = repo.scriptureChapterCount()
-        audioBytes = repo.audioTotalSizeBytes()
+        refreshTranslations()
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 20.dp)) {
@@ -127,12 +130,50 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit) {
         Spacer(Modifier.height(16.dp))
         HorizontalDivider()
         Spacer(Modifier.height(16.dp))
-        Text("Downloaded content", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+
+        // leaderboard_audio_removal_offline_bible_v1 / ISSUE 5d: Downloaded
+        // content is now about OFFLINE BIBLE TRANSLATIONS only (audio is gone).
+        // KJV is bundled (not listed). Shows total storage + per-translation
+        // removal that frees it.
+        Text("Offline Bible translations", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(4.dp))
-        Text("$chaptersStored chapters of scripture stored offline · ${formatBytes(audioBytes)} of audio",
+        Text("King James Version is bundled with the app — always available offline.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(4.dp))
+        Text("Downloaded translations use ${formatBytes(totalBytes)} on this device.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { confirmClear = true }) { Text("Clear downloaded content") }
+        if (translations.isEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            Text("No other translations downloaded yet.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Spacer(Modifier.height(8.dp))
+            translations.forEach { t ->
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(t.name.ifBlank { t.translation }, style = MaterialTheme.typography.bodyMedium)
+                        Text("${t.chapterCount} chapters · ${formatBytes(t.sizeBytes)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    IconButton(onClick = {
+                        scope.launch {
+                            runCatching { repo.removeTranslation(t.translation) }
+                            refreshTranslations()
+                        }
+                    }) { Icon(Icons.Filled.Delete, "Remove ${t.name}", tint = MaterialTheme.colorScheme.error) }
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Button(onClick = onManageTranslations, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Filled.LibraryBooks, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Manage translations")
+        }
         Spacer(Modifier.height(24.dp))
         Button(onClick = {
             scope.launch {
@@ -168,23 +209,6 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit) {
                 }
             },
             confirmButton = { TextButton(onClick = { pickingAvatar = false }) { Text("Cancel") } },
-        )
-    }
-    if (confirmClear) {
-        AlertDialog(
-            onDismissRequest = { confirmClear = false },
-            title = { Text("Clear downloaded content?") },
-            text = { Text("All offline scripture text and downloaded audio will be removed from this device. You can download it again any time.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmClear = false
-                    scope.launch {
-                        repo.clearOfflineContent()
-                        chaptersStored = 0; audioBytes = 0
-                    }
-                }) { Text("Clear") }
-            },
-            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Keep") } },
         )
     }
 }

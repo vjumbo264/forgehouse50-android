@@ -42,7 +42,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.forgebuild.engine.security.ScreenSecurity
 import com.forgebuild.forgehouse50.data.Repository
-import com.forgebuild.forgehouse50.media.AudioPlayerManager
 import com.forgebuild.forgehouse50.ui.admin.AdminScreen
 import com.forgebuild.forgehouse50.ui.home.HomeScreen
 import com.forgebuild.forgehouse50.ui.leaderboard.LeaderboardScreen
@@ -52,6 +51,7 @@ import com.forgebuild.forgehouse50.ui.profile.ProfileScreen
 import com.forgebuild.forgehouse50.ui.progress.ProgressScreen
 import com.forgebuild.forgehouse50.ui.quiz.QuizScreen
 import com.forgebuild.forgehouse50.ui.read.ReadScreen
+import com.forgebuild.forgehouse50.ui.read.TranslationsScreen
 import com.forgebuild.forgehouse50.update.UpdateChecker
 
 object Routes {
@@ -64,6 +64,7 @@ object Routes {
     const val NOTES = "notes"
     const val NOTE_EDIT = "note_edit?noteId={noteId}&day={day}"
     const val ADMIN = "admin"
+    const val TRANSLATIONS = "translations"
     fun read(day: Int) = "read/$day"
     fun quiz(day: Int) = "quiz/$day"
     fun noteEdit(noteId: String?, day: Int?) =
@@ -87,7 +88,6 @@ private val Tabs = listOf(
 @Composable
 fun AppNavHost(
     repo: Repository,
-    player: AudioPlayerManager,
     loggedIn: Boolean,
     authenticatedTick: Int,
     onAuthChanged: (Boolean) -> Unit,
@@ -104,8 +104,7 @@ fun AppNavHost(
         configLoaded = true
     }
 
-    // In-app update check: skippable but recurring, newest-always (supersession
-    // is structural — the manifest only ever names the latest build).
+    // In-app update check: skippable but recurring, newest-always.
     LaunchedEffect(loggedIn, authenticatedTick) {
         if (loggedIn) {
             pendingUpdate = UpdateChecker.check(context, repo.session)
@@ -132,16 +131,13 @@ fun AppNavHost(
     val currentRoute = backStack?.destination?.route
 
     // combined_fixes_v1 Issue 9: FLAG_SECURE is owned by QuizScreen's own
-    // DisposableEffect (apply on entry, clear on dispose). The NavHost route-keyed
-    // toggle that lived here raced and could clear the flag while the quiz was
-    // visible — why screenshots still succeeded in v1.
+    // DisposableEffect (apply on entry, clear on dispose).
     DisposableEffect(Unit) {
         onDispose { (context as? android.app.Activity)?.let { ScreenSecurity.clear(it) } }
     }
 
     Scaffold(
         bottomBar = {
-            // Bottom bar only on the four tab destinations.
             if (currentRoute in Tabs.map { it.route }) {
                 NavigationBar {
                     Tabs.forEach { tab ->
@@ -183,7 +179,11 @@ fun AppNavHost(
                 ProgressScreen(repo, onOpenDay = { nav.navigate(Routes.read(it)) })
             }
             composable(Routes.PROFILE) {
-                ProfileScreen(repo, onSignedOut = { onAuthChanged(false) })
+                ProfileScreen(
+                    repo,
+                    onSignedOut = { onAuthChanged(false) },
+                    onManageTranslations = { nav.navigate(Routes.TRANSLATIONS) },
+                )
             }
             composable(
                 Routes.READ,
@@ -191,12 +191,15 @@ fun AppNavHost(
             ) { entry ->
                 ReadScreen(
                     repo = repo,
-                    player = player,
                     day = entry.arguments?.getInt("day") ?: 1,
                     onBack = { nav.popBackStack() },
                     onOpenQuiz = { nav.navigate(Routes.quiz(it)) },
                     onAddNote = { d -> nav.navigate(Routes.noteEdit(null, d)) },
+                    onManageTranslations = { nav.navigate(Routes.TRANSLATIONS) },
                 )
+            }
+            composable(Routes.TRANSLATIONS) {
+                TranslationsScreen(repo = repo, onBack = { nav.popBackStack() })
             }
             composable(
                 Routes.QUIZ,
