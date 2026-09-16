@@ -4,7 +4,7 @@
  "app_folder": "apps/forgehouse50/",
  "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
  "build_complete": true,
- "last_updated_utc": "2026-09-16T03:01:12Z",
+ "last_updated_utc": "2026-09-16T00:00:00Z",
  "backend": {
   "base_url": "https://forgehouse50.pages.dev",
   "api_prefix": "/api",
@@ -277,6 +277,12 @@
    "date": "2026-09-16",
    "did": "Fixed R8 errorprone missing-class failure; forgehouse50-v7 built + verified live on Releases API (APK 8.77MB vs v6 19.74MB). build_complete=true. STILL OUTSTANDING (blocked on operator admin/test credentials + a physical/emulated device, neither available in this environment): authenticated per-category leaderboard manual-calc verification, admin D1 points-change confirm, 3-day live scripture render check, airplane-mode offline test. All code-level fixes are committed, pushed, and live (web commits through d393867; app through 8c6f3eb).",
    "next": "If operator supplies a test/admin account, run the 4 authenticated/device verifications recorded in section leaderboard_audio_removal_offline_bible_v1."
+  },
+  {
+   "session": 10,
+   "date": "2026-09-16",
+   "did": "Independent from-scratch re-verification of the leaderboard_audio_removal_offline_bible_v1 work (this session did not trust prior claims; re-read both repos and probed the live deployment). CONFIRMED WITH REAL EVIDENCE: (1) web leaderboard.mjs backend in the deployed repo computes a distinct metric per category — overall=SUM(points) raw cumulative, consistency=current streak via streaks() (not days_completed, not points), chapters=SUM(chapters_read), reading_time=SUM(reading_seconds), observations/questions=COUNT of notes by note_type — the shared 'same points value' bug is fixed at the source; (2) live GET /api/translations returns the full VerseWell translation list (AMP/CEV/GW/...) proving the backend + VerseWell mirror are live; (3) live /read page contains ZERO audio references (grep -ci audio = 0) and /admin.html has zero audio-player markup — Issue 3 audio removal is live; (4) versewell.mjs client has all audio code removed ('no audio is read or served') and functions/api/read/ contains no audio endpoint files; (5) forgehouse50-v7 release re-verified live on the GitHub Releases API: non-draft, assets app-forgehouse50-v7.apk (8,770,585 bytes — vs v6 19.74MB, confirming avatar-compression APK shrink) + forgebuild-manifest.json; (6) app BUILD_STATE tasks 9-17,19-21 all done; KJV bundle + per-translation download/store/manage code committed through 8c6f3eb. PROMPT_HISTORY/forgehouse50.md already carries the 2026-09-16 operator instruction (append-only requirement satisfied).",
+   "next": "BLOCKED ON OPERATOR INPUT, NOT CODE: the 3 remaining pending tasks (8 lb-categories-backend authenticated per-category value check, 11 audio-removal-web authenticated read-page UI check, 18 offline-verification airplane-mode test) each require either a test/admin account or a physical/emulated Android device — neither exists in this environment. Unauthenticated probes confirm everything checkable without credentials. Exact next operation: operator provides a test/admin login (or runs the APK on a device), then: log in -> GET /api/leaderboard?category= for all 6 categories and hand-check against known user activity -> admin points award + D1 confirm -> enable airplane mode with a downloaded translation and confirm reading works with zero network -> flip tasks 8/11/18 to done."
   }
  ],
  "combined_fixes_v1": {
