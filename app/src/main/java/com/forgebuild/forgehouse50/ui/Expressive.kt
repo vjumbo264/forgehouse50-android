@@ -122,10 +122,10 @@ fun ExpressiveWavyProgress(
         val wave = Path()
         val w = this.size.width
         var x = 0f
-        wave.moveTo(0f, midY + amp * sin(t * 2.0 * PI.toFloat()))
+        wave.moveTo(0f, midY + amp * sin(t * 2.0 * PI.toFloat()).toFloat())
         while (x < w) {
             x += 6f
-            val y = midY + amp * sin((x / w) * 5.0 * PI.toFloat() + t * 2.0 * PI.toFloat())
+            val y = midY + amp * sin((x / w) * 5.0 * PI.toFloat() + t * 2.0 * PI.toFloat()).toFloat()
             wave.lineTo(x, y)
         }
         drawPath(wave, color, style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round))

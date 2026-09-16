@@ -53,6 +53,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.painterResource
+import com.forgebuild.forgehouse50.ui.AvatarAssets
 
 private val CATEGORIES = listOf(
     "overall" to "Overall", "consistency" to "Consistency", "chapters" to "Chapters",
