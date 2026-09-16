@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-16T00:25:00Z",
+  "last_updated_utc": "2026-09-16T17:30:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -533,10 +533,10 @@
     ],
     "completed_utc": "2026-09-15T10:14:30Z"
   },
-  "current_release": "forgehouse50-v7",
+  "current_release": "forgehouse50-v8",
   "testing_phase_and_reader_fixes_v1": {
     "name": "testing_phase_and_reader_fixes_v1",
-    "status": "in_progress",
+    "status": "complete",
     "target_release": "forgehouse50-v8",
     "tasks": [
       {
@@ -597,7 +597,132 @@
         "id": "tR",
         "issue": null,
         "title": "Release forgehouse50-v8 via release.yml; verify live via GitHub Releases API; set build_complete true",
-        "status": "in_progress \u2014 release.yml run 35124693838 dispatched for apps/forgehouse50 (build running on GitHub Actions); next op: poll run, then verify forgehouse50-v8 on Releases API and set build_complete=true"
+        "status": "done",
+        "notes": "Release forgehouse50-v8 verified live via GitHub Releases API (2026-09-16): CI run 35124693838 success on head 981d2a54; release non-draft/public, assets app-forgehouse50-v8.apk (8,770,585 bytes) + forgebuild-manifest.json (526 bytes). No prior releases touched."
+      }
+    ],
+    "notes": "v8 released and verified live. Items pending operator device/credentials (t1b on-device end-testing reset, t2b live quiz/complete check, t3c offline read check, t4/t5 on-device reader checks) are operator-side verification, not code gaps \u2014 code shipped in v8."
+  },
+  "material3_expressive_overhaul_v1": {
+    "name": "material3_expressive_overhaul_v1",
+    "status": "in_progress",
+    "seeded_utc": "2026-09-16T17:30:00Z",
+    "target_release": "forgehouse50-v9",
+    "scope_note": "Android-app-only (apps/forgehouse50/). Website design system unaffected. Base source = v8 (current_release). Part A: full Material 3 Expressive adoption app-wide incl. auth screens; Part B: 4 targeted fixes (leaderboard avatars, confetti rebuild, adaptive icon, malformed footnote JSON in scripture bundles). Screenshot/on-device verification required per task before done.",
+    "tasks": [
+      {
+        "id": "m3-t1",
+        "group": "foundation",
+        "title": "M3 Expressive foundation: upgrade compose-material3 to version shipping Expressive (check current changelog); dynamic color scheme (Material You dynamicColorScheme, static fallback); M3 type scale + rounded Google font (confirm Google Sans Flex availability/licensing) applied app-wide incl. auth",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t2",
+        "group": "auth",
+        "title": "Auth screens (login/signup/OTP): full M3 Expressive restyle, dynamic theme (fixes stuck-old-dark-theme), Expressive buttons/loaders",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t3",
+        "group": "navigation",
+        "title": "Floating bottom navigation: pill/rounded-card tab bar inset from edges, app-wide; shared nav scaffolding",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t4",
+        "group": "home",
+        "title": "Home/Today screen: M3 Expressive components, squiggly button interactions, Expressive loading indicators",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t5",
+        "group": "read",
+        "title": "Read screen: M3 Expressive restyle incl. chapter view, audio controls, download progress -> Expressive loading indicator",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t6",
+        "group": "notes",
+        "title": "Notes screens (list/search/edit): M3 Expressive restyle",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t7",
+        "group": "progress",
+        "title": "Progress screen: M3 Expressive restyle",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t8",
+        "group": "leaderboard",
+        "title": "Leaderboard + final-results screens: M3 Expressive restyle (podium treatment retained)",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t9",
+        "group": "profile",
+        "title": "Profile screen (stats/badges/avatar picker/downloads manager): M3 Expressive restyle",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t10",
+        "group": "admin",
+        "title": "Admin screen: M3 Expressive restyle; point-award action uses Expressive loading indicator",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t11",
+        "group": "quiz",
+        "title": "Quiz screen: M3 Expressive restyle (FLAG_SECURE per-screen retained)",
+        "status": "pending"
+      },
+      {
+        "id": "m3-t12",
+        "group": "audit",
+        "title": "App-wide audit: every custom/one-off button + every loading spinner covered by Expressive treatment; any unlisted screen brought into the design language",
+        "status": "pending"
+      },
+      {
+        "id": "m3-b1",
+        "group": "fix",
+        "title": "B1: Leaderboard avatars \u2014 render bundled illustration avatar per entry avatar_id next to name/rank on all 6 categories + final-results screen",
+        "status": "pending"
+      },
+      {
+        "id": "m3-b2",
+        "group": "fix",
+        "title": "B2: Confetti rebuild \u2014 multi-particle burst (varied shapes/colors/rotation/fall physics, real Compose particle approach), comfortable few-seconds duration, layered over completion screen without obscuring message/Return Home",
+        "status": "pending"
+      },
+      {
+        "id": "m3-b3",
+        "group": "fix",
+        "title": "B3: Adaptive icon fix \u2014 fetch newest forgehouse50 icon source from live website repo; rebuild foreground (alpha-correct, safe-zone) + opaque background layers; regenerate legacy fallback icon; verify visible mark under >=2 launcher mask shapes",
+        "status": "pending"
+      },
+      {
+        "id": "m3-b4a",
+        "group": "fix",
+        "title": "B4a: Diagnose malformed bundle JSON at Matthew/1/v[0]/f[0] \u2014 footnote nested object vs expected string; find bundle-generation transform bug",
+        "status": "pending"
+      },
+      {
+        "id": "m3-b4b",
+        "group": "fix",
+        "title": "B4b: Fix bundle-generation footnote flattening; regenerate ALL translation bundles; add post-generation schema validation gate before publish",
+        "status": "pending"
+      },
+      {
+        "id": "m3-b4c",
+        "group": "fix",
+        "title": "B4c: Live verify \u2014 re-download previously failing translation on device/emulator; Matthew 1 renders with footnotes",
+        "status": "pending"
+      },
+      {
+        "id": "m3-tR",
+        "group": "release",
+        "title": "Release forgehouse50-v9 via release.yml (app_path=apps/forgehouse50); verify live on Releases API; set build_complete true",
+        "status": "pending"
       }
     ]
   }
