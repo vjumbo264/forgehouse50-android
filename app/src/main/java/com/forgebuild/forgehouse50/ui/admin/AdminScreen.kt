@@ -96,6 +96,7 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
     adjustTarget?.let { p ->
         var delta by remember { mutableStateOf("") }
         var reason by remember { mutableStateOf("") }
+        var adjusting by remember { mutableStateOf(false) }   // ISSUE 4: loading state
         AlertDialog(
             onDismissRequest = { adjustTarget = null },
             title = { Text("Adjust points — ${p.name}") },
@@ -111,16 +112,32 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    val pts = delta.toIntOrNull() ?: return@TextButton
-                    scope.launch {
-                        runCatching { repo.api.adminAdjustPoints(p.id, pts, reason) }.onSuccess {
-                            message = if (it.ok) "Adjusted ${p.name} by $pts points" else it.error
-                            if (it.ok) runCatching { repo.api.adminParticipants() }.onSuccess { r -> participants = r.participants }
+                TextButton(
+                    enabled = !adjusting,
+                    onClick = {
+                        val pts = delta.toIntOrNull() ?: return@TextButton
+                        scope.launch {
+                            adjusting = true                      // ISSUE 4: show loading
+                            message = "Saving…"
+                            runCatching { repo.api.adminAdjustPoints(p.id, pts, reason) }
+                                .onSuccess {
+                                    // ISSUE 4: explicit success vs error, and the
+                                    // points change is re-fetched from the server so
+                                    // the admin sees the real new total, not a guess.
+                                    message = if (it.ok) "Saved ✓ ${p.name} adjusted by $pts points"
+                                              else "Failed: ${it.error ?: "not saved"}"
+                                    if (it.ok) runCatching { repo.api.adminParticipants() }
+                                        .onSuccess { r -> participants = r.participants }
+                                }
+                                .onFailure { message = "Failed: ${it.message}" }
+                            adjusting = false
+                            adjustTarget = null
                         }
-                        adjustTarget = null
-                    }
-                }) { Text("Apply") }
+                    },
+                ) {
+                    if (adjusting) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    else Text("Apply")
+                }
             },
             dismissButton = { TextButton(onClick = { adjustTarget = null }) { Text("Cancel") } },
         )

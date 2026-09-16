@@ -77,9 +77,6 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")                    // persistent offline store for scripture text + downloaded content index
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
-    implementation("androidx.media3:media3-exoplayer:1.4.1")              // audio playback
-    implementation("androidx.media3:media3-session:1.4.1")                // MediaSessionService: background playback + media notification
-    implementation("androidx.media3:media3-ui:1.4.1")
     implementation("androidx.work:work-runtime-ktx:2.9.1")                // daily reminder worker + background sync
     implementation("io.coil-kt:coil-compose:2.6.0")                       // load the web repo's avatar illustration PNGs (same asset set as web app)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5")

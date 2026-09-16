@@ -9,64 +9,48 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.data.SessionStore
-import com.forgebuild.forgehouse50.media.AudioPlayerManager
 import com.forgebuild.forgehouse50.ui.AppNavHost
 import com.forgebuild.forgehouse50.ui.ForgeHouseTheme
 import com.forgebuild.forgehouse50.work.ReminderWorker
 import com.forgebuild.forgehouse50.work.KeepAliveService
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val repo = Repository(applicationContext, SessionStore(applicationContext))
-        val player = AudioPlayerManager(applicationContext)
         setContent {
             ForgeHouseTheme {
-                App(repo, player)
+                App(repo)
             }
         }
     }
 }
 
 @Composable
-private fun App(repo: Repository, player: AudioPlayerManager) {
+private fun App(repo: Repository) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
 
     var loggedIn by remember { mutableStateOf(repo.session.isLoggedIn) }
     var authenticatedTick by remember { mutableStateOf(0) }   // force full reload on auth change
 
-    // Media controller follows the app lifecycle (playback itself continues
-    // in the MediaSessionService when the user leaves the screen).
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> player.connect()
-                Lifecycle.Event.ON_STOP -> player.release()
-                else -> Unit
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
+    // leaderboard_audio_removal_offline_bible_v1 / ISSUE 3: the Media3 audio
+    // player and its lifecycle-bound controller are gone (audio removed
+    // upstream). The daily-reminder KeepAliveService below is a SEPARATE,
+    // still-needed foreground service and is untouched.
 
     // POST_NOTIFICATIONS (API 33+) for the daily reminder; fine if denied.
     val notifPermission = rememberLauncherForActivityResult(
@@ -99,7 +83,6 @@ private fun App(repo: Repository, player: AudioPlayerManager) {
 
     AppNavHost(
         repo = repo,
-        player = player,
         loggedIn = loggedIn,
         authenticatedTick = authenticatedTick,
         onAuthChanged = { nowLoggedIn ->

@@ -10,21 +10,20 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import kotlinx.coroutines.flow.Flow
 
 /**
- * Persistent on-device store for the heaviest, most-reused assets in the
- * app: scripture text and downloaded chapter audio.
+ * Persistent on-device store for scripture text.
  *
- * This is deliberately stronger than the general cache-first UI pattern:
- * once a chapter's text (keyed by translation+book+chapter) or an audio
- * file is stored here, reopening it — even fully offline — loads from this
- * store with NO network call. Entries are only re-fetched when absent, or
- * when the user clears the store from Profile → Downloaded content.
+ * leaderboard_audio_removal_offline_bible_v1 / ISSUE 5: this is now the
+ * offline-Bible store. The bundled KJV New Testament is IMPORTED into this
+ * table on first launch, and any other translation the user downloads is
+ * stored here permanently — so once a translation is on-device it reads with
+ * ZERO network. This is genuine persistent storage (Room/SQLite), never an
+ * evictable cache.
  *
- * Audio binaries themselves live as files under filesDir/audio/; this table
- * tracks what is present, its size and source URL (a cheap re-validation
- * handle if the backend ever signals the underlying content changed).
+ * ISSUE 3: the audio tables are gone (audio removed upstream). Version bumped
+ * 1 -> 2 with destructive migration so the old downloaded_audio table and any
+ * previously cached audio-bearing rows are dropped.
  */
 
 @Entity(tableName = "scripture_chapters")
@@ -37,18 +36,15 @@ data class ScriptureChapter(
     val versesJson: String = "",          // serialized List<Verse>
     val introsJson: String = "",          // serialized List<Intro>
     val attribution: String = "",
-    val audioPath: String? = null,
     val fetchedAt: Long = System.currentTimeMillis(),
 )
 
-@Entity(tableName = "downloaded_audio")
-data class DownloadedAudio(
-    @PrimaryKey val key: String,          // "$translation|$book|$chapter"
-    val translation: String,
-    val book: String,
-    val chapter: Int,
-    val sourceUrl: String,
-    val filePath: String,
+/** One row per downloaded translation (KJV is bundled, so not listed here). */
+@Entity(tableName = "downloaded_translations")
+data class DownloadedTranslation(
+    @PrimaryKey val translation: String,  // e.g. "versewell-niv"
+    val name: String = "",
+    val chapterCount: Int = 0,
     val sizeBytes: Long = 0,
     val downloadedAt: Long = System.currentTimeMillis(),
 )
@@ -61,38 +57,58 @@ interface ScriptureDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putChapter(chapter: ScriptureChapter)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun putChapters(chapters: List<ScriptureChapter>)
+
     @Query("SELECT COUNT(*) FROM scripture_chapters")
     suspend fun chapterCount(): Int
+
+    @Query("SELECT COUNT(*) FROM scripture_chapters WHERE translation = :t")
+    suspend fun chapterCountFor(t: String): Int
+
+    /** Approximate on-device footprint of one translation, in bytes. */
+    @Query("SELECT COALESCE(SUM(LENGTH(versesJson) + LENGTH(introsJson) + LENGTH(reference) + LENGTH(attribution)), 0) FROM scripture_chapters WHERE translation = :t")
+    suspend fun sizeBytesFor(t: String): Long
+
+    @Query("DELETE FROM scripture_chapters WHERE translation = :t")
+    suspend fun clearTranslation(t: String)
+
+    @Query("SELECT DISTINCT translation FROM scripture_chapters")
+    suspend fun translationsPresent(): List<String>
 
     @Query("DELETE FROM scripture_chapters")
     suspend fun clearAll()
 }
 
 @Dao
-interface AudioDao {
-    @Query("SELECT * FROM downloaded_audio WHERE `key` = :key")
-    suspend fun audio(key: String): DownloadedAudio?
-
+interface TranslationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun putAudio(audio: DownloadedAudio)
+    suspend fun put(t: DownloadedTranslation)
 
-    @Query("SELECT * FROM downloaded_audio ORDER BY downloadedAt DESC")
-    fun all(): Flow<List<DownloadedAudio>>
+    @Query("SELECT * FROM downloaded_translations ORDER BY name")
+    suspend fun all(): List<DownloadedTranslation>
 
-    @Query("SELECT COALESCE(SUM(sizeBytes),0) FROM downloaded_audio")
+    @Query("SELECT * FROM downloaded_translations WHERE translation = :t")
+    suspend fun get(t: String): DownloadedTranslation?
+
+    @Query("DELETE FROM downloaded_translations WHERE translation = :t")
+    suspend fun delete(t: String)
+
+    @Query("SELECT COALESCE(SUM(sizeBytes),0) FROM downloaded_translations")
     suspend fun totalSizeBytes(): Long
 
-    @Query("DELETE FROM downloaded_audio WHERE `key` = :key")
-    suspend fun delete(key: String)
-
-    @Query("DELETE FROM downloaded_audio")
+    @Query("DELETE FROM downloaded_translations")
     suspend fun clearAll()
 }
 
-@Database(entities = [ScriptureChapter::class, DownloadedAudio::class], version = 1, exportSchema = false)
+@Database(
+    entities = [ScriptureChapter::class, DownloadedTranslation::class],
+    version = 2,
+    exportSchema = false,
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun scriptureDao(): ScriptureDao
-    abstract fun audioDao(): AudioDao
+    abstract fun translationDao(): TranslationDao
 
     companion object {
         @Volatile private var instance: AppDatabase? = null

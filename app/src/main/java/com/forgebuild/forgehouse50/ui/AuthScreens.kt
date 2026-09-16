@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.forgebuild.forgehouse50.data.Repository
+import java.net.UnknownHostException
 import kotlinx.coroutines.launch
 
 /**
@@ -103,6 +104,26 @@ private fun AuthScaffold(subtitle: String, content: @Composable () -> Unit) {
     }
 }
 
+
+/**
+ * ISSUE 6a: map a low-level network/DNS failure (e.g. an UnknownHostException
+ * such as 'Unable to resolve host "forgehouse50.pages.dev"') to a clear,
+ * friendly, actionable message — an ordinary user should never see the raw
+ * exception text the operator screenshotted at registration.
+ */
+private fun friendlyNetError(e: Throwable, fallback: String): String {
+    val chain = generateSequence<Throwable>(e) { it.cause }
+    val net = chain.any {
+        it is UnknownHostException ||
+            (it.message?.contains("Unable to resolve host", true) == true) ||
+            (it.message?.contains("No address associated", true) == true) ||
+            (it.message?.contains("failed to connect", true) == true) ||
+            (it.message?.contains("timeout", true) == true)
+    }
+    return if (net) "Couldn't connect — check your internet connection and try again."
+    else e.message ?: fallback
+}
+
 @Composable
 private fun LoginForm(
     repo: Repository,
@@ -152,7 +173,7 @@ private fun LoginForm(
                         }
                     } catch (e: Exception) {
                         val m = e.message ?: "Sign-in failed"
-                        if (m.contains("not verified", true)) onNeedsVerification(email.trim()) else error = m
+                        if (m.contains("not verified", true)) onNeedsVerification(email.trim()) else error = friendlyNetError(e, "Sign-in failed")
                     } finally { busy = false }
                 }
             },
@@ -259,7 +280,7 @@ private fun SignupForm(
                         val res = repo.api.signup(email.trim(), password, name.trim(), surname.trim(), avatarId)
                         if (res.ok) onNeedsVerification(email.trim())
                         else error = res.error ?: "Could not create the account"
-                    } catch (e: Exception) { error = e.message } finally { busy = false }
+                    } catch (e: Exception) { error = friendlyNetError(e, "Something went wrong") } finally { busy = false }
                 }
             },
             enabled = !busy && name.isNotBlank() && surname.isNotBlank() && email.isNotBlank() && password.length >= 8,
@@ -310,7 +331,7 @@ private fun OtpForm(
                     try {
                         val res = repo.api.verify(email, code)
                         if (res.ok) onAuthenticated() else error = res.error ?: "Verification failed"
-                    } catch (e: Exception) { error = e.message } finally { busy = false }
+                    } catch (e: Exception) { error = friendlyNetError(e, "Something went wrong") } finally { busy = false }
                 }
             },
             enabled = !busy && code.length == 6,

@@ -9,23 +9,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Forward5
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay5
+import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -34,13 +26,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,75 +43,63 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.data.Assignment
-import com.forgebuild.forgehouse50.data.AudioAvailability
 import com.forgebuild.forgehouse50.data.DayResponse
 import com.forgebuild.forgehouse50.data.PassageResponse
 import com.forgebuild.forgehouse50.data.Repository
-import com.forgebuild.forgehouse50.media.AudioPlayerManager
-import com.forgebuild.forgehouse50.ui.formatClock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Read screen: fixed-height clipped chapter pane, seek/skip-5s audio
- * controls with audio-synced auto-scroll, single-chapter and
- * download-all-for-today persistence, completion + reading-time tracking.
+ * Read screen (leaderboard_audio_removal_offline_bible_v1).
+ *
+ * ISSUE 3: the entire audio player (seek/skip-5s/play, per-chapter +
+ * download-all-for-today) and all audio availability/network calls are
+ * removed — audio no longer exists upstream.
+ *
+ * ISSUE 5: scripture resolves offline-first via [Repository] (bundled KJV or
+ * a downloaded translation), so reading works with zero network once a
+ * translation is on-device. The translation selector only offers translations
+ * that are actually available on-device; a "Translations" action opens the
+ * download manager.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReadScreen(
     repo: Repository,
-    player: AudioPlayerManager,
     day: Int,
     onBack: () -> Unit,
     onOpenQuiz: (Int) -> Unit,
     onAddNote: (Int) -> Unit,
+    onManageTranslations: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val playback by player.state.collectAsState()
 
     var dayData by remember { mutableStateOf<DayResponse?>(null) }
-    // leaderboard_scripture_icon_fix_v1 / ISSUE 2: the passage spinner must
-    // only show while the day response is still in flight or a passage fetch
-    // is actually running. Previously loadingPassage initialised to true while
-    // the passage effect early-returned until day data arrived — so if the
-    // /read/day call ever failed, nothing ever flipped the flag false and the
-    // screen spun forever ("stuck on loading").
     var dayLoaded by remember { mutableStateOf(false) }
-    // scripture_audio_rewire_v1: starts blank (or from a stored id) and is
-    // VALIDATED against the live /translations list in the day-load effect
-    // below — a stale/unknown stored id used to be trusted blindly here and
-    // could silently break every passage + audio fetch.
-    var translation by remember { mutableStateOf(repo.session.translationId ?: "") }
+    var translation by remember { mutableStateOf(repo.session.translationId ?: Repository.KJV_ID) }
+    var availableTranslations by remember { mutableStateOf<List<String>>(listOf(Repository.KJV_ID)) }
     var passageError by remember { mutableStateOf<String?>(null) }
     var reloadToken by remember { mutableIntStateOf(0) }
     var selected by remember { mutableIntStateOf(0) }
     var passage by remember { mutableStateOf<PassageResponse?>(null) }
-    var audio by remember { mutableStateOf<AudioAvailability?>(null) }
     var loadingPassage by remember { mutableStateOf(false) }
     var completed by remember { mutableStateOf(false) }
-    var downloaded by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var downloading by remember { mutableStateOf<Set<String>>(emptySet()) }
     var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(day) {
-        // scripture_audio_rewire_v1: resolve a VALID translation id first —
-        // never trust a stale/blank stored id — then load the day, then flip
-        // dayLoaded. The passage effect below keys on the resolved values, so
-        // it provably re-fires once everything it needs is ready.
-        runCatching { repo.api.translations() }.onSuccess { t ->
-            val valid = t.translations.filter { it.versewell }.map { it.id }
-            val resolved = when {
-                translation.isNotBlank() && translation in valid -> translation
-                valid.isNotEmpty() -> valid.first()
-                translation.isNotBlank() -> translation
-                else -> "versewell-kjv"
-            }
-            translation = resolved
-            repo.session.translationId = resolved
-        }.onFailure {
-            if (translation.isBlank()) translation = "versewell-kjv"
+        // Import bundled KJV + discover which translations are on-device.
+        runCatching { repo.ensureBundledKjvImported() }
+        val onDevice = buildList {
+            add(Repository.KJV_ID)
+            repo.downloadedTranslations().forEach { add(it.translation) }
         }
+        availableTranslations = onDevice
+        val resolved = when {
+            translation in onDevice -> translation
+            else -> Repository.KJV_ID
+        }
+        translation = resolved
+        repo.session.translationId = resolved
         runCatching { repo.api.day(day) }.onSuccess {
             dayData = it
             completed = it.progress.completed
@@ -134,14 +111,9 @@ fun ReadScreen(
     val current: Assignment? = assignments.getOrNull(selected)
     val scroll = rememberScrollState()
 
-    // Passage + audio — REWIRED (scripture_audio_rewire_v1). The old effect
-    // was keyed on (day, selected, translation) and early-returned while the
-    // day response was still in flight; for a returning user none of those
-    // keys ever changed afterwards, so the passage + audio were fetched
-    // exactly never (permanent blank pane, no audio bar). This version keys
-    // on the ASSIGNMENT IDENTITY (book:cs:ce) plus the validated translation
-    // plus a manual reload token, so the load ALWAYS runs: when the day data
-    // lands, on chapter-chip switch, on translation change, and on Retry.
+    // Passage — keyed on the assignment identity + resolved translation, so it
+    // always re-fires when its inputs are ready. Served from the on-device
+    // store with no network call for bundled/downloaded translations.
     val assignmentKey = current?.let { "${it.book}:${it.chapter_start}:${it.chapter_end}" } ?: ""
     LaunchedEffect(assignmentKey, translation, reloadToken) {
         val a = current ?: return@LaunchedEffect
@@ -151,37 +123,7 @@ fun ReadScreen(
         runCatching { repo.getPassage(a.book, a.chapter_start, a.chapter_end, translation) }
             .onSuccess { passage = it }
             .onFailure { passage = null; passageError = it.message ?: "Could not load this passage." }
-        // Audio availability is independent: a failure here only hides the
-        // audio bar — it must never take the passage down with it.
-        runCatching { repo.api.audioAvailability(a.book, a.chapter_start, a.chapter_end, translation) }
-            .onSuccess { av ->
-                audio = av
-                val keys = av.available.map { "${it.chapter}" }.toSet()
-                val present = mutableSetOf<String>()
-                av.available.forEach { ch ->
-                    if (repo.localAudioFile(translation, a.book, ch.chapter) != null) present.add("${ch.chapter}")
-                }
-                downloaded = keys intersect present
-            }
-            .onFailure { audio = null }
         loadingPassage = false
-    }
-
-    // Position ticker for slider + auto-scroll.
-    LaunchedEffect(playback.isPlaying) {
-        if (playback.isPlaying) {
-            while (true) { player.refresh(); delay(500) }
-        }
-    }
-
-    // Audio-synced auto-scroll: while playing, keep the pane scrolling in
-    // proportion to playback progress (paused = user scrolls freely).
-    LaunchedEffect(playback.positionMs, playback.isPlaying) {
-        if (playback.isPlaying && playback.durationMs > 0 && scroll.maxValue > 0) {
-            val fraction = playback.positionMs.toFloat() / playback.durationMs
-            val target = (scroll.maxValue * fraction).toInt() - scroll.viewportSize / 3
-            scroll.animateScrollTo(target.coerceIn(0, scroll.maxValue))
-        }
     }
 
     // Reading-time tracking: report 30s chunks while the screen is open.
@@ -202,6 +144,9 @@ fun ReadScreen(
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 },
                 actions = {
+                    IconButton(onClick = onManageTranslations) {
+                        Icon(Icons.Filled.LibraryBooks, "Manage translations")
+                    }
                     IconButton(onClick = { onAddNote(day) }) { Icon(Icons.Filled.Edit, "Add note") }
                 },
             )
@@ -212,6 +157,24 @@ fun ReadScreen(
                 Text(it, color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp))
+            }
+
+            // Translation selector — only translations available on-device
+            // (bundled KJV + any downloaded). KJV is the default.
+            if (availableTranslations.size > 1) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    availableTranslations.forEach { t ->
+                        FilterChip(
+                            selected = translation == t,
+                            onClick = { translation = t; repo.session.translationId = t },
+                            label = { Text(t.removePrefix("versewell-").uppercase()) },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
             }
 
             // Chapter chips (one per assignment)
@@ -250,8 +213,6 @@ fun ReadScreen(
                         }
                     }
                     passage == null -> {
-                        // Genuine failure: a clear, retryable error — never a
-                        // silent blank pane or an endless spinner.
                         Column(
                             Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.Center,
@@ -304,24 +265,6 @@ fun ReadScreen(
                 }
             }
 
-            // Audio bar (when this assignment has VerseWell audio)
-            val av = audio
-            if (av != null && av.available.isNotEmpty() && current != null) {
-                AudioBar(
-                    repo = repo,
-                    player = player,
-                    playback = playback,
-                    day = day,
-                    translation = translation,
-                    book = current.book,
-                    availability = av,
-                    downloaded = downloaded,
-                    downloading = downloading,
-                    onDownloading = { downloading = it },
-                    onDownloaded = { downloaded = it },
-                )
-            }
-
             // Completion row
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
@@ -342,100 +285,6 @@ fun ReadScreen(
                         Modifier.fillMaxWidth(),
                     ) { Text("Mark day $day reading complete") }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AudioBar(
-    repo: Repository,
-    player: AudioPlayerManager,
-    playback: AudioPlayerManager.PlaybackUiState,
-    day: Int,
-    translation: String,
-    book: String,
-    availability: AudioAvailability,
-    downloaded: Set<String>,
-    downloading: Set<String>,
-    onDownloading: (Set<String>) -> Unit,
-    onDownloaded: (Set<String>) -> Unit,
-) {
-    val scope = rememberCoroutineScope()
-    val first = availability.available.first()
-    val absBase = "https://forgehouse50.pages.dev"
-
-    Card(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val source = "$absBase${first.url}"
-                val thisIsPlaying = playback.currentSource == source ||
-                    playback.currentSource?.endsWith("${first.url.substringAfterLast('/')}") == true
-                IconButton(onClick = {
-                    if (thisIsPlaying && playback.isPlaying) player.pause()
-                    else {
-                        scope.launch {
-                            // Prefer the persistent on-device copy (offline replay).
-                            val local = repo.localAudioFile(translation, book, first.chapter)
-                            player.play(local?.absolutePath ?: source, "$book ${first.chapter}")
-                            runCatching { repo.api.markAudio(day) }
-                        }
-                    }
-                }) {
-                    Icon(
-                        if (thisIsPlaying && playback.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        if (thisIsPlaying && playback.isPlaying) "Pause" else "Play",
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                IconButton(onClick = { player.skipBack5s() }) { Icon(Icons.Filled.Replay5, "Back 5s") }
-                IconButton(onClick = { player.skipForward5s() }) { Icon(Icons.Filled.Forward5, "Forward 5s") }
-                Spacer(Modifier.weight(1f))
-                // Single-chapter download (persist for offline)
-                val key = "${first.chapter}"
-                when {
-                    key in downloaded -> Icon(Icons.Filled.DownloadDone, "Downloaded",
-                        tint = MaterialTheme.colorScheme.primary)
-                    key in downloading -> CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                    else -> IconButton(onClick = {
-                        scope.launch {
-                            onDownloading(downloading + key)
-                            runCatching { repo.ensureAudio(translation, book, first.chapter, source) }
-                                .onSuccess { onDownloaded(downloaded + key) }
-                            onDownloading(downloading - key)
-                        }
-                    }) { Icon(Icons.Filled.Download, "Download chapter") }
-                }
-            }
-            if (playback.durationMs > 0) {
-                Slider(
-                    value = (playback.positionMs.toFloat() / playback.durationMs).coerceIn(0f, 1f),
-                    onValueChange = { player.seekTo((it * playback.durationMs).toLong()) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(formatClock(playback.positionMs), style = MaterialTheme.typography.labelSmall)
-                    Text(formatClock(playback.durationMs), style = MaterialTheme.typography.labelSmall)
-                }
-            }
-            // Download all for today
-            if (availability.available.size > 1) {
-                TextButton(onClick = {
-                    scope.launch {
-                        availability.available.forEach { ch ->
-                            val k = "${ch.chapter}"
-                            if (k !in downloaded && k !in downloading) {
-                                onDownloading(downloading + k)
-                                runCatching { repo.ensureAudio(translation, book, ch.chapter, "$absBase${ch.url}") }
-                                    .onSuccess { onDownloaded(downloaded + k) }
-                                onDownloading(downloading - k)
-                            }
-                        }
-                    }
-                }) { Text("Download all for today (${availability.available.size})") }
             }
         }
     }

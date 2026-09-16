@@ -147,17 +147,10 @@ class ApiClient(private val session: SessionStore) {
             parameter("chapter_end", ce); parameter("translation", translation)
         }
 
-    suspend fun audioAvailability(book: String, cs: Int, ce: Int, translation: String): AudioAvailability =
-        get("/read/audio_availability") {
-            parameter("book", book); parameter("chapter_start", cs)
-            parameter("chapter_end", ce); parameter("translation", translation)
-        }
 
     suspend fun completeDay(n: Int): GenericOk =
         post("/read/complete", buildJsonObject { put("day_number", n) })
 
-    suspend fun markAudio(n: Int): GenericOk =
-        post("/read/audio", buildJsonObject { put("day_number", n) })
 
     suspend fun addReadingTime(n: Int, seconds: Int): GenericOk =
         post("/read/time", buildJsonObject { put("day_number", n); put("seconds", seconds) })

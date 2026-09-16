@@ -223,22 +223,11 @@ data class PassageResponse(
     val reference: String = "",
     val verses: List<Verse> = emptyList(),
     val intros: List<Intro> = emptyList(),
-    val audio_path: String? = null,
     val attribution: String = "",
     val translation: String = "",
     val source: String = "",
 )
 
-@Serializable
-data class AudioChapter(val chapter: Int, val url: String)
-
-@Serializable
-data class AudioAvailability(
-    val source: String = "none",
-    val translation: String = "",
-    val available: List<AudioChapter> = emptyList(),
-    val note: String? = null,
-)
 
 @Serializable
 data class QuizQuestion(val index: Int, val q: String, val options: List<String>)
@@ -431,3 +420,14 @@ data class AdminProgramme(
 
 @Serializable
 data class GenericOk(val ok: Boolean = false, val error: String? = null, val points_awarded: Int = 0, val message: String? = null)
+
+// ── Bundled KJV asset (bible/kjv.json.gz) — compact field names to keep the
+// bundled file small; decoded then mapped to the full Verse/Intro DTOs. ────
+@Serializable
+data class BundledVerse(val n: Int, val t: String, val f: List<String> = emptyList())
+
+@Serializable
+data class BundledIntro(val s: Int = 0, val e: Int = 0, val t: String = "")
+
+@Serializable
+data class BundledChapter(val v: List<BundledVerse> = emptyList(), val i: List<BundledIntro> = emptyList())
