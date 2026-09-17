@@ -2,7 +2,9 @@ package com.forgebuild.forgehouse50.ui
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -128,8 +130,13 @@ fun ForgeHouseTheme(
         }
         else -> if (darkTheme) DarkScheme else LightScheme
     }
-    MaterialTheme(
+    // Material 3 Expressive: official spring-based expressive motion scheme +
+    // expressive shape system, applied on top of the existing dynamic-color +
+    // light/dark behavior (ForgeBuild real-expressive fix; Nunito typeface kept).
+    MaterialExpressiveTheme(
         colorScheme = colorScheme,
+        motionScheme = MotionScheme.expressive(),
+        shapes = Shapes(),
         typography = AppTypography,
         content = content,
     )
