@@ -83,9 +83,9 @@ dependencies {
     implementation("io.ktor:ktor-client-okhttp:2.3.12")                  // REST client against the existing Cloudflare Pages Functions API
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // typed JSON for API DTOs
     implementation("androidx.security:security-crypto:1.1.0-alpha06")     // EncryptedSharedPreferences for the session token (operator requirement)
-    implementation("androidx.room:room-runtime:2.6.1")                    // persistent offline store for scripture text + downloaded content index
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.8.5")                    // persistent offline store for scripture text + downloaded content index
+    implementation("androidx.room:room-ktx:2.8.5")
+    ksp("androidx.room:room-compiler:2.8.5")
     implementation("androidx.work:work-runtime-ktx:2.9.1")                // daily reminder worker + background sync
     implementation("io.coil-kt:coil-compose:2.6.0")                       // load the web repo's avatar illustration PNGs (same asset set as web app)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
