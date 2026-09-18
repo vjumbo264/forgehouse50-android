@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": false,
-  "last_updated_utc": "2026-09-18T06:30:00Z",
+  "build_complete": true,
+  "last_updated_utc": "2026-09-18T07:00:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -244,8 +244,8 @@
       "id": 127,
       "name": "p7-release-v12",
       "section": "post_testing_polish_v1",
-      "status": "pending",
-      "notes": "Dispatch .github/workflows/release.yml (app_path=apps/forgehouse50) -> auto-increment forgehouse50-v12; verify release + APK + forgebuild-manifest.json live on the GitHub Releases API; confirm v1..v11 untouched; then set build_complete=true"
+      "status": "done",
+      "notes": "DONE: CI run 35309797557 success on commit 8c790097. forgehouse50-v12 verified live on the Releases API: non-draft, assets app-forgehouse50-v12.apk (8,624,185 bytes) + forgebuild-manifest.json. Prior releases v1-v11 all intact (verified: fo"
     }
   ],
   "session_history": [
@@ -338,6 +338,12 @@
       "date": "2026-09-18",
       "did": "Operator EXTEND/UPDATE: post-testing polish round (6 issues). Confirmed no in_progress task (v11 complete, build_complete true). Appended instruction to PROMPT_HISTORY (credentials redacted). Implemented all six: body weight Medium->SemiBold; spinner default -> dynamic primary; leaderboard \"You\" tint+chip at any rank/category incl. final results; full footnote UI (single marker, one inline panel, all notes, one-open-at-a-time); prev/next chapter chevron icon TextButtons with calm press (no squiggle); real monochrome adaptive-icon layer regenerated from the current web icon (forgehouse50-icon-v3.png).",
       "next": "Commit+push, dispatch release.yml -> forgehouse50-v12, verify live on the Releases API, set build_complete=true. On-device screenshots/recordings for all six issues remain pending operator device."
+    },
+    {
+      "session": 11,
+      "date": "2026-09-18",
+      "did": "post_testing_polish_v1 shipped: forgehouse50-v12 built (CI run 35309797557, success) and verified live on the GitHub Releases API (APK 8,624,185 bytes + manifest, non-draft). build_complete=true. All six code fixes verified at source level; per-issue on-device screenshot/recording verification remains the operator-side step (no emulator in the build sandbox) — each task note records exactly what to look at on device.",
+      "next": "Operator installs app-forgehouse50-v12.apk and runs the six on-device checks recorded in post_testing_polish_v1 tasks p1-p6 (font comfort, spinner contrast light+dark, You row on leaderboard, footnote tap at e.g. Matthew 1, chapter-nav icons + no squiggle, themed-icons ON/OFF icon silhouette)."
     }
   ],
   "combined_fixes_v1": {
@@ -588,7 +594,7 @@
     ],
     "completed_utc": "2026-09-15T10:14:30Z"
   },
-  "current_release": "forgehouse50-v8",
+  "current_release": "forgehouse50-v12",
   "testing_phase_and_reader_fixes_v1": {
     "name": "testing_phase_and_reader_fixes_v1",
     "status": "complete",
@@ -801,7 +807,7 @@
     "notes": "2026-09-16 session 3: final audit sweep complete. Auth screens' three primary Buttons + the resend-code OutlinedButton converted to ExpressiveButton (bouncy press-scale physics + integrated wavy busy loader); the manual `if (busy) ExpressiveButtonLoader()` content collapse removes double-loader risk. Audit justification for remaining standard M3 controls: AlertDialog TextButtons (Cancel/confirm), top-app-bar back-arrow IconButtons and small action IconButtons are canonical M3 idioms kept per Expressive guidance (Expressive press treatment applies to primary actionable buttons, which are now all ExpressiveButton); determinate LinearProgressIndicators (Progress screen, translation downloads) are progress bars not loading spinners — all indeterminate loading states app-wide use ExpressiveLoading/ExpressiveButtonLoader. Part A coverage: dynamic Material You color + static fallback (AppTheme), Nunito rounded type scale (Google Sans Flex is proprietary/non-redistributable — documented substitution), floating 28dp pill NavigationBar inset from edges (AppNavHost), hand-rolled Expressive component set in ui/Expressive.kt used on every screen incl. auth, B1 leaderboard avatars via AvatarAssets.resFor on all categories + final results, B2 multi-particle confetti (rect/circle pieces, gravity+flutter+spin, ~3.2s, non-interactive overlay), B3 adaptive icon rebuilt from newest web-repo logo with PIL-verified safe zone + legacy fallbacks, B4 bundle footnote flattening fixed + all bundles regenerated + post-generation schema validation added (m3-b4a/b done; m3-b4c on-device parse check pending operator device). REMAINING: m3-b4c (device), m3-tR release v9. NEXT OP: dispatch release.yml app_path=apps/forgehouse50, verify forgehouse50-v9 on Releases API, set build_complete. 2026-09-16 session 3 END: v9 released and verified live (tag forgehouse50-v9, APK+manifest assets present). build_complete set. m3-b4c on-device parse verification remains the single operator-side check (no SDK/emulator in build sandbox; requires operator device install).",
     "complete": true
   },
-  "latest_release": "forgehouse50-v11",
+  "latest_release": "forgehouse50-v12",
   "material3_expressive_correction_v1": {
     "name": "material3_expressive_correction_v1",
     "status": "complete",
@@ -942,7 +948,7 @@
   },
   "post_testing_polish_v1": {
     "name": "post_testing_polish_v1",
-    "status": "implemented_pending_ci_and_ondevice_verification",
+    "status": "complete",
     "seeded_utc": "2026-09-18T06:30:00Z",
     "target_release": "forgehouse50-v12",
     "base_source": "forgehouse50-v11 (current main)",
@@ -986,9 +992,9 @@
       },
       {
         "id": "p7-release-v12",
-        "status": "pending",
+        "status": "done",
         "title": "Dispatch release + verify forgehouse50-v12 live",
-        "notes": "Dispatch .github/workflows/release.yml (app_path=apps/forgehouse50) -> auto-increment forgehouse50-v12; verify release + APK + forgebuild-manifest.json live on the GitHub Releases API; confirm v1..v11 untouched; then set build_complete=true."
+        "notes": "DONE: CI run 35309797557 success on commit 8c790097. forgehouse50-v12 verified live on the Releases API: non-draft, assets app-forgehouse50-v12.apk (8,624,185 bytes) + forgebuild-manifest.json. Prior releases v1-v11 all intact (verified: forgehouse50-v1, forgehouse50-v10, forgehouse50-v11, forgehouse50-v12, forgehouse50-v2, forgehouse50-v3, forgehouse50-v4, forgehouse50-v5, forgehouse50-v6, forgehouse50-v7, forgehouse50-v8, forgehouse50-v9)."
       }
     ]
   }
