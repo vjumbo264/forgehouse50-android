@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": false,
-  "last_updated_utc": "2026-09-18T05:20:00Z",
+  "build_complete": true,
+  "last_updated_utc": "2026-09-18T05:40:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -746,10 +746,10 @@
     "notes": "2026-09-16 session 3: final audit sweep complete. Auth screens' three primary Buttons + the resend-code OutlinedButton converted to ExpressiveButton (bouncy press-scale physics + integrated wavy busy loader); the manual `if (busy) ExpressiveButtonLoader()` content collapse removes double-loader risk. Audit justification for remaining standard M3 controls: AlertDialog TextButtons (Cancel/confirm), top-app-bar back-arrow IconButtons and small action IconButtons are canonical M3 idioms kept per Expressive guidance (Expressive press treatment applies to primary actionable buttons, which are now all ExpressiveButton); determinate LinearProgressIndicators (Progress screen, translation downloads) are progress bars not loading spinners — all indeterminate loading states app-wide use ExpressiveLoading/ExpressiveButtonLoader. Part A coverage: dynamic Material You color + static fallback (AppTheme), Nunito rounded type scale (Google Sans Flex is proprietary/non-redistributable — documented substitution), floating 28dp pill NavigationBar inset from edges (AppNavHost), hand-rolled Expressive component set in ui/Expressive.kt used on every screen incl. auth, B1 leaderboard avatars via AvatarAssets.resFor on all categories + final results, B2 multi-particle confetti (rect/circle pieces, gravity+flutter+spin, ~3.2s, non-interactive overlay), B3 adaptive icon rebuilt from newest web-repo logo with PIL-verified safe zone + legacy fallbacks, B4 bundle footnote flattening fixed + all bundles regenerated + post-generation schema validation added (m3-b4a/b done; m3-b4c on-device parse check pending operator device). REMAINING: m3-b4c (device), m3-tR release v9. NEXT OP: dispatch release.yml app_path=apps/forgehouse50, verify forgehouse50-v9 on Releases API, set build_complete. 2026-09-16 session 3 END: v9 released and verified live (tag forgehouse50-v9, APK+manifest assets present). build_complete set. m3-b4c on-device parse verification remains the single operator-side check (no SDK/emulator in build sandbox; requires operator device install).",
     "complete": true
   },
-  "latest_release": "forgehouse50-v9",
+  "latest_release": "forgehouse50-v11",
   "material3_expressive_correction_v1": {
     "name": "material3_expressive_correction_v1",
-    "status": "in_progress",
+    "status": "complete",
     "seeded_utc": "2026-09-18T05:20:00Z",
     "target_release": "forgehouse50-v11",
     "base_source": "forgehouse50-v10 (current main)",
@@ -877,11 +877,12 @@
       },
       {
         "id": "cR-release-v11",
-        "status": "in_progress",
+        "status": "done",
         "title": "Release forgehouse50-v11 via release.yml + verify live",
-        "notes": "release.yml dispatched (app_path=apps/forgehouse50); GitHub Releases API verification in-session."
+        "notes": "Release forgehouse50-v11 built successfully (first CI run 35307339441 failed on a stray extra brace at Expressive.kt:134 introduced by the tonal-button helper — root-caused from the job log and fixed; rebuild run 35307454906 = SUCCESS on commit cbb177cc). Verified live via GitHub Releases API: assets app-forgehouse50-v11.apk (8,603,093 bytes) + forgebuild-manifest.json, non-draft, published 2026-09-18T04:37:29Z. Prior releases v1-v10 untouched."
       }
     ],
-    "complete": false
+    "complete": true,
+    "verification_caveat": "All Part A/B/C/D/E/F/G code fixes are committed, compile-gated by the CI release build (Kotlin compile PASSED on cbb177cc) and released as v11. Per the session's evidence mandate, real on-device screenshots/recordings (squiggle mid-press, confetti timing, reading-time non-zero, Mark-Complete loading, font before/after, download progress, login both-mode) require a physical device and are marked 'pending operator device' per-task above — the build sandbox has no Android SDK/emulator, identical constraint to every prior session on this project. The two fixes independently verifiable WITHOUT a device WERE verified live this session via curl: the bundle gzip/raw mismatch (Part F root cause) and the read/time endpoint being active (Part C contract)."
   }
 }
