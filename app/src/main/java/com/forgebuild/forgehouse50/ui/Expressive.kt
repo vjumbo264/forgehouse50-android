@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -60,6 +63,30 @@ fun ExpressiveButtonLoader(
 }
 
 /**
+ * Expressive determinate progress bar: the official
+ * [LinearWavyProgressIndicator] (wavy/shape-morphing), replacing every legacy
+ * [androidx.compose.material3.LinearProgressIndicator]. [progress] is a real
+ * 0..1 fraction driven by genuine work (e.g. bytes downloaded).
+ */
+@Composable
+fun ExpressiveLinearProgress(
+    progress: () -> Float,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+) {
+    LinearWavyProgressIndicator(progress = progress, modifier = modifier, color = color)
+}
+
+/** Expressive indeterminate circular progress (official wavy indicator). */
+@Composable
+fun ExpressiveCircularProgress(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+) {
+    CircularWavyProgressIndicator(modifier = modifier, color = color)
+}
+
+/**
  * Expressive button: official material3 [Button] with the official expressive
  * [ButtonShapes] pressed-state shape morph, plus the official [LoadingIndicator]
  * as the busy in-button loader. Drop-in replacement for material3 Button with
@@ -81,4 +108,27 @@ fun ExpressiveButton(
     ) {
         if (busy) ExpressiveButtonLoader() else content()
     }
+}
+
+/**
+ * Expressive filled-tonal button variant (same real [ButtonShapes] morph +
+ * [LoadingIndicator] busy state), for secondary actions.
+ */
+@Composable
+fun ExpressiveTonalButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    busy: Boolean = false,
+    content: @Composable RowScope.() -> Unit,
+) {
+    androidx.compose.material3.FilledTonalButton(
+        onClick = onClick,
+        enabled = enabled && !busy,
+        modifier = modifier,
+        shapes = ButtonDefaults.shapes(),
+    ) {
+        if (busy) ExpressiveButtonLoader(color = MaterialTheme.colorScheme.onSecondaryContainer) else content()
+    }
+}
 }

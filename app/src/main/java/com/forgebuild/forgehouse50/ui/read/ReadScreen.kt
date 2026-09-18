@@ -47,6 +47,7 @@ import com.forgebuild.forgehouse50.data.DayResponse
 import com.forgebuild.forgehouse50.data.PassageResponse
 import com.forgebuild.forgehouse50.data.Repository
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 import com.forgebuild.forgehouse50.ui.ExpressiveButton
@@ -87,6 +88,8 @@ fun ReadScreen(
     var loadingPassage by remember { mutableStateOf(false) }
     var completed by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Part D: Mark-Complete loading/feedback state.
+    var completeBusy by remember { mutableStateOf(false) }
     // Issue 5: reader font scale, persisted across restarts via SessionStore.
     var fontScale by remember { mutableFloatStateOf(repo.session.fontScale) }
     // Issue 4: index into the day's flattened chapter list (one chapter shown at a time).
@@ -137,12 +140,27 @@ fun ReadScreen(
         scroll.scrollTo(0)
     }
 
-    // Reading-time tracking: report 30s chunks while the screen is open.
-    LaunchedEffect(day, completed) {
-        if (!completed) {
-            while (true) {
-                delay(30_000)
-                runCatching { repo.api.addReadingTime(day, 30) }
+    // Part C (2026-09-18): foreground reading-time tracking. Report 30s chunks
+    // while the Read screen is composed/foreground. Failures now RETRY with the
+    // pending seconds carried forward and surface as a soft banner after 3
+    // consecutive failures instead of being silently dropped (the old
+    // `runCatching{...}` swallowed every error, so a contract/endpoint failure
+    // produced an all-zero leaderboard with no signal).
+    var timeSyncError by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(day) {
+        var pending = 0
+        var fails = 0
+        while (isActive) {
+            delay(30_000)
+            pending += 30
+            try {
+                repo.api.addReadingTime(day, pending)
+                pending = 0
+                fails = 0
+                timeSyncError = null
+            } catch (e: Exception) {
+                fails++
+                if (fails >= 3) timeSyncError = "Reading time isn't syncing — check your connection."
             }
         }
     }
@@ -177,6 +195,11 @@ fun ReadScreen(
                 Text(it, color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp))
+            }
+            timeSyncError?.let {
+                Text(it, color = MaterialTheme.colorScheme.tertiary,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp))
             }
 
             // Translation selector — only translations available on-device
@@ -307,16 +330,23 @@ fun ReadScreen(
                     Text("Reading complete", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                     ExpressiveButton(onClick = { onOpenQuiz(day) }) { Text("Quiz") }
                 } else {
+                    // Part D: disable + real Expressive loading indicator while the
+                    // completion request is in flight; clear success (transitions to
+                    // the completed state / quiz prompt) and clear actionable error.
                     ExpressiveButton(
                         onClick = {
+                            if (completeBusy) return@ExpressiveButton
                             scope.launch {
+                                completeBusy = true
                                 error = null
                                 runCatching { repo.api.completeDay(day) }
                                     .onSuccess { completed = true }
                                     .onFailure { error = it.message ?: "Could not mark this day complete." }
+                                completeBusy = false
                             }
                         },
                         Modifier.fillMaxWidth(),
+                        busy = completeBusy,
                     ) { Text("Mark day $day reading complete") }
                 }
             }

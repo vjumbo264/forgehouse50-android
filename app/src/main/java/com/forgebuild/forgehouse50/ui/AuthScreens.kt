@@ -1,5 +1,6 @@
 package com.forgebuild.forgehouse50.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -78,9 +79,17 @@ private sealed interface Mode {
 
 @Composable
 private fun AuthScaffold(subtitle: String, content: @Composable () -> Unit) {
+    // Part G (2026-09-18): pin the login/sign-up/OTP background to the active
+    // theme's surface color. Auth renders inside the app NavHost, which — on
+    // the older navigation-compose line — does not draw its own window
+    // background, so the composable could fall through to a dark default
+    // window regardless of the system light/dark setting (the operator's
+    // "always stuck in a broken dark mode"). Reading from MaterialTheme keeps
+    // it following the same dynamic theme as every other screen.
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 28.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

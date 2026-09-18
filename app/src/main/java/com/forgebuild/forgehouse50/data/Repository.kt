@@ -175,12 +175,33 @@ class Repository(
         onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
     ): Unit = withContext(Dispatchers.IO) {
         val code = translation.removePrefix("versewell-").lowercase()
+        // Part F (progress): when the CDN serves the bundle chunked (no
+        // Content-Length), fetchBundleFile reports total=-1 and a naive UI
+        // would sit at 0% then jump to 100%. The manifest carries the exact
+        // byte size per bundle, so use it as the genuine expected denominator.
+        val expected: Long = runCatching {
+            api.bundleManifest().bundles.firstOrNull { it.url.endsWith("/$code.json.gz") }?.bytes ?: -1L
+        }.getOrDefault(-1L)
         val bytes = api.fetchBundleFile("/bundles/$code.json.gz") { r, t ->
-            onProgress(r.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), t.coerceAtLeast(0).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
+            val total = if (t > 0) t else expected
+            onProgress(
+                r.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+                total.coerceAtLeast(0).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+            )
         }
-        val books = java.util.zip.GZIPInputStream(bytes.inputStream()).bufferedReader().use {
-            json.decodeFromString<Map<String, Map<String, BundledChapter>>>(it.readText())
+        // Part F (format): the hosted bundles are INCONSISTENT — verified live
+        // 2026-09-18: kjv/nlv are genuine gzip (magic 1f 8b) while amp/cev/gw/
+        // msg/niv/nkjv/nlt/tlb are plain JSON despite the .json.gz name and the
+        // application/gzip content-type. Unconditionally wrapping in
+        // GZIPInputStream is exactly what produced "Scripture is not in GZIP
+        // format". Detect the real format from the magic bytes instead.
+        val isGzip = bytes.size >= 2 && bytes[0] == 0x1f.toByte() && bytes[1] == 0x8b.toByte()
+        val text = if (isGzip) {
+            GZIPInputStream(bytes.inputStream()).bufferedReader().use { it.readText() }
+        } else {
+            bytes.inputStream().bufferedReader().use { it.readText() }
         }
+        val books = json.decodeFromString<Map<String, Map<String, BundledChapter>>>(text)
         importBundle(translation, books, name)
         val size = db.scriptureDao().sizeBytesFor(translation)
         val count = db.scriptureDao().chapterCountFor(translation)
