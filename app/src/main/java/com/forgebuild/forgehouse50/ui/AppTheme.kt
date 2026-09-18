@@ -54,13 +54,14 @@ private val AppTypography = Typography().run {
         titleLarge = titleLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
         titleMedium = titleMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
         titleSmall = titleSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),
-        // Part E (2026-09-18): body text rendered too thin app-wide. Raise the
-        // baseline body weight from Regular(400) to Medium(500) on the Nunito
-        // variable font (closest registered weight), keeping headings heavier
-        // (SemiBold/Bold) so hierarchy is preserved.
-        bodyLarge = bodyLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium, lineHeight = 24.sp),
-        bodyMedium = bodyMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),
-        bodySmall = bodySmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),
+        // Part E (2026-09-18): raised body weight Regular(400)->Medium(500).
+        // post_testing_polish_v1 ISSUE 1 (2026-09-18): still reported too thin.
+        // Move a FULL further step: body now SemiBold(600) on the Nunito
+        // variable font. ReadScreen verse text uses bodyLarge, so this drives
+        // the primary reading surface. Headings stay Bold so hierarchy holds.
+        bodyLarge = bodyLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold, lineHeight = 24.sp),
+        bodyMedium = bodyMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
+        bodySmall = bodySmall.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
         labelLarge = labelLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
         labelMedium = labelMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),
         labelSmall = labelSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),

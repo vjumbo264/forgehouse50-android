@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": true,
-  "last_updated_utc": "2026-09-18T05:40:00Z",
+  "build_complete": false,
+  "last_updated_utc": "2026-09-18T06:30:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -197,6 +197,55 @@
       "section": "leaderboard_audio_removal_offline_bible_v1",
       "status": "done",
       "notes": "DONE: release.yml dispatched (run 35049739373 first attempt failed at minifyReleaseWithR8 — missing com.google.errorprone.annotations.* referenced by Tink/security-crypto after Media3 removal dropped the transitive artifact; fixed with -dontwarn com.google.errorprone.annotations.**); second dispatch run on 8c6f3eb4 SUCCESS. forgehouse50-v7 verified live on Releases API: app-forgehouse50-v7.apk 8,770,585 bytes (v6: 19,739,689 — 56% smaller, confirming avatar compression + audio/Media3 removal) + forgebuild-manifest.json. Non-draft. Prior releases v5/v6 untouched."
+    },
+    {
+      "id": 121,
+      "name": "p1-font-weight",
+      "section": "post_testing_polish_v1",
+      "status": "done",
+      "notes": "Verified the REAL current value in ui/AppTheme.kt: body was Medium(500) after the prior session (not the Light/Regular it started at). Moved a full step up to SemiBold(600) on the Nunito variable font for bodyLarge/bodyMedium/bodySmall — bo"
+    },
+    {
+      "id": 122,
+      "name": "p2-spinner-contrast",
+      "section": "post_testing_polish_v1",
+      "status": "done",
+      "notes": "Inspected the actual token: TranslationsScreen called ExpressiveButtonLoader() whose DEFAULT was colorScheme.onPrimary — correct only ON a filled-primary button, but on a plain Card surface it lands as a low-contrast near-background tone in"
+    },
+    {
+      "id": 123,
+      "name": "p3-leaderboard-you",
+      "section": "post_testing_polish_v1",
+      "status": "done",
+      "notes": "InProgressBoard now fetches the current user id via repo.api.me().id; PodiumRow takes isYou. Own row = subtle accent tint (primary @ 14% composited over the podium/surface container, so podium colours stay readable) + a filled \"You\" chip (p"
+    },
+    {
+      "id": 124,
+      "name": "p4-footnotes",
+      "section": "post_testing_polish_v1",
+      "status": "done",
+      "notes": "Verse.footnotes already flows from bundled KJV asset (BundledVerse.f) and downloaded bundles into Room -> PassageResponse; only the UI was missing. ReadScreen now renders exactly ONE small accent \"† footnote(s)\" marker after a verse's text "
+    },
+    {
+      "id": 125,
+      "name": "p5-chapter-nav-icons",
+      "section": "post_testing_polish_v1",
+      "status": "done",
+      "notes": "Previous/Next chapter are now TextButtons with a leading KeyboardArrowLeft / trailing KeyboardArrowRight (Material auto-mirrored icons, consistent with the app iconography) — clear button-like controls instead of bare text. They are deliber"
+    },
+    {
+      "id": 126,
+      "name": "p6-icon-monochrome",
+      "section": "post_testing_polish_v1",
+      "status": "done",
+      "notes": "Pulled the CURRENT source from the live website repo (vjumbo264/forgehouse50 public/branding/forgehouse50-icon-v3.png, 1024x1024 — the most recently committed revision). Extracted the mark silhouette (bright low-saturation pixels = the flam"
+    },
+    {
+      "id": 127,
+      "name": "p7-release-v12",
+      "section": "post_testing_polish_v1",
+      "status": "pending",
+      "notes": "Dispatch .github/workflows/release.yml (app_path=apps/forgehouse50) -> auto-increment forgehouse50-v12; verify release + APK + forgebuild-manifest.json live on the GitHub Releases API; confirm v1..v11 untouched; then set build_complete=true"
     }
   ],
   "session_history": [
@@ -283,6 +332,12 @@
       "date": "2026-09-16",
       "did": "Independent from-scratch re-verification of the leaderboard_audio_removal_offline_bible_v1 work (this session did not trust prior claims; re-read both repos and probed the live deployment). CONFIRMED WITH REAL EVIDENCE: (1) web leaderboard.mjs backend in the deployed repo computes a distinct metric per category — overall=SUM(points) raw cumulative, consistency=current streak via streaks() (not days_completed, not points), chapters=SUM(chapters_read), reading_time=SUM(reading_seconds), observations/questions=COUNT of notes by note_type — the shared 'same points value' bug is fixed at the source; (2) live GET /api/translations returns the full VerseWell translation list (AMP/CEV/GW/...) proving the backend + VerseWell mirror are live; (3) live /read page contains ZERO audio references (grep -ci audio = 0) and /admin.html has zero audio-player markup — Issue 3 audio removal is live; (4) versewell.mjs client has all audio code removed ('no audio is read or served') and functions/api/read/ contains no audio endpoint files; (5) forgehouse50-v7 release re-verified live on the GitHub Releases API: non-draft, assets app-forgehouse50-v7.apk (8,770,585 bytes — vs v6 19.74MB, confirming avatar-compression APK shrink) + forgebuild-manifest.json; (6) app BUILD_STATE tasks 9-17,19-21 all done; KJV bundle + per-translation download/store/manage code committed through 8c6f3eb. PROMPT_HISTORY/forgehouse50.md already carries the 2026-09-16 operator instruction (append-only requirement satisfied).",
       "next": "BLOCKED ON OPERATOR INPUT, NOT CODE: the 3 remaining pending tasks (8 lb-categories-backend authenticated per-category value check, 11 audio-removal-web authenticated read-page UI check, 18 offline-verification airplane-mode test) each require either a test/admin account or a physical/emulated Android device — neither exists in this environment. Unauthenticated probes confirm everything checkable without credentials. Exact next operation: operator provides a test/admin login (or runs the APK on a device), then: log in -> GET /api/leaderboard?category= for all 6 categories and hand-check against known user activity -> admin points award + D1 confirm -> enable airplane mode with a downloaded translation and confirm reading works with zero network -> flip tasks 8/11/18 to done."
+    },
+    {
+      "session": 11,
+      "date": "2026-09-18",
+      "did": "Operator EXTEND/UPDATE: post-testing polish round (6 issues). Confirmed no in_progress task (v11 complete, build_complete true). Appended instruction to PROMPT_HISTORY (credentials redacted). Implemented all six: body weight Medium->SemiBold; spinner default -> dynamic primary; leaderboard \"You\" tint+chip at any rank/category incl. final results; full footnote UI (single marker, one inline panel, all notes, one-open-at-a-time); prev/next chapter chevron icon TextButtons with calm press (no squiggle); real monochrome adaptive-icon layer regenerated from the current web icon (forgehouse50-icon-v3.png).",
+      "next": "Commit+push, dispatch release.yml -> forgehouse50-v12, verify live on the Releases API, set build_complete=true. On-device screenshots/recordings for all six issues remain pending operator device."
     }
   ],
   "combined_fixes_v1": {
@@ -884,5 +939,57 @@
     ],
     "complete": true,
     "verification_caveat": "All Part A/B/C/D/E/F/G code fixes are committed, compile-gated by the CI release build (Kotlin compile PASSED on cbb177cc) and released as v11. Per the session's evidence mandate, real on-device screenshots/recordings (squiggle mid-press, confetti timing, reading-time non-zero, Mark-Complete loading, font before/after, download progress, login both-mode) require a physical device and are marked 'pending operator device' per-task above — the build sandbox has no Android SDK/emulator, identical constraint to every prior session on this project. The two fixes independently verifiable WITHOUT a device WERE verified live this session via curl: the bundle gzip/raw mismatch (Part F root cause) and the read/time endpoint being active (Part C contract)."
+  },
+  "post_testing_polish_v1": {
+    "name": "post_testing_polish_v1",
+    "status": "implemented_pending_ci_and_ondevice_verification",
+    "seeded_utc": "2026-09-18T06:30:00Z",
+    "target_release": "forgehouse50-v12",
+    "base_source": "forgehouse50-v11 (current main)",
+    "scope_note": "Six post-Material-3-Expressive device-testing refinements. On-device screenshot/recording verification for each issue requires a physical/emulated device, which this build sandbox does not have — code-level fixes are committed and each issue carries an explicit pending-on-device verification note.",
+    "tasks": [
+      {
+        "id": "p1-font-weight",
+        "status": "done",
+        "title": "ISSUE 1: body font weight raised a full step",
+        "notes": "Verified the REAL current value in ui/AppTheme.kt: body was Medium(500) after the prior session (not the Light/Regular it started at). Moved a full step up to SemiBold(600) on the Nunito variable font for bodyLarge/bodyMedium/bodySmall — bodyLarge drives the Read screen verse text, the main reading surface. Headings stay Bold so hierarchy holds. On-device side-by-side screenshot: pending operator device (no emulator in sandbox)."
+      },
+      {
+        "id": "p2-spinner-contrast",
+        "status": "done",
+        "title": "ISSUE 2: download spinner uses dynamic theme accent",
+        "notes": "Inspected the actual token: TranslationsScreen called ExpressiveButtonLoader() whose DEFAULT was colorScheme.onPrimary — correct only ON a filled-primary button, but on a plain Card surface it lands as a low-contrast near-background tone in dark mode (the reported bug). Root-caused in ui/Expressive.kt: default changed to colorScheme.primary (the same dynamic theme accent every full-screen ExpressiveLoading/ExpressiveCircularProgress already uses). ExpressiveButton/ExpressiveTonalButton still pass explicit onPrimary/onSecondaryContainer overrides, so on-button contrast is unchanged. Fixed for BOTH light and dark dynamic schemes (the dark-mode default is what the operator hit). On-device light+dark screenshots of the download screen: pending operator device."
+      },
+      {
+        "id": "p3-leaderboard-you",
+        "status": "done",
+        "title": "ISSUE 3: \"You\" highlight on own leaderboard row",
+        "notes": "InProgressBoard now fetches the current user id via repo.api.me().id; PodiumRow takes isYou. Own row = subtle accent tint (primary @ 14% composited over the podium/surface container, so podium colours stay readable) + a filled \"You\" chip (primary bg / onPrimary text) beside the name; name forced SemiBold. Works at ANY rank (the tint layers over whatever the rank container is) and ANY category tab (keyed on user_id, not rank or value). FinalResultsView passes isYou on the row matching me.rank. On-device confirm as a real logged-in user: pending operator device."
+      },
+      {
+        "id": "p4-footnotes",
+        "status": "done",
+        "title": "ISSUE 4: footnotes implemented in reading view",
+        "notes": "Verse.footnotes already flows from bundled KJV asset (BundledVerse.f) and downloaded bundles into Room -> PassageResponse; only the UI was missing. ReadScreen now renders exactly ONE small accent \"† footnote(s)\" marker after a verse's text when footnotes exist (none when the verse has none). Tapping toggles ONE inline Surface panel (surfaceVariant bg, bodySmall, slightly smaller than verse text) listing ALL of that verse's footnotes together. openFootnoteVerse state guarantees only one panel open at a time; it resets to null on chapter change. Multi-footnote verses show one marker + one panel with all notes (count shown). Matthew 1 (real footnote referenced by operator) is in the bundled KJV data. On-device tap verification: pending operator device."
+      },
+      {
+        "id": "p5-chapter-nav-icons",
+        "status": "done",
+        "title": "ISSUE 5: prev/next chapter icon buttons, no squiggle",
+        "notes": "Previous/Next chapter are now TextButtons with a leading KeyboardArrowLeft / trailing KeyboardArrowRight (Material auto-mirrored icons, consistent with the app iconography) — clear button-like controls instead of bare text. They are deliberately plain TextButton (NOT ExpressiveButton), so they get the calm default ripple and NOT the official expressive pressed-shape-morph used on primary action buttons. On-device confirm of icon treatment + no squiggle: pending operator device."
+      },
+      {
+        "id": "p6-icon-monochrome",
+        "status": "done",
+        "title": "ISSUE 6: real monochrome adaptive-icon layer from current web icon",
+        "notes": "Pulled the CURRENT source from the live website repo (vjumbo264/forgehouse50 public/branding/forgehouse50-icon-v3.png, 1024x1024 — the most recently committed revision). Extracted the mark silhouette (bright low-saturation pixels = the flame/house/\"50\" white mark over the blue field) into a single-alpha mask, anti-aliased, cropped to the mark bbox, and scaled inside the 72dp safe zone per density (mdpi..xxxhdpi) as ic_launcher_monochrome.png — real shape data, not an empty/opaque layer. mipmap-anydpi-v26/ic_launcher.xml already references <monochrome> and is unchanged; existing foreground/background layers untouched. Visual check of the generated xxxhdpi layer: recognisable flame+house+50 silhouette. On-device themed-icons ON/OFF verification: pending operator device."
+      },
+      {
+        "id": "p7-release-v12",
+        "status": "pending",
+        "title": "Dispatch release + verify forgehouse50-v12 live",
+        "notes": "Dispatch .github/workflows/release.yml (app_path=apps/forgehouse50) -> auto-increment forgehouse50-v12; verify release + APK + forgebuild-manifest.json live on the GitHub Releases API; confirm v1..v11 untouched; then set build_complete=true."
+      }
+    ]
   }
 }

@@ -53,11 +53,26 @@ fun ExpressiveLoading(
     LoadingIndicator(modifier = modifier.size(size), color = color)
 }
 
-/** Small in-button variant (official [LoadingIndicator] at button-loader size). */
+/**
+ * Small busy indicator at 18.dp (official [LoadingIndicator]).
+ *
+ * post_testing_polish_v1 ISSUE 2 (2026-09-18): the translation-download spinner
+ * read too dark/low-contrast in dark mode. Root cause: this helper defaulted to
+ * onPrimary (the colour meant for use ON a filled-primary surface), but the
+ * TranslationsScreen calls it on a plain Card surface, where onPrimary is not
+ * the correct reading and lands as a low-contrast near-background tone in dark
+ * mode. The default is now the dynamic theme accent (colorScheme.primary) so
+ * the standalone spinner matches every other loading indicator in the app and
+ * keeps correct contrast in BOTH light and dark dynamic schemes.
+ *
+ * Genuine in-button loaders (ExpressiveButton/ExpressiveTonalButton below)
+ * still pass their explicit onPrimary/onSecondaryContainer override, so the
+ * on-filled-button contrast there is unchanged.
+ */
 @Composable
 fun ExpressiveButtonLoader(
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.onPrimary,
+    color: Color = MaterialTheme.colorScheme.primary,
 ) {
     LoadingIndicator(modifier = modifier.size(18.dp), color = color)
 }

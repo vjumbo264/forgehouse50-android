@@ -9,11 +9,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LibraryBooks
@@ -24,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -94,6 +99,9 @@ fun ReadScreen(
     var fontScale by remember { mutableFloatStateOf(repo.session.fontScale) }
     // Issue 4: index into the day's flattened chapter list (one chapter shown at a time).
     var chapterIdx by remember { mutableIntStateOf(0) }
+    // post_testing_polish_v1 ISSUE 4: exactly one footnote panel open at a time,
+    // keyed by verse number; null = none open. Resets when the chapter changes.
+    var openFootnoteVerse by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(day) {
         // Import bundled KJV + discover which translations are on-device.
@@ -137,6 +145,7 @@ fun ReadScreen(
             .onSuccess { passage = it }
             .onFailure { passage = null; passageError = it.message ?: "Could not load this chapter." }
         loadingPassage = false
+        openFootnoteVerse = null
         scroll.scrollTo(0)
     }
 
@@ -221,12 +230,18 @@ fun ReadScreen(
             }
 
             // Issue 4: Previous/Next chapter navigation within this day's range.
+            // post_testing_polish_v1 ISSUE 5: icon-led, button-like controls.
+            // These are plain [TextButton]s with a leading/trailing chevron icon
+            // (NOT ExpressiveButton) so they get the calm default ripple and NOT
+            // the expressive pressed-shape-morph used on primary action buttons.
             if (chapters.size > 1) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = { if (chapterIdx > 0) chapterIdx-- }, enabled = chapterIdx > 0) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(2.dp))
                         Text("Previous chapter")
                     }
                     Spacer(Modifier.weight(1f))
@@ -239,7 +254,11 @@ fun ReadScreen(
                     TextButton(
                         onClick = { if (chapterIdx < chapters.lastIndex) chapterIdx++ },
                         enabled = chapterIdx < chapters.lastIndex,
-                    ) { Text("Next chapter") }
+                    ) {
+                        Text("Next chapter")
+                        Spacer(Modifier.width(2.dp))
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, modifier = Modifier.size(20.dp))
+                    }
                 }
                 Spacer(Modifier.height(4.dp))
             }
@@ -303,8 +322,44 @@ fun ReadScreen(
                                     Text("${v.verse}", style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.width(28.dp).padding(top = 3.dp))
-                                    Text(v.text, style = MaterialTheme.typography.bodyLarge,
-                                        fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale)
+                                    Column(Modifier.weight(1f)) {
+                                        Text(v.text, style = MaterialTheme.typography.bodyLarge,
+                                            fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale)
+                                        // post_testing_polish_v1 ISSUE 4: ONE small marker after a
+                                        // verse's text when it has any footnotes; tapping toggles the
+                                        // single inline panel showing ALL of that verse's footnotes.
+                                        if (v.footnotes.isNotEmpty()) {
+                                            Text(
+                                                "\u2020 footnote" + if (v.footnotes.size > 1) "s (${v.footnotes.size})" else "",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.SemiBold,
+                                                modifier = Modifier
+                                                    .clickable {
+                                                        openFootnoteVerse =
+                                                            if (openFootnoteVerse == v.verse) null else v.verse
+                                                    }
+                                                    .padding(vertical = 2.dp),
+                                            )
+                                            if (openFootnoteVerse == v.verse) {
+                                                Spacer(Modifier.height(4.dp))
+                                                Surface(
+                                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                                    shape = MaterialTheme.shapes.medium,
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                ) {
+                                                    Column(Modifier.padding(10.dp)) {
+                                                        v.footnotes.forEach { note ->
+                                                            Text(note, style = MaterialTheme.typography.bodySmall,
+                                                                fontSize = MaterialTheme.typography.bodySmall.fontSize * fontScale,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                            Spacer(Modifier.height(4.dp))
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             if (p.attribution.isNotBlank()) {

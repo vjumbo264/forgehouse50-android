@@ -53,6 +53,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
+import androidx.compose.material3.Surface
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
@@ -96,7 +98,11 @@ private fun InProgressBoard(repo: Repository) {
     var category by remember { mutableStateOf("overall") }
     var data by remember { mutableStateOf<LeaderboardResponse?>(null) }
     var loading by remember { mutableStateOf(true) }
+    // post_testing_polish_v1 ISSUE 3: current user's id so their own row can be
+    // distinguished regardless of rank / category.
+    var myUserId by remember { mutableStateOf<String?>(null) }
 
+    LaunchedEffect(Unit) { runCatching { myUserId = repo.api.me().id } }
     LaunchedEffect(category) {
         // scripture_audio_rewire_v1: lb2_ cache key — invalidates any cached
         // pre-fix leaderboard payload (raw total points, never pts/day).
@@ -135,7 +141,7 @@ private fun InProgressBoard(repo: Repository) {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     item { Spacer(Modifier.height(8.dp)) }
-                    itemsIndexed(entries) { _, e -> PodiumRow(e.rank, e.display_name, e.avatar_id, valueLabel(category, e), e.value) }
+                    itemsIndexed(entries) { _, e -> PodiumRow(e.rank, e.display_name, e.avatar_id, valueLabel(category, e), e.value, isYou = e.user_id == myUserId) }
                     item { Spacer(Modifier.height(16.dp)) }
                 }
             }
@@ -156,16 +162,25 @@ private fun valueLabel(category: String, e: LeaderboardEntry): String = when (ca
     else -> "%.0f".format(e.value)
 }
 
-/** Shared podium row: rank 1 richest (glow + crown), 2/3 distinguished, 4+ plain. */
+/** Shared podium row: rank 1 richest (glow + crown), 2/3 distinguished, 4+ plain.
+ * post_testing_polish_v1 ISSUE 3: when [isYou], the row is tinted with the theme
+ * accent and carries a small "You" chip so the current user's own entry is
+ * instantly recognisable at ANY rank, in ANY category. */
 @Composable
-private fun PodiumRow(rank: Int, name: String, avatarId: String?, valueText: String, raw: Double) {
+private fun PodiumRow(rank: Int, name: String, avatarId: String?, valueText: String, raw: Double, isYou: Boolean = false) {
     val dark = androidx.compose.foundation.isSystemInDarkTheme()
-    val (container, accent) = when (rank) {
+    val (baseContainer, accent) = when (rank) {
         1 -> (if (dark) PodiumColors.goldContainerDark else PodiumColors.goldContainerLight) to PodiumColors.gold
         2 -> (if (dark) PodiumColors.silverContainerDark else PodiumColors.silverContainerLight) to PodiumColors.silver
         3 -> (if (dark) PodiumColors.bronzeContainerDark else PodiumColors.bronzeContainerLight) to PodiumColors.bronze
         else -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurfaceVariant
     }
+    // Own row gets a subtle accent tint (keeps podium colours readable underneath).
+    val container = if (isYou) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.14f).let { tint ->
+            baseContainer.compositeOverAccent(tint)
+        }
+    } else baseContainer
     Card(
         Modifier.fillMaxWidth().then(
             if (rank == 1) Modifier.drawBehind {
@@ -195,8 +210,22 @@ private fun PodiumRow(rank: Int, name: String, avatarId: String?, valueText: Str
             )
             Spacer(Modifier.width(if (rank <= 3) 12.dp else 10.dp))
             Column(Modifier.weight(1f)) {
-                Text(name, style = if (rank <= 3) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (rank <= 3) FontWeight.SemiBold else FontWeight.Normal)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(name, style = if (rank <= 3) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (rank <= 3 || isYou) FontWeight.SemiBold else FontWeight.Normal)
+                    if (isYou) {
+                        Spacer(Modifier.width(6.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = MaterialTheme.shapes.small,
+                        ) {
+                            Text("You", style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp))
+                        }
+                    }
+                }
                 if (rank <= 3) {
                     Text(when (rank) { 1 -> "Leading the programme"; 2 -> "Second place"; else -> "Third place" },
                         style = MaterialTheme.typography.labelSmall, color = accent)
@@ -235,8 +264,11 @@ private fun FinalResultsView(repo: Repository, finals: FinalResultsResponse, onB
         }
         Spacer(Modifier.height(10.dp))
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            itemsIndexed(finals.rankings) { _, r -> PodiumRow(r.rank, r.display_name, r.avatar_id, "${r.total_points} pts", r.total_points.toDouble()) }
+            itemsIndexed(finals.rankings) { _, r -> PodiumRow(r.rank, r.display_name, r.avatar_id, "${r.total_points} pts", r.total_points.toDouble(), isYou = me != null && r.rank == me.rank) }
             item { Spacer(Modifier.height(16.dp)) }
         }
     }
 }
+
+/** Composite a translucent accent tint over a base container colour. */
+private fun Color.compositeOverAccent(tint: Color): Color = tint.compositeOver(this)
