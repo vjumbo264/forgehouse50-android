@@ -46,32 +46,38 @@ DENSITIES = {"mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 4
 SAFE_FRACTION = 72 / 108  # inner safe zone
 
 # --- source classification thresholds (vector/icon-style vs raster/photo-style) ---
-CLASSIFY_SIZE = 144          # probe resolution; small + deterministic
-COLOR_LIMIT = 64             # more distinct opaque colors than this => raster/photo
-EDGE_DENSITY_LIMIT = 0.20    # fraction of pixels on strong edges => raster/photo
+CLASSIFY_SIZE = 144            # probe resolution; small + deterministic
+SIG_COLOR_LIMIT = 24           # more significant 4-bit color bins than this => raster/photo
+SIG_COLOR_MIN_SHARE = 0.005    # a bin is significant if it covers > 0.5% of pixels
+EDGE_DENSITY_LIMIT = 0.15      # fraction of pixels on strong edges => raster/photo
 
 def is_raster_like(img: Image.Image) -> bool:
     """True when the source looks raster/photo-style rather than flat icon-style.
 
-    Two cheap signals on a downscaled probe:
-      1. distinct opaque-color count (flat icon art uses a handful of colors;
-         photos/illustrations use hundreds+)
+    Two anti-aliasing-robust signals on a downscaled probe:
+      1. significant color count: flatten onto white, quantize to 4 bits/channel,
+         and count only bins covering > 0.5% of pixels. Anti-aliasing turns a flat
+         icon's 3 source colors into hundreds of single-pixel shades after a
+         LANCZOS resize, so raw distinct-color counts are useless — significant
+         bins are not (flat icon art: a handful; photos/gradients: dozens+).
       2. edge density of the luminance channel (flat icon art is mostly uniform
-         regions with sparse edges; photos have high-frequency detail everywhere)
+         regions with sparse edges; photos have high-frequency detail everywhere).
     """
     probe = img.convert("RGBA")
     probe.thumbnail((CLASSIFY_SIZE, CLASSIFY_SIZE), Image.LANCZOS)
-    counts = probe.getcolors(maxcolors=CLASSIFY_SIZE * CLASSIFY_SIZE)
-    if counts is None:  # every probe pixel a distinct color -> photographic
-        return True
-    opaque_colors = {c for _n, c in counts if c[3] >= 128}
-    if len(opaque_colors) > COLOR_LIMIT:
-        return True
+    total = float(probe.width * probe.height)
     flat = Image.new("RGB", probe.size, (255, 255, 255))
     flat.paste(probe, (0, 0), probe)
+    bins = {}
+    for r, g, b in flat.getdata():
+        key = (r >> 4, g >> 4, b >> 4)
+        bins[key] = bins.get(key, 0) + 1
+    significant = sum(1 for n in bins.values() if n > SIG_COLOR_MIN_SHARE * total)
+    if significant > SIG_COLOR_LIMIT:
+        return True
     edges = flat.convert("L").filter(ImageFilter.FIND_EDGES)
     strong = sum(1 for v in edges.getdata() if v > 32)
-    return strong / float(probe.width * probe.height) > EDGE_DENSITY_LIMIT
+    return strong / total > EDGE_DENSITY_LIMIT
 
 XML_ANYDPI_MONO = """<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
