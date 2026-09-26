@@ -8,11 +8,29 @@ safe zone guaranteed visible in every mask. This script:
   * scales the foreground artwork to fit INSIDE the 72dp safe zone (66% of canvas)
   * centers it on a 108dp canvas with transparent padding (never a white square)
   * generates background (solid color or artwork), mipmap densities, and the
-    adaptive-icon XML, plus a monochrome layer for themed icons (API 33+).
+    adaptive-icon XML.
+
+MONOCHROME / THEMED ICONS POLICY (Android 13+, enforced by this tool):
+  The source artwork is classified as vector/icon-style vs raster/photo-style.
+    * Vector/icon-style source (flat shapes, few colors, icon-like): a
+      purpose-drawn <monochrome> layer (alpha silhouette of the foreground) is
+      generated and referenced from the adaptive-icon XML, opting the app into
+      themed icons with a clean, controllable glyph.
+    * Raster/photo-style source (complex, full-color, photographic): the
+      <monochrome> element is OMITTED ENTIRELY and no ic_launcher_monochrome
+      assets are written (stale ones are deleted). A baked black silhouette of
+      a photo renders as a flat, detail-less blob under forced themed icons;
+      with no explicit monochrome layer the launcher falls back to auto-tracing
+      the foreground layer's own alpha/detail, preserving shape detail
+      (the behavior seen on Duolingo/Drive/Filmora etc.). This is the real
+      platform fallback, not a workaround.
+  Override with --monochrome force|skip if the operator/AI wants to decide
+  manually; default is --monochrome auto (classify the source).
 
 Usage:
   python3 tools/make_adaptive_icon.py --foreground icon_fg.png \
-      --background-color "#6750A4" --out app/src/main/res [--background bg.png]
+      --background-color "#6750A4" --out app/src/main/res [--background bg.png] \
+      [--monochrome auto|force|skip]
 
 If the operator supplies their own artwork, pass it as --foreground. If not,
 the generating AI produces simple artwork first, then calls this script.
@@ -20,15 +38,62 @@ the generating AI produces simple artwork first, then calls this script.
 import argparse, pathlib, sys
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageFilter
 except ImportError:
     sys.exit("pip install pillow")
 
 DENSITIES = {"mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 432}
 SAFE_FRACTION = 72 / 108  # inner safe zone
 
-def make_layers(fg_path, bg_color, bg_path, out: pathlib.Path):
+# --- source classification thresholds (vector/icon-style vs raster/photo-style) ---
+CLASSIFY_SIZE = 144          # probe resolution; small + deterministic
+COLOR_LIMIT = 64             # more distinct opaque colors than this => raster/photo
+EDGE_DENSITY_LIMIT = 0.20    # fraction of pixels on strong edges => raster/photo
+
+def is_raster_like(img: Image.Image) -> bool:
+    """True when the source looks raster/photo-style rather than flat icon-style.
+
+    Two cheap signals on a downscaled probe:
+      1. distinct opaque-color count (flat icon art uses a handful of colors;
+         photos/illustrations use hundreds+)
+      2. edge density of the luminance channel (flat icon art is mostly uniform
+         regions with sparse edges; photos have high-frequency detail everywhere)
+    """
+    probe = img.convert("RGBA")
+    probe.thumbnail((CLASSIFY_SIZE, CLASSIFY_SIZE), Image.LANCZOS)
+    counts = probe.getcolors(maxcolors=CLASSIFY_SIZE * CLASSIFY_SIZE)
+    if counts is None:  # every probe pixel a distinct color -> photographic
+        return True
+    opaque_colors = {c for _n, c in counts if c[3] >= 128}
+    if len(opaque_colors) > COLOR_LIMIT:
+        return True
+    flat = Image.new("RGB", probe.size, (255, 255, 255))
+    flat.paste(probe, (0, 0), probe)
+    edges = flat.convert("L").filter(ImageFilter.FIND_EDGES)
+    strong = sum(1 for v in edges.getdata() if v > 32)
+    return strong / float(probe.width * probe.height) > EDGE_DENSITY_LIMIT
+
+XML_ANYDPI_MONO = """<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@mipmap/ic_launcher_background"/>
+    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>
+</adaptive-icon>
+"""
+
+XML_ANYDPI_PLAIN = """<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@mipmap/ic_launcher_background"/>
+    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+</adaptive-icon>
+"""
+
+def make_layers(fg_path, bg_color, bg_path, out: pathlib.Path, mono: bool | None = None):
+    """Write all density layers + adaptive-icon XML. Returns True if a purpose-drawn
+    monochrome layer was emitted, False if the <monochrome> element was omitted."""
     fg_src = Image.open(fg_path).convert("RGBA")
+    if mono is None:
+        mono = not is_raster_like(fg_src)
     if bg_path: bg_src = Image.open(bg_path).convert("RGBA")
     for density, size in DENSITIES.items():
         d = out / f"mipmap-{density}"
@@ -45,21 +110,26 @@ def make_layers(fg_path, bg_color, bg_path, out: pathlib.Path):
         layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         layer.paste(fg, ((size - fg.width) // 2, (size - fg.height) // 2), fg)
         layer.save(d / "ic_launcher_foreground.png")
-        # monochrome (themed icons): alpha silhouette of the foreground
-        mono = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-        alpha = fg.split()[3]
-        black = Image.new("RGBA", fg.size, (0, 0, 0, 255))
-        black.putalpha(alpha)
-        mono.paste(black, ((size - fg.width) // 2, (size - fg.height) // 2), black)
-        mono.save(d / "ic_launcher_monochrome.png")
-
-XML_ANYDPI = """<?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@mipmap/ic_launcher_background"/>
-    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
-    <monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>
-</adaptive-icon>
-"""
+        if mono:
+            # monochrome (themed icons): alpha silhouette of the foreground
+            mono_img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+            alpha = fg.split()[3]
+            black = Image.new("RGBA", fg.size, (0, 0, 0, 255))
+            black.putalpha(alpha)
+            mono_img.paste(black, ((size - fg.width) // 2, (size - fg.height) // 2), black)
+            mono_img.save(d / "ic_launcher_monochrome.png")
+        else:
+            # raster/photo path: NO monochrome element may reference a baked blob,
+            # and no stale monochrome asset from an earlier run may linger.
+            stale = d / "ic_launcher_monochrome.png"
+            if stale.exists():
+                stale.unlink()
+    xml = XML_ANYDPI_MONO if mono else XML_ANYDPI_PLAIN
+    for name in ("mipmap-anydpi-v26",):
+        d = out / name; d.mkdir(parents=True, exist_ok=True)
+        (d / "ic_launcher.xml").write_text(xml)
+        (d / "ic_launcher_round.xml").write_text(xml)
+    return mono
 
 def main():
     ap = argparse.ArgumentParser()
@@ -67,13 +137,18 @@ def main():
     ap.add_argument("--background-color", default="#6750A4")
     ap.add_argument("--background", default=None)
     ap.add_argument("--out", default="app/src/main/res")
+    ap.add_argument("--monochrome", choices=("auto", "force", "skip"), default="auto",
+                    help="auto = classify the source (default); force = always emit a "
+                         "purpose-drawn <monochrome> layer; skip = never emit one")
     a = ap.parse_args()
     out = pathlib.Path(a.out)
-    make_layers(a.foreground, a.background_color, a.background, out)
-    for name in ("mipmap-anydpi-v26",):
-        d = out / name; d.mkdir(parents=True, exist_ok=True)
-        (d / "ic_launcher.xml").write_text(XML_ANYDPI)
-        (d / "ic_launcher_round.xml").write_text(XML_ANYDPI)
+    mono_override = {"auto": None, "force": True, "skip": False}[a.monochrome]
+    emitted = make_layers(a.foreground, a.background_color, a.background, out, mono=mono_override)
+    style = "vector/icon-style" if emitted else "raster/photo-style"
+    decision = ("purpose-drawn <monochrome> layer emitted"
+                if emitted else
+                "<monochrome> element OMITTED (launcher foreground-alpha auto-trace fallback)")
+    print(f"source classification: {style} -> {decision}")
     print("adaptive icon layers written to", out)
 
 if __name__ == "__main__":
