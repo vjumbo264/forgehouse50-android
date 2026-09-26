@@ -49,19 +49,26 @@ SAFE_FRACTION = 72 / 108  # inner safe zone
 CLASSIFY_SIZE = 144            # probe resolution; small + deterministic
 SIG_COLOR_LIMIT = 24           # more significant 4-bit color bins than this => raster/photo
 SIG_COLOR_MIN_SHARE = 0.005    # a bin is significant if it covers > 0.5% of pixels
-EDGE_DENSITY_LIMIT = 0.15      # fraction of pixels on strong edges => raster/photo
+EDGE_DENSITY_LIMIT = 0.15      # strong-edge pixel fraction (flattened) => raster/photo
+INTERIOR_EDGE_LIMIT = 0.06     # strong-edge fraction INSIDE the opaque subject => raster/photo
 
 def is_raster_like(img: Image.Image) -> bool:
     """True when the source looks raster/photo-style rather than flat icon-style.
 
-    Two anti-aliasing-robust signals on a downscaled probe:
+    Three anti-aliasing-robust signals on a downscaled probe:
       1. significant color count: flatten onto white, quantize to 4 bits/channel,
          and count only bins covering > 0.5% of pixels. Anti-aliasing turns a flat
          icon's 3 source colors into hundreds of single-pixel shades after a
          LANCZOS resize, so raw distinct-color counts are useless — significant
          bins are not (flat icon art: a handful; photos/gradients: dozens+).
-      2. edge density of the luminance channel (flat icon art is mostly uniform
-         regions with sparse edges; photos have high-frequency detail everywhere).
+      2. edge density of the flattened luminance channel (flat icon art is mostly
+         uniform regions with sparse edges; photos have detail everywhere).
+      3. INTERIOR edge density: same edge metric restricted to pixels opaque in
+         the source (alpha >= 128). A flat icon's edges sit almost entirely on
+         its silhouette (interior ~0); a photo subject on transparent background
+         has a clean silhouette but a textured interior (gradient/noise/detail),
+         so its interior density stays high. This separates Duolingo-style raster
+         mascots from Material-Symbols-style flat glyphs.
     """
     probe = img.convert("RGBA")
     probe.thumbnail((CLASSIFY_SIZE, CLASSIFY_SIZE), Image.LANCZOS)
@@ -76,8 +83,18 @@ def is_raster_like(img: Image.Image) -> bool:
     if significant > SIG_COLOR_LIMIT:
         return True
     edges = flat.convert("L").filter(ImageFilter.FIND_EDGES)
-    strong = sum(1 for v in edges.getdata() if v > 32)
-    return strong / total > EDGE_DENSITY_LIMIT
+    edge_vals = list(edges.getdata())
+    strong = sum(1 for v in edge_vals if v > 32)
+    if strong / total > EDGE_DENSITY_LIMIT:
+        return True
+    alpha = probe.split()[3]
+    interior_strong = interior_total = 0
+    for v, a in zip(edge_vals, alpha.getdata()):
+        if a >= 128:
+            interior_total += 1
+            if v > 32:
+                interior_strong += 1
+    return interior_total > 0 and interior_strong / float(interior_total) > INTERIOR_EDGE_LIMIT
 
 XML_ANYDPI_MONO = """<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
