@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": false,
-  "last_updated_utc": "2026-09-27T07:00:00Z",
+  "build_complete": true,
+  "last_updated_utc": "2026-09-27T07:30:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -594,7 +594,7 @@
     ],
     "completed_utc": "2026-09-15T10:14:30Z"
   },
-  "current_release": "forgehouse50-v12",
+  "current_release": "forgehouse50-v13",
   "testing_phase_and_reader_fixes_v1": {
     "name": "testing_phase_and_reader_fixes_v1",
     "status": "complete",
@@ -807,7 +807,7 @@
     "notes": "2026-09-16 session 3: final audit sweep complete. Auth screens' three primary Buttons + the resend-code OutlinedButton converted to ExpressiveButton (bouncy press-scale physics + integrated wavy busy loader); the manual `if (busy) ExpressiveButtonLoader()` content collapse removes double-loader risk. Audit justification for remaining standard M3 controls: AlertDialog TextButtons (Cancel/confirm), top-app-bar back-arrow IconButtons and small action IconButtons are canonical M3 idioms kept per Expressive guidance (Expressive press treatment applies to primary actionable buttons, which are now all ExpressiveButton); determinate LinearProgressIndicators (Progress screen, translation downloads) are progress bars not loading spinners \u2014 all indeterminate loading states app-wide use ExpressiveLoading/ExpressiveButtonLoader. Part A coverage: dynamic Material You color + static fallback (AppTheme), Nunito rounded type scale (Google Sans Flex is proprietary/non-redistributable \u2014 documented substi",
     "complete": true
   },
-  "latest_release": "forgehouse50-v12",
+  "latest_release": "forgehouse50-v13",
   "material3_expressive_correction_v1": {
     "name": "material3_expressive_correction_v1",
     "status": "complete",
@@ -999,7 +999,7 @@
     ]
   },
   "catchup_widget_links_v1": {
-    "status": "in_progress",
+    "status": "complete",
     "notes": "2026-09-27 operator contract: (1) WhatsApp group join + wa.me admin support links; (2) 2-days-at-a-time chronological catch-up for missed days with honest arithmetic-only status, no lockout; (3) real Android AppWidget (Glance) with day/progress/verse + state-based Start/Continue/Completed action + WorkManager refresh; (4) gate mark-complete until every chapter of the day viewed; (5) reapply app icon from operator-supplied source (adaptive bg/fg/monochrome + legacy). App-only: no backend repo access this session.",
     "tasks": [
       {
@@ -1049,8 +1049,8 @@
       },
       {
         "name": "cw10-validate-release-v13",
-        "status": "in_progress",
-        "notes": "Code complete; release dispatched 2026-09-27 via release.yml app_path=apps/forgehouse50; awaiting CI + Releases-API verification."
+        "status": "done",
+        "notes": "DONE: CI run 36300150587 success; forgehouse50-v13 verified live on Releases API, assets=[('app-forgehouse50-v13.apk', 9552285), ('forgebuild-manifest.json', 633)], non-draft. v1-v12 untouched."
       },
       {
         "name": "cw11-ondevice-verification",
