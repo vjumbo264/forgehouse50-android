@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-09-27T00:00:00Z",
+  "last_updated_utc": "2026-09-27T07:00:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1004,58 +1004,58 @@
     "tasks": [
       {
         "name": "cw1-whatsapp-group-link",
-        "status": "pending",
-        "notes": "Home + Profile: Join ForgeHouse WhatsApp Group -> https://chat.whatsapp.com/KNt6BxuzOWwFZ9p4LL2Dfq (ACTION_VIEW, distinct from support)."
+        "status": "done",
+        "notes": "DONE: CommunityLinks.kt JoinWhatsAppGroupButton (Groups icon, OutlinedButton) on the Home screen (placement allowed by the contract: 'e.g. Home screen or Profile/Settings area' \u2014 Home chosen as the easiest to find). Opens https://chat.whatsapp.com/KNt6BxuzOWwFZ9p4LL2Dfq via ACTION_VIEW. Kept visually/functionally distinct from the support action."
       },
       {
         "name": "cw2-support-wame-link",
-        "status": "pending",
-        "notes": "Home + Profile: Support ForgeHouse Global -> https://wa.me/2349139095481 (admin +234 913 909 5481, international no +/spaces), distinct from group join."
+        "status": "done",
+        "notes": "DONE: SupportWhatsAppButton (Favorite icon, OutlinedButton) on the Home screen, directly below the group-join action (contract-permitted placement). Opens https://wa.me/2349139095481 (admin +234 913 909 5481 in international wa.me format, no +/spaces) via ACTION_VIEW -> WhatsApp chat ready to send. Distinct from the group-join action."
       },
       {
         "name": "cw3-catchup-assignment-logic",
-        "status": "pending",
-        "notes": "Repository.resolveReadingSession(): outstanding = earliest uncompleted non-future days from /api/progress; session = 1 day if no backlog else oldest 2; read-ahead (+1) only when zero backlog and ahead allowed; arithmetic-only \"cannot finish in time\" computed vs remaining calendar reading days; no lockout."
+        "status": "done",
+        "notes": "DONE: data/ReadingSession.kt \u2014 resolve(progress,today,meEndDate) presents <=2 oldest outstanding (completed=false && is_future=false) days; catchup mode iff backlog>1; NO hard cap (no max-missed-days lockout anywhere); read-ahead only when backlog==0 (existing +1 rule preserved); remainingReadingDays counts Tue/Fri-excluded calendar days from today to the user's programme_end_date; shortfallDays=max(0,backlog-remaining) is STATUS ONLY (cannotFinishInTime) \u2014 never a block."
       },
       {
         "name": "cw4-catchup-session-ui",
-        "status": "pending",
-        "notes": "ReadSessionScreen: paginate day A then day B chapters; per-day completion gate; per-day quiz entry; progress updates each day independently."
+        "status": "done",
+        "notes": "DONE: ui/read/ReadSessionScreen.kt \u2014 paginates day A then day B chapters; day B's pane unlocks only after day A is completed; per-day completion + per-day Quiz buttons; completing each day updates progress independently via POST /api/read/complete. Wired as route readsession/{days}; Home opens it when plan.catchup."
       },
       {
         "name": "cw5-completion-gate",
-        "status": "pending",
-        "notes": "Per-day viewed-chapter set (min dwell >=1.5s or revisit); Finish Reading disabled with \"View all N chapters to finish (k/N)\" until all visited; applies per-day inside catch-up sessions."
+        "status": "done",
+        "notes": "DONE: data/ChapterViewTracker + ReadSessionScreen gate. A chapter counts as viewed after being the displayed chapter for a >=1.5s dwell (requires genuinely reaching every chapter via Previous/Next). 'Finish day N reading' is visibly DISABLED (enabled=false, not hidden) with the hint 'View all N chapters to finish (k/N viewed)' until all are viewed; applies per-day inside catch-up sessions."
       },
       {
         "name": "cw6-widget-glance",
-        "status": "pending",
-        "notes": "Real AppWidget via androidx.glance: Day x/50, assignment, first verse of range, X/260 progress bar, Start/Continue/Completed(+Reflect) primary action deep-linking into app; state from repository snapshot."
+        "status": "done",
+        "notes": "DONE (RemoteViews implementation, documented): widget/ForgeHouseWidgetProvider.kt + WidgetStateStore + res/layout/forgehouse_widget.xml + xml/forgehouse_widget_info.xml. Shows Day x/50, assignment, key verse (first verse of the assigned range), X/260 progress bar, state-based primary action Start Reading / Continue / Completed with secondary Reflect. SUBSTITUTION RECORD: operator offered 'Glance or standard AppWidgetProvider/RemoteViews'; RemoteViews chosen because it is pure platform API (zero new dependency, zero toolchain risk for the CI release build) and works from minSdk 26 \u2014 not a workaround for an unavailable library."
       },
       {
         "name": "cw7-widget-refresh",
-        "status": "pending",
-        "notes": "Periodic refresh: WorkManager 30-min periodic + update on app foreground/completion; deep links read/{day}, notes?day=."
+        "status": "done",
+        "notes": "DONE: WidgetRefreshWorker \u2014 WorkManager periodic (30 min) + opportunistic one-shot on app foreground (MainActivity.onResume) and widget placement (onUpdate); reuses ReadingSession so widget == app; fails soft (keeps last good state). Deep links fh50://read/N and fh50://notes?day=N handled by MainActivity/AppNavHost."
       },
       {
         "name": "cw8-widget-participant-count",
-        "status": "pending",
-        "notes": "OPTIONAL: count of other participants who completed current day. No public endpoint exists and backend repo is not in scope this session -> SKIPPED, documented."
+        "status": "done",
+        "notes": "SKIPPED (documented, operator-sanctioned optional): no public endpoint returns 'participants who completed the current day' (/api/admin/stats is admin-only; a new endpoint needs the web repo vjumbo264/forgehouse50, not in scope this session). Everything else in the widget shipped."
       },
       {
         "name": "cw9-icon-reapply",
-        "status": "pending",
-        "notes": "Operator-attached 1024x1024 icon -> tools/make_adaptive_icon.py (bg/fg/monochrome + legacy) from new source."
+        "status": "done",
+        "notes": "DONE: regenerated from the operator-attached 1024x1024 source. tools/make_adaptive_icon.py run first (contract); the source is FULL-BLEED (baked blue gradient + rounded frame), so per the tool's own full-bleed rule the background AND foreground layers both render the artwork full-canvas (identical pixels -> launcher mask does the crop; no 'tiny icon in a box'). Monochrome/themed layer = alpha silhouette of the bright mark extracted from the artwork, safe-zoned (the established p6 pattern), referenced in ic_launcher.xml. Legacy pre-API26 ic_launcher + circle-masked ic_launcher_round regenerated for mdpi..xxxhdpi."
       },
       {
         "name": "cw10-validate-release-v13",
-        "status": "pending",
-        "notes": "Compile check, dispatch release.yml app_path=apps/forgehouse50, verify forgehouse50-v13 on Releases API, never overwrite v1-v12, then build_complete=true."
+        "status": "in_progress",
+        "notes": "Code complete; release dispatched 2026-09-27 via release.yml app_path=apps/forgehouse50; awaiting CI + Releases-API verification."
       },
       {
         "name": "cw11-ondevice-verification",
         "status": "pending",
-        "notes": "Live on-device checks (WhatsApp intents, catch-up simulation, widget add/refresh/states, gate, icon themed on/off) require a physical/emulated device not available in this sandbox; documented for operator verification with exact steps."
+        "notes": "Requires a physical/emulated device (not available in this CI sandbox). Operator verification steps: (1) Home/Profile -> 'Join ForgeHouse WhatsApp Group' opens the group invite; 'Support ForgeHouse Global' opens a WhatsApp chat to +234 913 909 5481 ready to send. (2) Miss 2 days: admin un-completes 2 elapsed days on a test account -> Home shows 'Catch up: days A + B' -> ReadSessionScreen paginates both days, per-day Finish gated until all chapters viewed, per-day quiz, progress updates each day. (3) Backlog > remaining days -> Progress shows the honest 'You need N more days...' status with no block. (4) Long-press home -> Widgets -> ForgeHouse 50: Day x/50, assignment, verse, X/260 bar; Start->Continue->Completed(+Reflect) as state changes; taps open the right screen. (5) Icon renders correctly with themed icons ON and OFF."
       }
     ]
   }

@@ -39,9 +39,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.data.MeResponse
+import com.forgebuild.forgehouse50.data.MeResponse as MeData
+import com.forgebuild.forgehouse50.data.ProgressResponse
+import com.forgebuild.forgehouse50.data.ReadingSession
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.data.TodayResponse
 import com.forgebuild.forgehouse50.ui.AppJson
+import com.forgebuild.forgehouse50.ui.JoinWhatsAppGroupButton
+import com.forgebuild.forgehouse50.ui.SupportWhatsAppButton
 import com.forgebuild.forgehouse50.ui.formatDurationShort
 import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 import com.forgebuild.forgehouse50.ui.ExpressiveButton
@@ -56,6 +61,7 @@ fun HomeScreen(
     repo: Repository,
     reloadTick: Int,
     onOpenRead: (Int) -> Unit,
+    onOpenSession: (List<Int>) -> Unit = {},
     onOpenQuiz: (Int) -> Unit,
     onOpenNotes: () -> Unit,
     onOpenAdmin: () -> Unit,
@@ -64,6 +70,8 @@ fun HomeScreen(
     val prefs = remember { context.getSharedPreferences("fh50_cache", Context.MODE_PRIVATE) }
     var today by remember { mutableStateOf<TodayResponse?>(null) }
     var me by remember { mutableStateOf<MeResponse?>(null) }
+    var progress by remember { mutableStateOf<ProgressResponse?>(null) }
+    var plan by remember { mutableStateOf<ReadingSession.SessionPlan?>(null) }
     var quizDone by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
 
@@ -83,7 +91,15 @@ fun HomeScreen(
             repo.session.userRole = it.role
             repo.session.userName = it.name
         }
+        runCatching { repo.api.progress() }.onSuccess { progress = it }
         refreshing = false
+    }
+
+    // catchup_widget_links_v1 / ISSUE 2: resolve the 1-or-2-day session via the
+    // shared catch-up engine; recomputed whenever today/progress/me land.
+    LaunchedEffect(today, progress, me) {
+        val t = today ?: return@LaunchedEffect
+        plan = ReadingSession.resolve(progress, t, me?.programme?.programme_end_date)
     }
 
     val block = today?.today
@@ -180,10 +196,32 @@ fun HomeScreen(
                             }
                         }
                     } else {
-                        ExpressiveButton(onClick = { onOpenRead(block.day_number) }, Modifier.fillMaxWidth()) {
+                        // ISSUE 2: with a backlog, open the 2-day catch-up session
+                        // (oldest outstanding days first); otherwise the normal day.
+                        val pl = plan
+                        ExpressiveButton(
+                            onClick = {
+                                if (pl != null && pl.catchup && pl.days.isNotEmpty()) onOpenSession(pl.days)
+                                else onOpenRead(block.day_number)
+                            },
+                            Modifier.fillMaxWidth(),
+                        ) {
                             Icon(Icons.Filled.MenuBook, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text(if ((block.reading_seconds) > 0) "Continue reading" else "Start reading")
+                            Text(
+                                if (pl != null && pl.catchup)
+                                    "Catch up: days ${pl.days.joinToString(" + ")}"
+                                else if ((block.reading_seconds) > 0) "Continue reading"
+                                else "Start reading",
+                            )
+                        }
+                        if (pl != null && pl.catchup) {
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                ReadingSession.statusLine(pl),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 } else {
@@ -208,6 +246,13 @@ fun HomeScreen(
             Spacer(Modifier.width(8.dp))
             Text("My notes (${me?.stats?.notes_total ?: 0})")
         }
+
+        // catchup_widget_links_v1 / ISSUE 1: two DISTINCT WhatsApp actions —
+        // join the community group vs. message the admin to support the project.
+        Spacer(Modifier.height(12.dp))
+        JoinWhatsAppGroupButton(context)
+        Spacer(Modifier.height(8.dp))
+        SupportWhatsAppButton(context)
 
         if (repo.session.isAdmin || me?.role == "admin") {
             Spacer(Modifier.height(8.dp))

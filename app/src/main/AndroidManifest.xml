@@ -26,7 +26,27 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- catchup_widget_links_v1 / ISSUE 3: widget deep links. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="fh50" />
+            </intent-filter>
         </activity>
         <service android:name=".work.KeepAliveService" android:exported="false" android:foregroundServiceType="dataSync" />
+
+        <!-- catchup_widget_links_v1 / ISSUE 3: genuine home-screen App Widget. -->
+        <receiver
+            android:name=".widget.ForgeHouseWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/forgehouse_widget_info" />
+        </receiver>
     </application>
 </manifest>

@@ -24,6 +24,7 @@ import com.forgebuild.forgehouse50.ui.AppNavHost
 import com.forgebuild.forgehouse50.ui.ForgeHouseTheme
 import com.forgebuild.forgehouse50.work.ReminderWorker
 import com.forgebuild.forgehouse50.work.KeepAliveService
+import com.forgebuild.forgehouse50.widget.WidgetRefreshWorker
 import android.os.PowerManager
 import android.provider.Settings
 
@@ -32,25 +33,34 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val repo = Repository(applicationContext, SessionStore(applicationContext))
+        // catchup_widget_links_v1 / ISSUE 3: widget deep-link target (fh50://read/N, fh50://notes?day=N).
+        val deepLink = intent?.data?.toString()
         setContent {
             ForgeHouseTheme {
-                App(repo)
+                App(repo, deepLink)
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Opportunistic widget refresh whenever the app is foregrounded, so the
+        // home-screen widget never shows stale day/progress data.
+        WidgetRefreshWorker.refreshNow(applicationContext)
     }
 }
 
 @Composable
-private fun App(repo: Repository) {
+private fun App(repo: Repository, deepLink: String?) {
     val context = LocalContext.current
 
     var loggedIn by remember { mutableStateOf(repo.session.isLoggedIn) }
     var authenticatedTick by remember { mutableStateOf(0) }   // force full reload on auth change
-
-    // leaderboard_audio_removal_offline_bible_v1 / ISSUE 3: the Media3 audio
-    // player and its lifecycle-bound controller are gone (audio removed
-    // upstream). The daily-reminder KeepAliveService below is a SEPARATE,
-    // still-needed foreground service and is untouched.
 
     // POST_NOTIFICATIONS (API 33+) for the daily reminder; fine if denied.
     val notifPermission = rememberLauncherForActivityResult(
@@ -63,9 +73,11 @@ private fun App(repo: Repository) {
             }
             ReminderWorker.schedule(context)
             KeepAliveService.start(context)
+            WidgetRefreshWorker.schedule(context)   // ISSUE 3: periodic widget refresh
         } else {
             ReminderWorker.cancel(context)
             KeepAliveService.stop(context)
+            WidgetRefreshWorker.cancel(context)
         }
     }
 
@@ -85,6 +97,7 @@ private fun App(repo: Repository) {
         repo = repo,
         loggedIn = loggedIn,
         authenticatedTick = authenticatedTick,
+        deepLink = deepLink,
         onAuthChanged = { nowLoggedIn ->
             loggedIn = nowLoggedIn
             authenticatedTick++

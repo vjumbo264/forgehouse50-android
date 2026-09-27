@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.data.ProgressResponse
+import com.forgebuild.forgehouse50.data.ReadingSession
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.ui.AppJson
 import com.forgebuild.forgehouse50.ui.formatDurationShort
@@ -56,6 +57,16 @@ fun ProgressScreen(repo: Repository, onOpenDay: (Int) -> Unit) {
             progress = it
             prefs.edit().putString("progress", AppJson.encodeToString(ProgressResponse.serializer(), it)).apply()
         }
+    }
+
+    // catchup_widget_links_v1 / ISSUE 2: honest, arithmetic-only catch-up status.
+    var catchupStatus by remember { mutableStateOf("") }
+    LaunchedEffect(progress) {
+        val pr = progress ?: return@LaunchedEffect
+        val t = runCatching { repo.api.today() }.getOrNull()
+        val me = runCatching { repo.api.me() }.getOrNull()
+        val plan = ReadingSession.resolve(pr, t, me?.programme?.programme_end_date)
+        catchupStatus = ReadingSession.statusLine(plan)
     }
 
     val p = progress
@@ -81,6 +92,15 @@ fun ProgressScreen(repo: Repository, onOpenDay: (Int) -> Unit) {
                     formatDurationShort(p.totals.reading_seconds_total) + " read",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (catchupStatus.isNotBlank()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        catchupStatus,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (catchupStatus.startsWith("You need")) MaterialTheme.colorScheme.tertiary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         Spacer(Modifier.height(12.dp))

@@ -1,4 +1,7 @@
 <resources>
     <!-- FORGEBUILD: generating AI replaces this with the app name. -->
     <string name="app_name">ForgeHouse 50</string>
+    <string name="widget_label">ForgeHouse 50 Reading</string>
+    <string name="widget_description">Today\'s ForgeHouse 50 reading day, assignment, verse and progress.</string>
+    <string name="widget_loading">Loading today\'s reading…</string>
 </resources>

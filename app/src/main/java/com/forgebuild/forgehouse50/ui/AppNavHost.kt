@@ -57,6 +57,7 @@ import com.forgebuild.forgehouse50.ui.profile.ProfileScreen
 import com.forgebuild.forgehouse50.ui.progress.ProgressScreen
 import com.forgebuild.forgehouse50.ui.quiz.QuizScreen
 import com.forgebuild.forgehouse50.ui.read.ReadScreen
+import com.forgebuild.forgehouse50.ui.read.ReadSessionScreen
 import com.forgebuild.forgehouse50.ui.read.TranslationsScreen
 import com.forgebuild.forgehouse50.update.UpdateChecker
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
@@ -67,12 +68,14 @@ object Routes {
     const val PROGRESS = "progress"
     const val PROFILE = "profile"
     const val READ = "read/{day}"
+    const val READ_SESSION = "readsession/{days}"
     const val QUIZ = "quiz/{day}"
     const val NOTES = "notes"
     const val NOTE_EDIT = "note_edit?noteId={noteId}&day={day}"
     const val ADMIN = "admin"
     const val TRANSLATIONS = "translations"
     fun read(day: Int) = "read/$day"
+    fun readSession(days: List<Int>) = "readsession/${days.joinToString(",")}"
     fun quiz(day: Int) = "quiz/$day"
     fun noteEdit(noteId: String?, day: Int?) =
         "note_edit?noteId=${noteId ?: ""}&day=${day ?: 0}"
@@ -97,6 +100,7 @@ fun AppNavHost(
     repo: Repository,
     loggedIn: Boolean,
     authenticatedTick: Int,
+    deepLink: String? = null,
     onAuthChanged: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
@@ -193,6 +197,7 @@ fun AppNavHost(
                     repo = repo,
                     reloadTick = authenticatedTick,
                     onOpenRead = { nav.navigate(Routes.read(it)) },
+                    onOpenSession = { ds -> nav.navigate(Routes.readSession(ds)) },
                     onOpenQuiz = { nav.navigate(Routes.quiz(it)) },
                     onOpenNotes = { nav.navigate(Routes.NOTES) },
                     onOpenAdmin = { nav.navigate(Routes.ADMIN) },
@@ -224,6 +229,21 @@ fun AppNavHost(
             }
             composable(Routes.TRANSLATIONS) {
                 TranslationsScreen(repo = repo, onBack = { nav.popBackStack() })
+            }
+            composable(
+                Routes.READ_SESSION,
+                arguments = listOf(navArgument("days") { type = NavType.StringType }),
+            ) { entry ->
+                val ds = entry.arguments?.getString("days")
+                    ?.split(",")?.mapNotNull { it.trim().toIntOrNull() }.orEmpty()
+                ReadSessionScreen(
+                    repo = repo,
+                    days = ds,
+                    onBack = { nav.popBackStack() },
+                    onOpenQuiz = { nav.navigate(Routes.quiz(it)) },
+                    onAddNote = { d -> nav.navigate(Routes.noteEdit(null, d)) },
+                    onManageTranslations = { nav.navigate(Routes.TRANSLATIONS) },
+                )
             }
             composable(
                 Routes.QUIZ,
@@ -258,6 +278,27 @@ fun AppNavHost(
                 )
             }
             composable(Routes.ADMIN) { AdminScreen(repo, onBack = { nav.popBackStack() }) }
+        }
+
+        // catchup_widget_links_v1 / ISSUE 3: consume a widget deep link once,
+        // when logged in (fh50://read/N opens the session flow; fh50://notes?day=N
+        // opens Notes as the post-completion "Reflect" target).
+        var deepLinkHandled by remember { mutableStateOf(false) }
+        LaunchedEffect(deepLink, loggedIn) {
+            if (!deepLinkHandled && loggedIn && !deepLink.isNullOrBlank()) {
+                deepLinkHandled = true
+                runCatching {
+                    val u = android.net.Uri.parse(deepLink)
+                    when (u.host) {
+                        "read" -> u.pathSegments?.firstOrNull()?.toIntOrNull()?.let {
+                            nav.navigate(Routes.read(it))
+                        }
+                        "notes" -> nav.navigate(Routes.NOTES)
+                        "home" -> nav.navigate(Routes.HOME)
+                        else -> {}
+                    }
+                }
+            }
         }
 
         // Non-blocking, skippable update prompt.
