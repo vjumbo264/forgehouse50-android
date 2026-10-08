@@ -1237,13 +1237,13 @@
     "tasks": [
       {
         "id": "srs1-issue1-diagnose-streak",
-        "status": "in_progress",
+        "status": "done",
         "title": "ISSUE 1 (Diagnose): Investigate streak calculation and why inactivity does not reset it",
-        "notes": "Diagnose streak calculation in backend (D1 / workers / functions) and app. Determine why inactive users retain stale frozen streak."
+        "notes": "DIAGNOSED: streaks(db, userId) in web repo functions/lib/points.mjs computed 'current' streak solely as the backwards consecutive run ending at the highest completed day_number (reading_progress.day_number). It never compared against the current date (watToday()) or the user's reading schedule (user_reading_days). If a user completed Days 1..6 a week ago and stopped reading, streaks() continued reporting 6 indefinitely. This frozen streak fed userAggregates, /api/today, /api/progress, and /api/leaderboard (Consistency category)."
       },
       {
         "id": "srs2-issue1-fix-streak",
-        "status": "pending",
+        "status": "in_progress",
         "title": "ISSUE 1 (Fix): Implement server-side streak rule and leaderboard consistency update",
         "notes": "Implement server-authoritative streak calculation that correctly accounts for WAT day boundaries, consecutive completed days, and catch-up mode, resetting to 0 when inactive. Verify live."
       },
