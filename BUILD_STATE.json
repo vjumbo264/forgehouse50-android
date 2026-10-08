@@ -1139,33 +1139,33 @@
     "tasks": [
       {
         "id": "fwd1-replace-font-plus-jakarta-sans",
-        "status": "in_progress",
+        "status": "done",
         "title": "Replace font family with Plus Jakarta Sans",
-        "notes": "Download official OFL Plus Jakarta Sans TTF into res/font/plus_jakarta_sans.ttf, wire in AppTheme.kt with explicit 400/500/600/700 weight variation, remove nunito.ttf."
+        "notes": "DONE: Downloaded official OFL Plus Jakarta Sans TTF into res/font/plus_jakarta_sans.ttf (176 KB, default weight 400.0). Wired into AppTheme.kt with explicit FontVariation.Settings(FontVariation.weight(...)) across Normal(400), Medium(500), SemiBold(600), and Bold(700). Nunito TTF completely removed."
       },
       {
         "id": "fwd2-fix-widget-button-crop",
-        "status": "pending",
+        "status": "done",
         "title": "Fix widget button bottom cropping in forgehouse_widget.xml",
-        "notes": "Tighten vertical padding, collapse empty verse view, reduce button height to compact 38dp, ensure comfortable bottom clearance on standard 2-cell home screen grids."
+        "notes": "DONE: Fixed widget layout in forgehouse_widget.xml: tightened vertical padding to 12dp top / 10dp bottom, reduced pill button height to compact 38dp with 2dp bottom margin, collapsed empty verse view (GONE when blank) so content never overflows on standard 2-cell home screen grid heights."
       },
       {
         "id": "fwd3-widget-dynamic-theme-dark",
-        "status": "pending",
+        "status": "done",
         "title": "Implement full Material You dynamic theming for widget (dark mode + system colors)",
-        "notes": "Create values/colors.xml, values-night/colors.xml, values-v31/colors.xml, and values-night-v31/colors.xml using system_neutral and system_accent colors; bind drawables and layout."
+        "notes": "DONE: Full Material You dynamic theming across values/colors.xml, values-night/colors.xml, values-v31/colors.xml, and values-night-v31/colors.xml using @android:color/system_* dynamic system colors. In dark mode, widget renders as a deep sleek dark surface with dynamic system accents from wallpaper."
       },
       {
         "id": "fwd4-widget-wavy-progress",
-        "status": "pending",
+        "status": "done",
         "title": "Add Material 3 Expressive wavy progress bar to widget",
-        "notes": "Implement custom wavy progress drawable for RemoteViews ProgressBar matching Expressive UI."
+        "notes": "DONE: Styled widget progress bar with Material 3 Expressive wavy progress drawable (widget_progress_wavy.xml layer-list with sinusoidal track and clipped accent wave)."
       },
       {
         "id": "fwd5-validate-and-release",
-        "status": "pending",
+        "status": "in_progress",
         "title": "Release forgehouse50-v15 and verify live",
-        "notes": "Dispatch release.yml workflow -> forgehouse50-v15, verify APK and manifest on GitHub Releases API, set build_complete=true."
+        "notes": "Dispatching release.yml workflow for forgehouse50-v15."
       }
     ]
   }

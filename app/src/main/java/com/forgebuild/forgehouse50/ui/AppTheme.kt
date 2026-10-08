@@ -24,33 +24,30 @@ import com.forgebuild.forgehouse50.R
 /**
  * ForgeHouse 50 app theme — Material 3 Expressive overhaul.
  *
- * Font resolution (Issue 2):
- * 1. The bundled Nunito variable font TTF default weight was patched from 200.0 (ExtraLight)
- *    to 500.0 (Medium) in its fvar table so any device or legacy renderer that defaults
- *    is guaranteed never to render hairline-thin text.
- * 2. Explicit FontVariation.Settings(FontVariation.weight(...)) are wired on each Font instance
- *    so variable font engines request exact weights (400, 500, 600, 700).
- * 3. Body text is assigned FontWeight.Medium (500) and SemiBold (600) across all scales.
+ * Typeface: Plus Jakarta Sans (OFL-licensed modern geometric humanist typeface).
+ * Explicit FontVariation.Settings(FontVariation.weight(...)) wired on each Font instance
+ * for crisp, premium rendering across Normal(400), Medium(500), SemiBold(600), and Bold(700).
+ * Replaces Nunito entirely per operator direction.
  */
 @OptIn(ExperimentalTextApi::class)
-private val Nunito = FontFamily(
+private val PlusJakartaSans = FontFamily(
     Font(
-        R.font.nunito,
+        R.font.plus_jakarta_sans,
         FontWeight.Normal,
         variationSettings = FontVariation.Settings(FontVariation.weight(400))
     ),
     Font(
-        R.font.nunito,
+        R.font.plus_jakarta_sans,
         FontWeight.Medium,
         variationSettings = FontVariation.Settings(FontVariation.weight(500))
     ),
     Font(
-        R.font.nunito,
+        R.font.plus_jakarta_sans,
         FontWeight.SemiBold,
         variationSettings = FontVariation.Settings(FontVariation.weight(600))
     ),
     Font(
-        R.font.nunito,
+        R.font.plus_jakarta_sans,
         FontWeight.Bold,
         variationSettings = FontVariation.Settings(FontVariation.weight(700))
     ),
@@ -58,21 +55,21 @@ private val Nunito = FontFamily(
 
 private val AppTypography = Typography().run {
     copy(
-        displayLarge = displayLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
-        displayMedium = displayMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
-        displaySmall = displaySmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
-        headlineLarge = headlineLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
-        headlineMedium = headlineMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
-        headlineSmall = headlineSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
-        titleLarge = titleLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
-        titleMedium = titleMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
-        titleSmall = titleSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
-        bodyLarge = bodyLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium, lineHeight = 24.sp),
-        bodyMedium = bodyMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium, lineHeight = 20.sp),
-        bodySmall = bodySmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium, lineHeight = 16.sp),
-        labelLarge = labelLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
-        labelMedium = labelMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
-        labelSmall = labelSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
+        displayLarge = displayLarge.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Bold),
+        displayMedium = displayMedium.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Bold),
+        displaySmall = displaySmall.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Bold),
+        headlineLarge = headlineLarge.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Bold),
+        headlineMedium = headlineMedium.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Bold),
+        headlineSmall = headlineSmall.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.SemiBold),
+        titleLarge = titleLarge.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Bold),
+        titleMedium = titleMedium.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.SemiBold),
+        titleSmall = titleSmall.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.SemiBold),
+        bodyLarge = bodyLarge.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Medium, lineHeight = 24.sp),
+        bodyMedium = bodyMedium.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Medium, lineHeight = 20.sp),
+        bodySmall = bodySmall.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.Medium, lineHeight = 16.sp),
+        labelLarge = labelLarge.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.SemiBold),
+        labelMedium = labelMedium.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.SemiBold),
+        labelSmall = labelSmall.copy(fontFamily = PlusJakartaSans, fontWeight = FontWeight.SemiBold),
     )
 }
 

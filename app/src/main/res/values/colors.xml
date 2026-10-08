@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light mode widget colors -->
+    <color name="widget_background">#FDFCF7</color>
+    <color name="widget_text_primary">#1A1C19</color>
+    <color name="widget_text_secondary">#5A5F56</color>
+    <color name="widget_chip_bg">#E8EBE2</color>
+    <color name="widget_chip_text">#1A1C19</color>
+    <color name="widget_progress_track">#E1E4DC</color>
+    <color name="widget_progress_bar">#2E6B4F</color>
+    <color name="widget_btn_primary_bg">#2E6B4F</color>
+    <color name="widget_btn_primary_text">#FFFFFF</color>
+    <color name="widget_btn_secondary_bg">#E8EBE2</color>
+    <color name="widget_btn_secondary_text">#1A1C19</color>
+</resources>

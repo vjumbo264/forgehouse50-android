@@ -5,7 +5,10 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_bg"
-    android:padding="16dp">
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="10dp">
 
     <!-- Top header: App title on left, pill day badge on right -->
     <LinearLayout
@@ -22,7 +25,7 @@
             android:text="ForgeHouse 50"
             android:textSize="12sp"
             android:textStyle="bold"
-            android:textColor="?android:attr/textColorSecondary" />
+            android:textColor="@color/widget_text_secondary" />
 
         <TextView
             android:id="@+id/w_day"
@@ -34,44 +37,42 @@
             android:text="Day 1/50"
             android:textSize="11sp"
             android:textStyle="bold"
-            android:textColor="?android:attr/textColorPrimary" />
+            android:textColor="@color/widget_chip_text" />
     </LinearLayout>
 
-    <Space
-        android:layout_width="match_parent"
-        android:layout_height="6dp" />
-
-    <!-- Assignment title -->
+    <!-- Reading assignment title -->
     <TextView
         android:id="@+id/w_assignment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
         android:maxLines="1"
         android:ellipsize="end"
         android:text="John 1–3"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:textColor="?android:attr/textColorPrimary" />
+        android:textColor="@color/widget_text_primary" />
 
-    <!-- Verse snippet -->
+    <!-- Optional verse snippet (collapsed when empty to save space) -->
     <TextView
         android:id="@+id/w_verse"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="3dp"
-        android:maxLines="2"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:maxLines="1"
         android:ellipsize="end"
-        android:textSize="12sp"
-        android:textColor="?android:attr/textColorSecondary" />
+        android:visibility="gone"
+        android:textSize="11sp"
+        android:textColor="@color/widget_text_secondary" />
 
-    <!-- Progress indicator -->
+    <!-- Expressive wavy progress indicator -->
     <ProgressBar
         android:id="@+id/w_progress"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:layout_marginTop="4dp"
+        android:layout_height="10dp"
+        android:layout_marginTop="3dp"
+        android:progressDrawable="@drawable/widget_progress_wavy"
         android:max="100"
         android:progress="0" />
 
@@ -79,34 +80,35 @@
         android:id="@+id/w_progress_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="1dp"
         android:text="0/260 chapters"
         android:textSize="10sp"
-        android:textColor="?android:attr/textColorSecondary" />
+        android:textColor="@color/widget_text_secondary" />
 
-    <!-- Action row at bottom -->
+    <!-- Compact pill action button row with generous bottom clearance -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="2dp"
         android:orientation="horizontal">
 
         <Button
             android:id="@+id/w_primary"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="42dp"
+            android:layout_height="38dp"
             android:background="@drawable/widget_btn_primary"
             android:text="Start Reading"
             android:textAllCaps="false"
             android:textSize="13sp"
             android:textStyle="bold"
-            android:textColor="@android:color/white" />
+            android:textColor="@color/widget_btn_primary_text" />
 
         <Button
             android:id="@+id/w_secondary"
             android:layout_width="wrap_content"
-            android:layout_height="42dp"
+            android:layout_height="38dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/widget_btn_secondary"
             android:visibility="gone"
@@ -114,7 +116,7 @@
             android:textAllCaps="false"
             android:textSize="13sp"
             android:textStyle="bold"
-            android:textColor="?android:attr/textColorPrimary" />
+            android:textColor="@color/widget_btn_secondary_text" />
     </LinearLayout>
 
 </LinearLayout>

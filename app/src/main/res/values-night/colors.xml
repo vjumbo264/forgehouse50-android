@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark mode widget colors -->
+    <color name="widget_background">#1E221E</color>
+    <color name="widget_text_primary">#E2E3DD</color>
+    <color name="widget_text_secondary">#A8AEA4</color>
+    <color name="widget_chip_bg">#2D322C</color>
+    <color name="widget_chip_text">#E2E3DD</color>
+    <color name="widget_progress_track">#2D322C</color>
+    <color name="widget_progress_bar">#8CD8AC</color>
+    <color name="widget_btn_primary_bg">#8CD8AC</color>
+    <color name="widget_btn_primary_text">#003820</color>
+    <color name="widget_btn_secondary_bg">#2D322C</color>
+    <color name="widget_btn_secondary_text">#E2E3DD</color>
+</resources>

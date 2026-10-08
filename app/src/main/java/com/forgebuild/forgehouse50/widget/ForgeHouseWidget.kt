@@ -6,24 +6,25 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.view.View
 import android.widget.RemoteViews
 import com.forgebuild.forgehouse50.R
 
 /**
  * Android home-screen App Widget.
  *
- * Cache-first guarantee (Issue 1): renders instantly from [WidgetStateStore]
- * snapshot on the very first layout frame without any blocking network or disk wait.
+ * Cache-first guarantee: renders instantly from [WidgetStateStore]
+ * snapshot on the very first layout frame without blocking network or disk wait.
  *
- * Visual redesign (Issue 3): Clean Material 3 widget layout with 28dp corners,
- * clear top day pill badge, bold assignment title, key verse snippet, and rounded
- * action bar.
+ * Material 3 Expressive & Dynamic Theming:
+ * - 28dp corners with wallpaper-based dynamic colors (both Light and Dark modes).
+ * - Expressive wavy progress bar.
+ * - Compact pill action buttons with ample clearance so the button curve is never cropped.
  */
 class ForgeHouseWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, mgr: AppWidgetManager, ids: IntArray) {
         for (id in ids) updateOne(context, mgr, id)
-        // Opportunistic background refresh so placing or updating stays fresh
         WidgetRefreshWorker.refreshNow(context)
     }
 
@@ -66,10 +67,13 @@ class ForgeHouseWidgetProvider : AppWidgetProvider() {
                 if (s.assignment.isNotBlank()) s.assignment else "No reading scheduled today"
             )
 
-            v.setTextViewText(
-                R.id.w_verse,
-                if (s.verse.isNotBlank()) "\u201C${s.verse}\u201D" else ""
-            )
+            // Dynamic verse visibility: collapse completely if blank so button never gets pushed down
+            if (s.verse.isNotBlank()) {
+                v.setViewVisibility(R.id.w_verse, View.VISIBLE)
+                v.setTextViewText(R.id.w_verse, "\u201C${s.verse}\u201D")
+            } else {
+                v.setViewVisibility(R.id.w_verse, View.GONE)
+            }
 
             // Overall completion progress
             val pct = if (s.chaptersTotal > 0)
@@ -85,24 +89,24 @@ class ForgeHouseWidgetProvider : AppWidgetProvider() {
                 !s.loggedIn || s.day <= 0 -> {
                     v.setTextViewText(R.id.w_primary, "Open ForgeHouse 50")
                     v.setOnClickPendingIntent(R.id.w_primary, deepLink(context, "fh50://home"))
-                    v.setViewVisibility(R.id.w_secondary, android.view.View.GONE)
+                    v.setViewVisibility(R.id.w_secondary, View.GONE)
                 }
                 s.completed -> {
                     v.setTextViewText(R.id.w_primary, "Completed")
                     v.setOnClickPendingIntent(R.id.w_primary, deepLink(context, "fh50://read/${s.day}"))
-                    v.setViewVisibility(R.id.w_secondary, android.view.View.VISIBLE)
+                    v.setViewVisibility(R.id.w_secondary, View.VISIBLE)
                     v.setTextViewText(R.id.w_secondary, "Reflect")
                     v.setOnClickPendingIntent(R.id.w_secondary, deepLink(context, "fh50://notes?day=${s.day}"))
                 }
                 s.started -> {
                     v.setTextViewText(R.id.w_primary, "Continue")
                     v.setOnClickPendingIntent(R.id.w_primary, deepLink(context, "fh50://read/${s.day}"))
-                    v.setViewVisibility(R.id.w_secondary, android.view.View.GONE)
+                    v.setViewVisibility(R.id.w_secondary, View.GONE)
                 }
                 else -> {
                     v.setTextViewText(R.id.w_primary, "Start Reading")
                     v.setOnClickPendingIntent(R.id.w_primary, deepLink(context, "fh50://read/${s.day}"))
-                    v.setViewVisibility(R.id.w_secondary, android.view.View.GONE)
+                    v.setViewVisibility(R.id.w_secondary, View.GONE)
                 }
             }
 
