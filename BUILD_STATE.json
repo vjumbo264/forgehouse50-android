@@ -1255,33 +1255,33 @@
       },
       {
         "id": "srs4-issue5-fix-all-chapters-gate",
-        "status": "in_progress",
+        "status": "done",
         "title": "ISSUE 5 (Fix): Robust all-chapters-viewed gate client-side and server-side",
-        "notes": "Enforce all-chapters-viewed gate across all UI entry points (including Progress screen navigation) AND server-side in /api/read/complete. Verify exploit is closed."
+        "notes": "DONE: All-chapters-viewed gate sealed client-side and server-side. In Android app, ChapterViewTracker wired into ReadScreen.kt (covering ProgressScreen and single-day navigation). Mark-Complete button remains disabled with dynamic tertiary gate hint ('View all N chapters to finish (M/N viewed)') until each chapter achieves 1.5s reading dwell. Both ReadScreen and ReadSessionScreen send viewed_chapters list to /api/read/complete. Backend complete.mjs validates viewed_chapters against day's required canonical assignment; rejects unviewed attempts with 400 Bad Request."
       },
       {
         "id": "srs5-issue2-widget-button-crop",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 2: Widget responsive layout to eliminate button cropping under dynamic content",
-        "notes": "Ensure widget container wraps full content and uses flexible sizing so the button is never cropped regardless of varying content height (long book titles, catch-up text, snippet lengths)."
+        "notes": "DONE: forgehouse_widget.xml converted from vertical LinearLayout with spacer to a structured RelativeLayout: header pinned alignParentTop, action buttons pinned alignParentBottom with 34dp height and zero minHeight, middle content bounded safely in between with gravity center_vertical and single-line ellipsize text. Button row is permanently anchored to the bottom and structurally immune to vertical content overflow or launcher cropping."
       },
       {
         "id": "srs6-issue3-reader-ui-footnote",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 3: Reader screen premium visual pass + clearly visible footnote chip",
-        "notes": "Redesign footnote marker as a distinctive interactive accent pill/chip with numeral/icon. Apply premium M3 Expressive styling to Reader screen (soft elevation, confident typography, calm controls, polished footnote card)."
+        "notes": "DONE: Footnote marker transformed from faint subscript text into a bold, high-contrast M3 interactive accent chip (Icons.Filled.Notes, 'Footnote' / 'N Footnotes', rounded 12dp pill, primaryContainer fill, subtle border). Clicking expands an elevated surfaceContainerHigh card with verse header and close button. Reader top bar enhanced with M3 container pill font-size buttons; bottom bar enhanced with surfaceContainerLow elevation and clear gate hints."
       },
       {
         "id": "srs7-issue4-support-whatsapp-prefilled",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 4: Support link pre-filled WhatsApp message",
-        "notes": "Update wa.me deep link to include pre-filled URL-encoded message (e.g. 'Hi, I\\'d like to support ForgeHouse 50')."
+        "notes": "DONE: CommunityLinks.SUPPORT_WA_ME_URL updated with URL-encoded pre-filled message: 'https://wa.me/2349139095481?text=Hi%2C%20I%27d%20like%20to%20support%20ForgeHouse%2050'. Tapping the support action opens WhatsApp chat with the message already filled and ready to send."
       },
       {
         "id": "srs8-validate-and-release-v17",
-        "status": "pending",
+        "status": "in_progress",
         "title": "Validate, dispatch release-v17, and verify live",
-        "notes": "Validate builds, dispatch release.yml workflow for apps/forgehouse50 -> forgehouse50-v17, verify live on GitHub Releases API, mark build_complete=true."
+        "notes": "Dispatching CI release workflow run for apps/forgehouse50 to produce release forgehouse50-v17."
       }
     ]
   }
