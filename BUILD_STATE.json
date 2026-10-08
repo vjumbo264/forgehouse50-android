@@ -1313,15 +1313,15 @@
       },
       {
         "id": "rufs4-catchup-streak-fix",
-        "status": "in_progress",
+        "status": "done",
         "title": "ISSUE 4: Catch-up/backlog days must not increment streak counter",
-        "notes": "Applying catch-up streak rule..."
+        "notes": "DONE (Issue 4): Streak calculation in streaks(db, userId) updated to enforce operator catch-up rule: (1) While highestCompleted < elapsed, user is in catch-up backlog mode and current streak is strictly 0; (2) Completing catch-up backlog days awards reading_completed (+70) and quiz points but never awards daily_streak points or increments streak; (3) When caught up and completing the current real-time day (highestCompleted >= elapsed), streak increments starting fresh from 1 by counting only consecutive on-time completed days (compDate <= scheduledDate); (4) Longest streak is preserved. Verified across 4 live test scenarios (2 catch-up days -> streak 0, 4 catch-up days -> streak 0, caught up on current day -> streak 1, uninterrupted schedule -> streak 6)."
       },
       {
         "id": "rufs5-validate-and-release-v18",
-        "status": "pending",
+        "status": "in_progress",
         "title": "Release forgehouse50-v18 and verify live",
-        "notes": "Pending."
+        "notes": "Preparing release dispatch..."
       }
     ]
   }
