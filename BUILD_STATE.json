@@ -1301,15 +1301,15 @@
       },
       {
         "id": "rufs2-footnote-icon-only",
-        "status": "in_progress",
+        "status": "done",
         "title": "ISSUE 2: Remove text label from footnote marker, leaving icon only",
-        "notes": "Implementing icon-only footnote marker..."
+        "notes": "DONE (Issue 2): Removed text label ('Footnote' / 'N Footnotes') from the footnote marker chip, leaving only the interactive Notes icon element. Styled with a compact M3 rounded surface container (8dp radius, primaryContainer tint, subtle border, 15dp icon, 7x4dp padding) positioned immediately after the verse text, ensuring it is clearly legible and effortlessly tappable without any accompanying text."
       },
       {
         "id": "rufs3-footnote-remove-chapter-lettering",
-        "status": "pending",
+        "status": "in_progress",
         "title": "ISSUE 3: Remove cross-chapter alphabetic footnote lettering; local verse-level separation only",
-        "notes": "Pending."
+        "notes": "Implementing footnote lettering removal and local verse separation..."
       },
       {
         "id": "rufs4-catchup-streak-fix",
