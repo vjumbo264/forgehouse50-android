@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": true,
-  "last_updated_utc": "2026-10-08T09:51:00Z",
+  "build_complete": false,
+  "last_updated_utc": "2026-10-08T15:21:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1282,6 +1282,46 @@
         "status": "done",
         "title": "Validate, dispatch release-v17, and verify live",
         "notes": "DONE: CI release workflow run 37759025952 succeeded. Tag forgehouse50-v17 published live on GitHub Releases API with signed app-forgehouse50-v17.apk (8,774,197 bytes, versionCode=17, versionName=2) and forgebuild-manifest.json. Releases v1-v16 completely intact."
+      }
+    ]
+  },
+  "reader_unify_footnote_streak_v1": {
+    "name": "reader_unify_footnote_streak_v1",
+    "status": "in_progress",
+    "seeded_utc": "2026-10-08T15:20:00Z",
+    "target_release": "forgehouse50-v18",
+    "base_source": "forgehouse50-v17",
+    "scope_note": "Four issues from 2026-10-08 operator prompt: (1) Unify two divergent Reading-screen implementations into single screen; (2) Footnote marker remove text label, icon only; (3) Remove cross-chapter alphabetic footnote lettering; (4) Catch-up days must not increase streak.",
+    "tasks": [
+      {
+        "id": "rufs1-unify-reading-screens",
+        "status": "in_progress",
+        "title": "ISSUE 1: Trace all reading screen entry points and consolidate into single unified reader",
+        "notes": "Starting investigation of entry points..."
+      },
+      {
+        "id": "rufs2-footnote-icon-only",
+        "status": "pending",
+        "title": "ISSUE 2: Remove text label from footnote marker, leaving icon only",
+        "notes": "Pending."
+      },
+      {
+        "id": "rufs3-footnote-remove-chapter-lettering",
+        "status": "pending",
+        "title": "ISSUE 3: Remove cross-chapter alphabetic footnote lettering; local verse-level separation only",
+        "notes": "Pending."
+      },
+      {
+        "id": "rufs4-catchup-streak-fix",
+        "status": "pending",
+        "title": "ISSUE 4: Catch-up/backlog days must not increment streak counter",
+        "notes": "Pending."
+      },
+      {
+        "id": "rufs5-validate-and-release-v18",
+        "status": "pending",
+        "title": "Release forgehouse50-v18 and verify live",
+        "notes": "Pending."
       }
     ]
   }
