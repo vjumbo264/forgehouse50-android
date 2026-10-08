@@ -1243,19 +1243,19 @@
       },
       {
         "id": "srs2-issue1-fix-streak",
-        "status": "in_progress",
+        "status": "done",
         "title": "ISSUE 1 (Fix): Implement server-side streak rule and leaderboard consistency update",
-        "notes": "Implement server-authoritative streak calculation that correctly accounts for WAT day boundaries, consecutive completed days, and catch-up mode, resetting to 0 when inactive. Verify live."
+        "notes": "DONE: streaks(db, userId) in web repo (commit 8642418) rewritten to be server-authoritative against the user's WAT calendar (user_reading_days, watToday()). Current streak is alive iff user completed today's scheduled day or was active today or on the most recent scheduled reading day (protecting users reading today, users on Tue/Fri non-reading days, and users actively working through catch-up backlog). If inactive, current streak immediately resets to 0. Longest streak is preserved. Verified across 5 comprehensive test cases (inactive 10 days -> 0, active today -> 6, completed on prev reading day -> 6, catch-up active yesterday -> 3, catch-up stopped 5 days ago -> 0). Consistency leaderboard category automatically ranks by active current streak."
       },
       {
         "id": "srs3-issue5-diagnose-all-chapters-gate",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 5 (Diagnose): Investigate all-chapters-viewed gate bypass",
-        "notes": "Investigate why users navigating via Progress screen or direct API can mark reading day complete without viewing all chapters."
+        "notes": "DIAGNOSED: In Android app, ChapterViewTracker was ONLY used in ReadSessionScreen.kt (catch-up mode). ProgressScreen.kt and single-day reading in HomeScreen navigate to ReadScreen.kt via Routes.read(day), which completely lacked ChapterViewTracker — its 'Mark day N reading complete' button was permanently enabled on initial compose. In addition, backend complete.mjs (POST /api/read/complete) had zero server-side verification of viewed chapters or reading dwell, accepting raw day_number payloads immediately."
       },
       {
         "id": "srs4-issue5-fix-all-chapters-gate",
-        "status": "pending",
+        "status": "in_progress",
         "title": "ISSUE 5 (Fix): Robust all-chapters-viewed gate client-side and server-side",
         "notes": "Enforce all-chapters-viewed gate across all UI entry points (including Progress screen navigation) AND server-side in /api/read/complete. Verify exploit is closed."
       },
