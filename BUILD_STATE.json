@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": true,
-  "last_updated_utc": "2026-10-08T05:42:00Z",
+  "build_complete": false,
+  "last_updated_utc": "2026-10-08T09:31:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1224,6 +1224,64 @@
         "status": "done",
         "title": "Release forgehouse50-v16 and verify live",
         "notes": "DONE: CI release workflow run 37743813082 succeeded. Tag forgehouse50-v16 published live on GitHub Releases API with signed app-forgehouse50-v16.apk (8,773,949 bytes, versionCode=16, versionName=2) and forgebuild-manifest.json. Releases v1-v15 completely intact."
+      }
+    ]
+  },
+  "streak_reader_support_fix_v1": {
+    "name": "streak_reader_support_fix_v1",
+    "status": "in_progress",
+    "seeded_utc": "2026-10-08T09:31:00Z",
+    "target_release": "forgehouse50-v17",
+    "base_source": "forgehouse50-v16",
+    "scope_note": "Five issues from 2026-10-08 operator prompt: (1) Streak does not reset after inactivity (critical server-authoritative fix); (2) Widget button still intermittently cropped (responsive dynamic layout); (3) Reader page UI enhancement + prominent footnote marker; (4) Support link WhatsApp pre-filled message; (5) All-chapters-viewed gate bypass fix client + server.",
+    "tasks": [
+      {
+        "id": "srs1-issue1-diagnose-streak",
+        "status": "in_progress",
+        "title": "ISSUE 1 (Diagnose): Investigate streak calculation and why inactivity does not reset it",
+        "notes": "Diagnose streak calculation in backend (D1 / workers / functions) and app. Determine why inactive users retain stale frozen streak."
+      },
+      {
+        "id": "srs2-issue1-fix-streak",
+        "status": "pending",
+        "title": "ISSUE 1 (Fix): Implement server-side streak rule and leaderboard consistency update",
+        "notes": "Implement server-authoritative streak calculation that correctly accounts for WAT day boundaries, consecutive completed days, and catch-up mode, resetting to 0 when inactive. Verify live."
+      },
+      {
+        "id": "srs3-issue5-diagnose-all-chapters-gate",
+        "status": "pending",
+        "title": "ISSUE 5 (Diagnose): Investigate all-chapters-viewed gate bypass",
+        "notes": "Investigate why users navigating via Progress screen or direct API can mark reading day complete without viewing all chapters."
+      },
+      {
+        "id": "srs4-issue5-fix-all-chapters-gate",
+        "status": "pending",
+        "title": "ISSUE 5 (Fix): Robust all-chapters-viewed gate client-side and server-side",
+        "notes": "Enforce all-chapters-viewed gate across all UI entry points (including Progress screen navigation) AND server-side in /api/read/complete. Verify exploit is closed."
+      },
+      {
+        "id": "srs5-issue2-widget-button-crop",
+        "status": "pending",
+        "title": "ISSUE 2: Widget responsive layout to eliminate button cropping under dynamic content",
+        "notes": "Ensure widget container wraps full content and uses flexible sizing so the button is never cropped regardless of varying content height (long book titles, catch-up text, snippet lengths)."
+      },
+      {
+        "id": "srs6-issue3-reader-ui-footnote",
+        "status": "pending",
+        "title": "ISSUE 3: Reader screen premium visual pass + clearly visible footnote chip",
+        "notes": "Redesign footnote marker as a distinctive interactive accent pill/chip with numeral/icon. Apply premium M3 Expressive styling to Reader screen (soft elevation, confident typography, calm controls, polished footnote card)."
+      },
+      {
+        "id": "srs7-issue4-support-whatsapp-prefilled",
+        "status": "pending",
+        "title": "ISSUE 4: Support link pre-filled WhatsApp message",
+        "notes": "Update wa.me deep link to include pre-filled URL-encoded message (e.g. 'Hi, I\\'d like to support ForgeHouse 50')."
+      },
+      {
+        "id": "srs8-validate-and-release-v17",
+        "status": "pending",
+        "title": "Validate, dispatch release-v17, and verify live",
+        "notes": "Validate builds, dispatch release.yml workflow for apps/forgehouse50 -> forgehouse50-v17, verify live on GitHub Releases API, mark build_complete=true."
       }
     ]
   }
