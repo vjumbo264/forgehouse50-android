@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": true,
-  "last_updated_utc": "2026-09-27T07:30:00Z",
+  "build_complete": false,
+  "last_updated_utc": "2026-10-07T23:58:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -344,6 +344,12 @@
       "date": "2026-09-18",
       "did": "post_testing_polish_v1 shipped: forgehouse50-v12 built (CI run 35309797557, success) and verified live on the GitHub Releases API (APK 8,624,185 bytes + manifest, non-draft). build_complete=true. All six code fixes verified at source level; per-issue on-device screenshot/recording verification remains the operator-side step (no emulator in the build sandbox) \u2014 each task note records exactly what to look at on device.",
       "next": "Operator installs app-forgehouse50-v12.apk and runs the six on-device checks recorded in post_testing_polish_v1 tasks p1-p6 (font comfort, spinner contrast light+dark, You row on leaderboard, footnote tap at e.g. Matthew 1, chapter-nav icons + no squiggle, themed-icons ON/OFF icon silhouette)."
+    },
+    {
+      "session": 14,
+      "date": "2026-10-07",
+      "did": "Operator EXTEND/UPDATE: premium visual pass (mockup reference), critical cache-first fix app-wide & widget, widget redesign, icon silhouette swap to v2. Seeded premium_ui_cache_fix_v1 task list.",
+      "next": "Execute puc1-audit-cache-first -> puc2-fix-cache-first -> puc3-font-weight-variable-fix -> puc4-premium-ui-home -> puc5-premium-ui-appwide -> puc6-widget-redesign -> puc7-icon-silhouette-v2 -> puc8-validate-and-release."
     }
   ],
   "combined_fixes_v1": {
@@ -1056,6 +1062,65 @@
         "name": "cw11-ondevice-verification",
         "status": "pending",
         "notes": "Requires a physical/emulated device (not available in this CI sandbox). Operator verification steps: (1) Home/Profile -> 'Join ForgeHouse WhatsApp Group' opens the group invite; 'Support ForgeHouse Global' opens a WhatsApp chat to +234 913 909 5481 ready to send. (2) Miss 2 days: admin un-completes 2 elapsed days on a test account -> Home shows 'Catch up: days A + B' -> ReadSessionScreen paginates both days, per-day Finish gated until all chapters viewed, per-day quiz, progress updates each day. (3) Backlog > remaining days -> Progress shows the honest 'You need N more days...' status with no block. (4) Long-press home -> Widgets -> ForgeHouse 50: Day x/50, assignment, verse, X/260 bar; Start->Continue->Completed(+Reflect) as state changes; taps open the right screen. (5) Icon renders correctly with themed icons ON and OFF."
+      }
+    ]
+  },
+  "target_release": "forgehouse50-v14",
+  "premium_ui_cache_fix_v1": {
+    "name": "premium_ui_cache_fix_v1",
+    "status": "in_progress",
+    "seeded_utc": "2026-10-07T23:58:00Z",
+    "target_release": "forgehouse50-v14",
+    "base_source": "forgehouse50-v13 (current main)",
+    "scope_note": "Four issues from 2026-10-07 operator prompt: (1) Critical cache-first audit and fix across all screens and widget; (2) Premium visual pass matching reference mockup + permanent body font weight fix; (3) Clean Material-style widget redesign; (4) Replace themed-icon monochrome silhouette with clean v2 attached version.",
+    "tasks": [
+      {
+        "id": "puc1-audit-cache-first",
+        "status": "in_progress",
+        "title": "ISSUE 1 (Audit): Diagnose stale/default/zeroed data flash across app and widget",
+        "notes": "Investigating data layer and UI lifecycle: identify where state begins as null/default and flashes before network return, and why widget loses state."
+      },
+      {
+        "id": "puc2-fix-cache-first",
+        "status": "pending",
+        "title": "ISSUE 1 (Fix): Implement synchronous/immediate cache-first rendering app-wide",
+        "notes": "Provide persistent cache store for Today, Me, Progress, Notes, Leaderboard, Quiz. Initialize Compose state synchronously inside remember; background network updates cache and reconciles seamlessly."
+      },
+      {
+        "id": "puc3-font-weight-variable-fix",
+        "status": "pending",
+        "title": "ISSUE 2 (Font): Permanent fix for hairline thin body font",
+        "notes": "Fix nunito.ttf fvar default weight (was 200.0 ExtraLight) and wire Compose FontVariation.weight settings so text is guaranteed Medium/SemiBold on all devices."
+      },
+      {
+        "id": "puc4-premium-ui-home",
+        "status": "pending",
+        "title": "ISSUE 2 (Home): Elevated visual confidence matching reference mockup",
+        "notes": "Pill stat cards with soft circular icon chips and bold large numerals; full-width pill action rows with icon chips and chevrons; generous 24dp/28dp corner radii and soft elevation."
+      },
+      {
+        "id": "puc5-premium-ui-appwide",
+        "status": "pending",
+        "title": "ISSUE 2 (App-Wide): Elevate Progress, Leaderboard, Profile, Notes, Admin screens",
+        "notes": "Apply consistent visual polish: bold numerals, elevated cards, pill action buttons, and generous radii across all secondary screens."
+      },
+      {
+        "id": "puc6-widget-redesign",
+        "status": "pending",
+        "title": "ISSUE 3: Clean Material 3 widget redesign",
+        "notes": "Material 3 widget layout: 28dp corners, top header badge, bold assignment title, key verse snippet, rounded action button; failsafe cache preservation."
+      },
+      {
+        "id": "puc7-icon-silhouette-v2",
+        "status": "pending",
+        "title": "ISSUE 4: Replace themed-icon monochrome layer with clean v2 silhouette",
+        "notes": "Generate ic_launcher_monochrome.png across all densities from the v2 logo source, anti-aliased and safe-zoned."
+      },
+      {
+        "id": "puc8-validate-and-release",
+        "status": "pending",
+        "title": "Release forgehouse50-v14 and verify live",
+        "notes": "Dispatch release.yml workflow -> forgehouse50-v14, verify APK and manifest on GitHub Releases API, set build_complete=true."
       }
     ]
   }
