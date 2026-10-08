@@ -1307,15 +1307,15 @@
       },
       {
         "id": "rufs3-footnote-remove-chapter-lettering",
-        "status": "in_progress",
+        "status": "done",
         "title": "ISSUE 3: Remove cross-chapter alphabetic footnote lettering; local verse-level separation only",
-        "notes": "Implementing footnote lettering removal and local verse separation..."
+        "notes": "DONE (Issue 3): Removed cross-chapter running alphabetic (and numeric) sequential lettering schemes (e.g. 'a ', 'b ', 'c ', '1 ', 'd a ') via cleanFootnoteText. Single-footnote verses now render cleanly without any letter or number identifier. Multi-footnote verses render their distinct notes with local 1, 2, 3 indexing and subtle horizontal dividers starting fresh from 1 for that verse, completely eliminating whole-chapter running lettering."
       },
       {
         "id": "rufs4-catchup-streak-fix",
-        "status": "pending",
+        "status": "in_progress",
         "title": "ISSUE 4: Catch-up/backlog days must not increment streak counter",
-        "notes": "Pending."
+        "notes": "Applying catch-up streak rule..."
       },
       {
         "id": "rufs5-validate-and-release-v18",
