@@ -1,4 +1,5 @@
 package com.forgebuild.forgehouse50.ui.admin
+import com.forgebuild.forgehouse50.data.AppCache
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
@@ -57,10 +58,11 @@ import com.forgebuild.forgehouse50.ui.ExpressiveButton
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminScreen(repo: Repository, onBack: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
     var tab by remember { mutableStateOf(0) }
-    var stats by remember { mutableStateOf<AdminStats?>(null) }
-    var programme by remember { mutableStateOf<AdminProgramme?>(null) }
+    var stats by remember { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getAdminStats(context)) }
+    var programme by remember { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getAdminProgramme(context)) }
     var participants by remember { mutableStateOf<List<Participant>>(emptyList()) }
     var message by remember { mutableStateOf<String?>(null) }
     var adjustTarget by remember { mutableStateOf<Participant?>(null) }
@@ -68,8 +70,8 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
     var confirmEndTesting by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        runCatching { repo.api.adminStats() }.onSuccess { stats = it }
-        runCatching { repo.api.adminProgramme() }.onSuccess { programme = it }
+        runCatching { repo.api.adminStats() }.onSuccess { stats = it; com.forgebuild.forgehouse50.data.AppCache.saveAdminStats(context, it) }
+        runCatching { repo.api.adminProgramme() }.onSuccess { programme = it; com.forgebuild.forgehouse50.data.AppCache.saveAdminProgramme(context, it) }
         runCatching { repo.api.adminParticipants() }.onSuccess { participants = it.participants }
     }
 

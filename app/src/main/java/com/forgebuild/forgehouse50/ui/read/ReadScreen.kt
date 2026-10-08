@@ -1,4 +1,5 @@
 package com.forgebuild.forgehouse50.ui.read
+import com.forgebuild.forgehouse50.data.AppCache
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -80,10 +81,10 @@ fun ReadScreen(
     onAddNote: (Int) -> Unit,
     onManageTranslations: () -> Unit,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
-
-    var dayData by remember { mutableStateOf<DayResponse?>(null) }
-    var dayLoaded by remember { mutableStateOf(false) }
+    var dayData by remember(day) { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getDay(context, day)) }
+    var dayLoaded by remember(day) { mutableStateOf(dayData != null) }
     var translation by remember { mutableStateOf(repo.session.translationId ?: Repository.KJV_ID) }
     var availableTranslations by remember { mutableStateOf<List<String>>(listOf(Repository.KJV_ID)) }
     var passageError by remember { mutableStateOf<String?>(null) }
@@ -91,7 +92,7 @@ fun ReadScreen(
     var selected by remember { mutableIntStateOf(0) }
     var passage by remember { mutableStateOf<PassageResponse?>(null) }
     var loadingPassage by remember { mutableStateOf(false) }
-    var completed by remember { mutableStateOf(false) }
+    var completed by remember(day) { mutableStateOf(dayData?.progress?.completed ?: false) }
     var error by remember { mutableStateOf<String?>(null) }
     // Part D: Mark-Complete loading/feedback state.
     var completeBusy by remember { mutableStateOf(false) }
@@ -120,6 +121,7 @@ fun ReadScreen(
         runCatching { repo.api.day(day) }.onSuccess {
             dayData = it
             completed = it.progress.completed
+            com.forgebuild.forgehouse50.data.AppCache.saveDay(context, day, it)
         }.onFailure { error = it.message }
         dayLoaded = true
     }
@@ -395,7 +397,16 @@ fun ReadScreen(
                                 completeBusy = true
                                 error = null
                                 runCatching { repo.api.completeDay(day) }
-                                    .onSuccess { completed = true }
+                                    .onSuccess {
+                                        completed = true
+                                        dayData?.let { cur ->
+                                            val upd = cur.copy(progress = cur.progress.copy(completed = true))
+                                            dayData = upd
+                                            com.forgebuild.forgehouse50.data.AppCache.saveDay(context, day, upd)
+                                        }
+                                        com.forgebuild.forgehouse50.widget.WidgetRefreshWorker.refreshWidgetState(context, repo)
+                                        com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
+                                    }
                                     .onFailure { error = it.message ?: "Could not mark this day complete." }
                                 completeBusy = false
                             }

@@ -8,39 +8,31 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.RemoteViews
 import com.forgebuild.forgehouse50.R
-import com.forgebuild.forgehouse50.data.Repository
-import com.forgebuild.forgehouse50.data.SessionStore
 
 /**
- * catchup_widget_links_v1 / ISSUE 3 — genuine Android home-screen App Widget,
- * implemented with the standard AppWidgetProvider + RemoteViews approach (the
- * operator's contract explicitly allows RemoteViews). Rationale for choosing it
- * over Glance here: ZERO new library dependency (RemoteViews is platform API),
- * so no Gradle/JDK/toolchain risk for the CI release build, and it works from
- * minSdk 26 up. Recorded as a documented decision in BUILD_STATE notes.
+ * Android home-screen App Widget.
  *
- * Content comes from the shared [WidgetStateStore] snapshot, which
- * [WidgetRefreshWorker] refreshes periodically (WorkManager) + opportunistically
- * (app foreground / day completion), so the widget never shows stale data.
+ * Cache-first guarantee (Issue 1): renders instantly from [WidgetStateStore]
+ * snapshot on the very first layout frame without any blocking network or disk wait.
  *
- * State-based primary action:
- *   not started  -> "Start Reading"   (deep link fh50://read/<day>)
- *   in progress  -> "Continue"        (deep link fh50://read/<day>)
- *   completed    -> "Completed" + a secondary "Reflect" (deep link fh50://notes?day=<day>)
+ * Visual redesign (Issue 3): Clean Material 3 widget layout with 28dp corners,
+ * clear top day pill badge, bold assignment title, key verse snippet, and rounded
+ * action bar.
  */
 class ForgeHouseWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, mgr: AppWidgetManager, ids: IntArray) {
         for (id in ids) updateOne(context, mgr, id)
-        // Kick a fresh pull so the first placement shows real data, not the placeholder.
+        // Opportunistic background refresh so placing or updating stays fresh
         WidgetRefreshWorker.refreshNow(context)
     }
 
     companion object {
         fun updateAll(context: Context) {
-            val mgr = AppWidgetManager.getInstance(context)
+            val mgr = AppWidgetManager.getInstance(context) ?: return
             val ids = mgr.getAppWidgetIds(
-                android.content.ComponentName(context, ForgeHouseWidgetProvider::class.java))
+                android.content.ComponentName(context, ForgeHouseWidgetProvider::class.java)
+            )
             for (id in ids) updateOne(context, mgr, id)
         }
 
@@ -63,21 +55,31 @@ class ForgeHouseWidgetProvider : AppWidgetProvider() {
             v.setTextViewText(
                 R.id.w_day,
                 when {
-                    !s.loggedIn -> "Sign in to see today"
+                    !s.loggedIn -> "Sign In"
                     s.day > 0 -> "Day ${s.day}/${s.totalDays}" + if (s.catchup) " · catch-up" else ""
-                    else -> "No reading due today"
+                    else -> "Rest day"
                 },
             )
-            v.setTextViewText(R.id.w_assignment, s.assignment.ifBlank { "" })
+
+            v.setTextViewText(
+                R.id.w_assignment,
+                if (s.assignment.isNotBlank()) s.assignment else "No reading scheduled today"
+            )
+
             v.setTextViewText(
                 R.id.w_verse,
-                if (s.verse.isBlank()) "" else "\u201C${s.verse}\u201D",
+                if (s.verse.isNotBlank()) "\u201C${s.verse}\u201D" else ""
             )
-            // overall completion bar X/260
+
+            // Overall completion progress
             val pct = if (s.chaptersTotal > 0)
                 ((s.chaptersDone * 100) / s.chaptersTotal).coerceIn(0, 100) else 0
             v.setProgressBar(R.id.w_progress, 100, pct, false)
-            v.setTextViewText(R.id.w_progress_text, "${s.chaptersDone}/${s.chaptersTotal} chapters")
+            v.setTextViewText(R.id.w_progress_text, "${s.chaptersDone}/${s.chaptersTotal} chapters ($pct%)")
+
+            // Top container click opens app
+            val mainIntent = if (s.day > 0) "fh50://read/${s.day}" else "fh50://home"
+            v.setOnClickPendingIntent(R.id.w_root, deepLink(context, mainIntent))
 
             when {
                 !s.loggedIn || s.day <= 0 -> {
@@ -103,6 +105,7 @@ class ForgeHouseWidgetProvider : AppWidgetProvider() {
                     v.setViewVisibility(R.id.w_secondary, android.view.View.GONE)
                 }
             }
+
             mgr.updateAppWidget(id, v)
         }
     }

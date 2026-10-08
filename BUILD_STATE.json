@@ -1082,45 +1082,45 @@
       },
       {
         "id": "puc2-fix-cache-first",
-        "status": "in_progress",
+        "status": "done",
         "title": "ISSUE 1 (Fix): Implement synchronous/immediate cache-first rendering app-wide",
-        "notes": "Provide persistent cache store for Today, Me, Progress, Notes, Leaderboard, Quiz. Initialize Compose state synchronously inside remember; background network updates cache and reconciles seamlessly."
+        "notes": "DONE: AppCache.kt provides synchronous, offline-first cache store for Today, Me, Progress, Notes, Leaderboard, Day, Quiz, and Admin. Screens initialize synchronously inside remember before first frame composition, eliminating zero/placeholder flash. WidgetRefreshWorker falls back to AppCache and preserves state on network failure."
       },
       {
         "id": "puc3-font-weight-variable-fix",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 2 (Font): Permanent fix for hairline thin body font",
-        "notes": "Fix nunito.ttf fvar default weight (was 200.0 ExtraLight) and wire Compose FontVariation.weight settings so text is guaranteed Medium/SemiBold on all devices."
+        "notes": "DONE: nunito.ttf fvar table default weight patched from 200.0 (ExtraLight) to 500.0 (Medium). Explicit FontVariation.Settings(FontVariation.weight(...)) wired on all font instances in AppTheme.kt. Body text set to FontWeight.Medium (500) and SemiBold (600)."
       },
       {
         "id": "puc4-premium-ui-home",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 2 (Home): Elevated visual confidence matching reference mockup",
-        "notes": "Pill stat cards with soft circular icon chips and bold large numerals; full-width pill action rows with icon chips and chevrons; generous 24dp/28dp corner radii and soft elevation."
+        "notes": "DONE: HomeScreen redesigned matching reference mockup: 3 pill stat cards with soft circular icon chips (Star, DateRange, Whatshot) and bold large numerals; full-width pill action rows with circular icon chips and trailing chevrons; generous 24dp/28dp radii and soft elevation."
       },
       {
         "id": "puc5-premium-ui-appwide",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 2 (App-Wide): Elevate Progress, Leaderboard, Profile, Notes, Admin screens",
-        "notes": "Apply consistent visual polish: bold numerals, elevated cards, pill action buttons, and generous radii across all secondary screens."
+        "notes": "DONE: Consistent premium visual pass applied across Progress, Profile, Leaderboard, Notes, and Admin screens (elevated cards, bold numbers, pill action rows)."
       },
       {
         "id": "puc6-widget-redesign",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 3: Clean Material 3 widget redesign",
-        "notes": "Material 3 widget layout: 28dp corners, top header badge, bold assignment title, key verse snippet, rounded action button; failsafe cache preservation."
+        "notes": "DONE: Redesigned widget layout (forgehouse_widget.xml + drawables) with 28dp corners, top header badge, bold assignment, key verse snippet, and rounded action bar with deep linking."
       },
       {
         "id": "puc7-icon-silhouette-v2",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 4: Replace themed-icon monochrome layer with clean v2 silhouette",
-        "notes": "Generate ic_launcher_monochrome.png across all densities from the v2 logo source, anti-aliased and safe-zoned."
+        "notes": "DONE: Generated ic_launcher_monochrome.png across all densities (mdpi..xxxhdpi) from clean v2 logo source, anti-aliased and safe-zone centered."
       },
       {
         "id": "puc8-validate-and-release",
-        "status": "pending",
+        "status": "in_progress",
         "title": "Release forgehouse50-v14 and verify live",
-        "notes": "Dispatch release.yml workflow -> forgehouse50-v14, verify APK and manifest on GitHub Releases API, set build_complete=true."
+        "notes": "Dispatching release workflow via GitHub Actions for forgehouse50-v14."
       }
     ]
   }

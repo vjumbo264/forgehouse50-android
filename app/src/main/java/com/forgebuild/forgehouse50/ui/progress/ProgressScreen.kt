@@ -33,38 +33,53 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.forgebuild.forgehouse50.data.AppCache
 import com.forgebuild.forgehouse50.data.ProgressResponse
 import com.forgebuild.forgehouse50.data.ReadingSession
 import com.forgebuild.forgehouse50.data.Repository
-import com.forgebuild.forgehouse50.ui.AppJson
-import com.forgebuild.forgehouse50.ui.formatDurationShort
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
+import com.forgebuild.forgehouse50.ui.formatDurationShort
 
-/** Progress: 50-day grid with completion + quiz state, cache-first. */
+/**
+ * Progress: 50-day grid with completion + quiz state, cache-first.
+ * Renders immediately from AppCache synchronously on first frame composition,
+ * eliminating any loading spinner or zero-state flash.
+ */
 @Composable
 fun ProgressScreen(repo: Repository, onOpenDay: (Int) -> Unit) {
     val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("fh50_cache", Context.MODE_PRIVATE) }
-    var progress by remember { mutableStateOf<ProgressResponse?>(null) }
+    var progress by remember { mutableStateOf(AppCache.getProgress(context)) }
+    var today by remember { mutableStateOf(AppCache.getToday(context)) }
+    var me by remember { mutableStateOf(AppCache.getMe(context)) }
+
+    var catchupStatus by remember {
+        val initialPlan = if (progress != null && today != null) {
+            ReadingSession.resolve(progress, today!!, me?.programme?.programme_end_date)
+        } else null
+        mutableStateOf(if (initialPlan != null) ReadingSession.statusLine(initialPlan) else "")
+    }
 
     LaunchedEffect(Unit) {
-        prefs.getString("progress", null)?.let { c ->
-            runCatching { AppJson.decodeFromString<ProgressResponse>(c) }.getOrNull()
-        }?.let { progress = it }
         runCatching { repo.api.progress() }.onSuccess {
             progress = it
-            prefs.edit().putString("progress", AppJson.encodeToString(ProgressResponse.serializer(), it)).apply()
+            AppCache.saveProgress(context, it)
+        }
+        runCatching { repo.api.today() }.onSuccess {
+            today = it
+            AppCache.saveToday(context, it)
+        }
+        runCatching { repo.api.me() }.onSuccess {
+            me = it
+            AppCache.saveMe(context, it)
+            repo.session.userId = it.id
+            repo.session.userName = it.name
+            repo.session.userRole = it.role
         }
     }
 
-    // catchup_widget_links_v1 / ISSUE 2: honest, arithmetic-only catch-up status.
-    var catchupStatus by remember { mutableStateOf("") }
-    LaunchedEffect(progress) {
+    LaunchedEffect(progress, today, me) {
         val pr = progress ?: return@LaunchedEffect
-        val t = runCatching { repo.api.today() }.getOrNull()
-        val me = runCatching { repo.api.me() }.getOrNull()
+        val t = today ?: return@LaunchedEffect
         val plan = ReadingSession.resolve(pr, t, me?.programme?.programme_end_date)
         catchupStatus = ReadingSession.statusLine(plan)
     }
@@ -74,59 +89,80 @@ fun ProgressScreen(repo: Repository, onOpenDay: (Int) -> Unit) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ExpressiveLoading() }
         return
     }
+
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp)) {
         Text("Progress", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(12.dp))
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-            Column(Modifier.padding(16.dp)) {
-                Text("${p.totals.reading_days_completed} of ${p.programme.total_days} reading days · " +
-                    "${p.totals.chapters_completed} of ${p.programme.total_chapters} chapters",
-                    style = MaterialTheme.typography.titleSmall)
-                Spacer(Modifier.height(8.dp))
+
+        Card(
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                Text(
+                    "${p.totals.reading_days_completed} of ${p.programme.total_days} reading days · " +
+                        "${p.totals.chapters_completed} of ${p.programme.total_chapters} chapters",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(Modifier.height(10.dp))
                 LinearProgressIndicator(
                     progress = { (p.totals.percent_completed / 100f).toFloat().coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Spacer(Modifier.height(8.dp))
-                Text("Streak ${p.totals.streak_current} (best ${p.totals.streak_longest}) · " +
-                    formatDurationShort(p.totals.reading_seconds_total) + " read",
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Streak ${p.totals.streak_current} (best ${p.totals.streak_longest}) · " +
+                        formatDurationShort(p.totals.reading_seconds_total) + " read",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 if (catchupStatus.isNotBlank()) {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         catchupStatus,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
                         color = if (catchupStatus.startsWith("You need")) MaterialTheme.colorScheme.tertiary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            else MaterialTheme.colorScheme.primary,
                     )
                 }
             }
         }
-        Spacer(Modifier.height(12.dp))
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+
+        Spacer(Modifier.height(16.dp))
+
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(p.days, key = { it.day_number }) { d ->
                 Card(
                     onClick = { if (!d.is_future) onOpenDay(d.day_number) },
+                    shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(
-                        containerColor = if (d.is_future) MaterialTheme.colorScheme.surfaceVariant
-                            else MaterialTheme.colorScheme.surface),
+                        containerColor = if (d.is_future) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                            else MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
                 ) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Icon(
                             if (d.completed) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
                             null,
                             tint = if (d.completed) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp),
+                                else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(24.dp),
                         )
-                        Spacer(Modifier.size(12.dp))
+                        Spacer(Modifier.size(14.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Day ${d.day_number} — ${d.assignment}",
-                                style = MaterialTheme.typography.bodyMedium,
+                            Text(
+                                "Day ${d.day_number} — ${d.assignment}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = if (d.completed) FontWeight.SemiBold else FontWeight.Medium,
                                 color = if (d.is_future) MaterialTheme.colorScheme.onSurfaceVariant
-                                    else MaterialTheme.colorScheme.onSurface)
+                                    else MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(Modifier.height(2.dp))
                             Text(
                                 buildString {
                                     append(d.date)
@@ -134,7 +170,8 @@ fun ProgressScreen(repo: Repository, onOpenDay: (Int) -> Unit) {
                                     if (d.notes_count > 0) append(" · ${d.notes_count} notes")
                                 },
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }

@@ -1,55 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/w_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_bg"
-    android:padding="14dp">
+    android:padding="16dp">
 
-    <TextView
-        android:id="@+id/w_title"
-        android:layout_width="wrap_content"
+    <!-- Top header: App title on left, pill day badge on right -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="ForgeHouse 50"
-        android:textSize="11sp"
-        android:textColor="?android:attr/textColorSecondary" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/w_day"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="Day 1/50"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="?android:attr/textColorPrimary" />
+        <TextView
+            android:id="@+id/w_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="ForgeHouse 50"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorSecondary" />
 
+        <TextView
+            android:id="@+id/w_day"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/widget_chip_bg"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="3dp"
+            android:text="Day 1/50"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary" />
+    </LinearLayout>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="6dp" />
+
+    <!-- Assignment title -->
     <TextView
         android:id="@+id/w_assignment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
         android:maxLines="1"
         android:ellipsize="end"
-        android:textSize="14sp"
+        android:text="John 1–3"
+        android:textSize="16sp"
+        android:textStyle="bold"
         android:textColor="?android:attr/textColorPrimary" />
 
+    <!-- Verse snippet -->
     <TextView
         android:id="@+id/w_verse"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="3dp"
         android:maxLines="2"
         android:ellipsize="end"
         android:textSize="12sp"
         android:textColor="?android:attr/textColorSecondary" />
 
+    <!-- Progress indicator -->
     <ProgressBar
         android:id="@+id/w_progress"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="6dp"
+        android:layout_height="4dp"
+        android:layout_marginTop="4dp"
         android:max="100"
         android:progress="0" />
 
@@ -58,9 +80,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
-        android:textSize="11sp"
+        android:text="0/260 chapters"
+        android:textSize="10sp"
         android:textColor="?android:attr/textColorSecondary" />
 
+    <!-- Action row at bottom -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -71,17 +95,26 @@
             android:id="@+id/w_primary"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="wrap_content"
+            android:layout_height="42dp"
+            android:background="@drawable/widget_btn_primary"
             android:text="Start Reading"
-            android:textSize="13sp" />
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white" />
 
         <Button
             android:id="@+id/w_secondary"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="42dp"
             android:layout_marginStart="8dp"
+            android:background="@drawable/widget_btn_secondary"
             android:visibility="gone"
             android:text="Reflect"
-            android:textSize="13sp" />
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary" />
     </LinearLayout>
+
 </LinearLayout>

@@ -1,4 +1,5 @@
 package com.forgebuild.forgehouse50.ui.quiz
+import com.forgebuild.forgehouse50.data.AppCache
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -66,14 +67,15 @@ fun QuizScreen(
     onBack: () -> Unit,
     onHome: () -> Unit,
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var quiz by remember { mutableStateOf<QuizResponse?>(null) }
+    var quiz by remember(day) { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getQuiz(context, day)) }
     var result by remember { mutableStateOf<QuizSubmitResponse?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
-    var loading by remember { mutableStateOf(true) }
+    var loading by remember(day) { mutableStateOf(quiz == null) }
     var showConfetti by remember { mutableStateOf(false) }
-    var readingCompleted by remember { mutableStateOf(false) }
+    var readingCompleted by remember(day) { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getDay(context, day)?.progress?.completed ?: false) }
     val answers = remember { mutableStateMapOf<Int, Int>() }
 
     // combined_fixes_v1 Issue 9: FLAG_SECURE for exactly as long as the quiz is
@@ -87,7 +89,11 @@ fun QuizScreen(
     LaunchedEffect(day) {
         runCatching { repo.api.day(day) }.onSuccess { readingCompleted = it.progress.completed }
         runCatching { repo.api.quiz(day) }
-            .onSuccess { quiz = it }
+            .onSuccess {
+                quiz = it
+                com.forgebuild.forgehouse50.data.AppCache.saveQuiz(context, day, it)
+                if (it.attempt != null) com.forgebuild.forgehouse50.data.AppCache.setQuizDone(context, day, true)
+            }
             .onFailure { error = it.message }
         loading = false
     }

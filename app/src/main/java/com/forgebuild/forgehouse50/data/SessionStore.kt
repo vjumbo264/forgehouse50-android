@@ -34,6 +34,9 @@ class SessionStore(context: Context) {
             if (value == null) remove(KEY_TOKEN) else putString(KEY_TOKEN, value)
         }.apply()
 
+    var userId: String?
+        get() = prefs.getString(KEY_USER_ID, null)
+        set(value) = prefs.edit().putString(KEY_USER_ID, value).apply()
     var userName: String?
         get() = prefs.getString(KEY_NAME, null)
         set(value) = prefs.edit().putString(KEY_NAME, value).apply()
@@ -73,6 +76,7 @@ class SessionStore(context: Context) {
 
     private companion object {
         const val KEY_TOKEN = "session_token"
+        const val KEY_USER_ID = "user_id"
         const val KEY_NAME = "user_name"
         const val KEY_ROLE = "user_role"
         const val KEY_TRANSLATION = "translation_id"

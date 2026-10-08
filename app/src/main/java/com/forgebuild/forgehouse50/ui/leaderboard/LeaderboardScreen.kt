@@ -1,4 +1,5 @@
 package com.forgebuild.forgehouse50.ui.leaderboard
+import com.forgebuild.forgehouse50.data.AppCache
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
@@ -94,24 +95,31 @@ fun LeaderboardScreen(repo: Repository) {
 @Composable
 private fun InProgressBoard(repo: Repository) {
     val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("fh50_cache", Context.MODE_PRIVATE) }
     var category by remember { mutableStateOf("overall") }
-    var data by remember { mutableStateOf<LeaderboardResponse?>(null) }
-    var loading by remember { mutableStateOf(true) }
-    // post_testing_polish_v1 ISSUE 3: current user's id so their own row can be
-    // distinguished regardless of rank / category.
-    var myUserId by remember { mutableStateOf<String?>(null) }
+    var data by remember(category) { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getLeaderboard(context, category)) }
+    var loading by remember(category) { mutableStateOf(data == null) }
+    var myUserId by remember { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getMe(context)?.id ?: repo.session.userId) }
 
-    LaunchedEffect(Unit) { runCatching { myUserId = repo.api.me().id } }
+    LaunchedEffect(Unit) {
+        if (myUserId == null) {
+            runCatching { repo.api.me() }.onSuccess {
+                myUserId = it.id
+                com.forgebuild.forgehouse50.data.AppCache.saveMe(context, it)
+                repo.session.userId = it.id
+            }
+        }
+    }
+
     LaunchedEffect(category) {
-        // scripture_audio_rewire_v1: lb2_ cache key — invalidates any cached
-        // pre-fix leaderboard payload (raw total points, never pts/day).
-        prefs.getString("lb2_$category", null)?.let { c ->
-            runCatching { AppJson.decodeFromString<LeaderboardResponse>(c) }.getOrNull()
-        }?.let { data = it; loading = false }
+        val cached = com.forgebuild.forgehouse50.data.AppCache.getLeaderboard(context, category)
+        if (cached != null) {
+            data = cached
+            loading = false
+        }
         runCatching { repo.api.leaderboard(category) }.onSuccess {
             data = it
-            prefs.edit().putString("lb2_$category", AppJson.encodeToString(LeaderboardResponse.serializer(), it)).apply()
+            loading = false
+            com.forgebuild.forgehouse50.data.AppCache.saveLeaderboard(context, category, it)
         }
         loading = false
     }

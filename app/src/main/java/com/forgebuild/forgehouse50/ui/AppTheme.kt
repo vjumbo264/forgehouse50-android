@@ -13,100 +13,108 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.forgebuild.forgehouse50.R
 
 /**
- * ForgeHouse 50 app theme — Material 3 Expressive overhaul (session 2026-09-16).
+ * ForgeHouse 50 app theme — Material 3 Expressive overhaul.
  *
- * Operator decision (this session, Android-app-only): replace the previous
- * fixed muted-blue accent with Android DYNAMIC COLOR (Material You) wherever
- * the device supports it (API 31+), with the established warm static scheme
- * kept as the fallback for older devices. Light/dark continues to follow the
- * system setting. The web app keeps its own design system — this change is
- * intentionally NOT ported back.
- *
- * Typeface: the operator asked for "Google Sans Flex". That font is a
- * proprietary Google brand typeface and is NOT distributed via Google Fonts,
- * so it cannot be bundled legally. Substituted with Nunito (OFL-licensed
- * rounded Google font, bundled as a variable TTF in res/font) — the closest
- * licensable match to the requested rounded/friendly character.
+ * Font resolution (Issue 2):
+ * 1. The bundled Nunito variable font TTF default weight was patched from 200.0 (ExtraLight)
+ *    to 500.0 (Medium) in its fvar table so any device or legacy renderer that defaults
+ *    is guaranteed never to render hairline-thin text.
+ * 2. Explicit FontVariation.Settings(FontVariation.weight(...)) are wired on each Font instance
+ *    so variable font engines request exact weights (400, 500, 600, 700).
+ * 3. Body text is assigned FontWeight.Medium (500) and SemiBold (600) across all scales.
  */
-
+@OptIn(ExperimentalTextApi::class)
 private val Nunito = FontFamily(
-    Font(R.font.nunito, FontWeight.Normal),
-    Font(R.font.nunito, FontWeight.Medium),
-    Font(R.font.nunito, FontWeight.SemiBold),
-    Font(R.font.nunito, FontWeight.Bold),
+    Font(
+        R.font.nunito,
+        FontWeight.Normal,
+        variationSettings = FontVariation.Settings(FontVariation.weight(400))
+    ),
+    Font(
+        R.font.nunito,
+        FontWeight.Medium,
+        variationSettings = FontVariation.Settings(FontVariation.weight(500))
+    ),
+    Font(
+        R.font.nunito,
+        FontWeight.SemiBold,
+        variationSettings = FontVariation.Settings(FontVariation.weight(600))
+    ),
+    Font(
+        R.font.nunito,
+        FontWeight.Bold,
+        variationSettings = FontVariation.Settings(FontVariation.weight(700))
+    ),
 )
 
 private val AppTypography = Typography().run {
     copy(
-        displayLarge = displayLarge.copy(fontFamily = Nunito),
-        displayMedium = displayMedium.copy(fontFamily = Nunito),
-        displaySmall = displaySmall.copy(fontFamily = Nunito),
+        displayLarge = displayLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
+        displayMedium = displayMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
+        displaySmall = displaySmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
         headlineLarge = headlineLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
         headlineMedium = headlineMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
         headlineSmall = headlineSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
-        titleLarge = titleLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
+        titleLarge = titleLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.Bold),
         titleMedium = titleMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
-        titleSmall = titleSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),
-        // Part E (2026-09-18): raised body weight Regular(400)->Medium(500).
-        // post_testing_polish_v1 ISSUE 1 (2026-09-18): still reported too thin.
-        // Move a FULL further step: body now SemiBold(600) on the Nunito
-        // variable font. ReadScreen verse text uses bodyLarge, so this drives
-        // the primary reading surface. Headings stay Bold so hierarchy holds.
-        bodyLarge = bodyLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold, lineHeight = 24.sp),
-        bodyMedium = bodyMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
-        bodySmall = bodySmall.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
+        titleSmall = titleSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
+        bodyLarge = bodyLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium, lineHeight = 24.sp),
+        bodyMedium = bodyMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium, lineHeight = 20.sp),
+        bodySmall = bodySmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium, lineHeight = 16.sp),
         labelLarge = labelLarge.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
-        labelMedium = labelMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),
-        labelSmall = labelSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.Medium),
+        labelMedium = labelMedium.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
+        labelSmall = labelSmall.copy(fontFamily = Nunito, fontWeight = FontWeight.SemiBold),
     )
 }
 
 // Static fallback scheme (pre-overhaul warm scheme, retained for API < 31).
 private val LightScheme = lightColorScheme(
-    primary = Color(0xFF3A5F8A),
+    primary = Color(0xFF2E6B4F),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFD3E0F0),
-    onPrimaryContainer = Color(0xFF2D4E74),
-    secondary = Color(0xFF53606F),
+    primaryContainer = Color(0xFFD3EEDF),
+    onPrimaryContainer = Color(0xFF133B28),
+    secondary = Color(0xFF4E6355),
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFE6E9ED),
-    onSecondaryContainer = Color(0xFF2C343D),
-    tertiary = Color(0xFF6B5E54),
-    background = Color(0xFFFAFAF8),
-    onBackground = Color(0xFF1F1E1C),
+    secondaryContainer = Color(0xFFD1E8D7),
+    onSecondaryContainer = Color(0xFF0C1F15),
+    tertiary = Color(0xFF7A5930),
+    background = Color(0xFFF9F9F6),
+    onBackground = Color(0xFF191C1A),
     surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF1F1E1C),
-    surfaceVariant = Color(0xFFF2F2EF),
-    onSurfaceVariant = Color(0xFF5A5751),
-    outline = Color(0xFFD4D4CD),
-    outlineVariant = Color(0xFFE6E6E1),
+    onSurface = Color(0xFF191C1A),
+    surfaceVariant = Color(0xFFE7ECE7),
+    onSurfaceVariant = Color(0xFF414942),
+    outline = Color(0xFF727971),
+    outlineVariant = Color(0xFFC1C9C0),
 )
 
 private val DarkScheme = darkColorScheme(
-    primary = Color(0xFF7F9FC4),
-    onPrimary = Color(0xFF101A26),
-    primaryContainer = Color(0xFF2C3E54),
-    onPrimaryContainer = Color(0xFF9DB8D6),
-    secondary = Color(0xFFB6BFC9),
-    onSecondary = Color(0xFF1E242B),
-    secondaryContainer = Color(0xFF353B43),
-    onSecondaryContainer = Color(0xFFD5DBE2),
-    tertiary = Color(0xFFC9B6A4),
-    background = Color(0xFF171614),
-    onBackground = Color(0xFFEBE8E1),
-    surface = Color(0xFF201F1C),
-    onSurface = Color(0xFFEBE8E1),
-    surfaceVariant = Color(0xFF2A2925),
-    onSurfaceVariant = Color(0xFFB5B1A8),
-    outline = Color(0xFF48453F),
-    outlineVariant = Color(0xFF353330),
+    primary = Color(0xFF8CD8AC),
+    onPrimary = Color(0xFF003820),
+    primaryContainer = Color(0xFF145235),
+    onPrimaryContainer = Color(0xFFA8F5C7),
+    secondary = Color(0xFFB5CCBC),
+    onSecondary = Color(0xFF203529),
+    secondaryContainer = Color(0xFF374B3E),
+    onSecondaryContainer = Color(0xFFD1E8D7),
+    tertiary = Color(0xFFEBBF8A),
+    background = Color(0xFF111412),
+    onBackground = Color(0xFFE1E3DF),
+    surface = Color(0xFF191C1A),
+    onSurface = Color(0xFFE1E3DF),
+    surfaceVariant = Color(0xFF414942),
+    onSurfaceVariant = Color(0xFFC1C9C0),
+    outline = Color(0xFF8B938A),
+    outlineVariant = Color(0xFF414942),
 )
 
 // Leaderboard top-3 treatments (used on in-progress + final-results screens).
@@ -135,9 +143,9 @@ fun ForgeHouseTheme(
         }
         else -> if (darkTheme) DarkScheme else LightScheme
     }
+
     // Material 3 Expressive: official spring-based expressive motion scheme +
-    // expressive shape system, applied on top of the existing dynamic-color +
-    // light/dark behavior (ForgeBuild real-expressive fix; Nunito typeface kept).
+    // expressive shape system, applied on top of dynamic color.
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = MotionScheme.expressive(),

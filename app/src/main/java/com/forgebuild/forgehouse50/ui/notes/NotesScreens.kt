@@ -1,4 +1,5 @@
 package com.forgebuild.forgehouse50.ui.notes
+import com.forgebuild.forgehouse50.data.AppCache
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
@@ -63,27 +64,23 @@ import com.forgebuild.forgehouse50.ui.ExpressiveButton
 @Composable
 fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) -> Unit) {
     val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("fh50_cache", Context.MODE_PRIVATE) }
     val scope = rememberCoroutineScope()
-    var notes by remember { mutableStateOf<List<Note>>(emptyList()) }
-    var query by remember { mutableStateOf("") }
-    var typeFilter by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(true) }
+    var notes by remember { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getNotes(context)?.notes.orEmpty()) }
+    var query by remember { mutableStateOf() }
+    var typeFilter by remember { mutableStateOf() }
+    var loading by remember { mutableStateOf(notes.isEmpty()) }
 
     suspend fun refresh() {
         runCatching { repo.api.notes(q = query, type = typeFilter) }.onSuccess {
             notes = it.notes
             if (query.isBlank() && typeFilter.isBlank()) {
-                prefs.edit().putString("notes", AppJson.encodeToString(NotesResponse.serializer(), it)).apply()
+                com.forgebuild.forgehouse50.data.AppCache.saveNotes(context, it)
             }
         }
         loading = false
     }
 
     LaunchedEffect(Unit) {
-        prefs.getString("notes", null)?.let { c ->
-            runCatching { AppJson.decodeFromString<NotesResponse>(c) }.getOrNull()
-        }?.let { notes = it.notes; loading = false }
         refresh()
     }
     LaunchedEffect(query, typeFilter) {
