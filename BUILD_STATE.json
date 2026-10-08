@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": true,
-  "last_updated_utc": "2026-10-08T00:26:00Z",
+  "build_complete": false,
+  "last_updated_utc": "2026-10-08T05:42:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -350,6 +350,12 @@
       "date": "2026-10-07",
       "did": "Operator EXTEND/UPDATE: premium visual pass (mockup reference), critical cache-first fix app-wide & widget, widget redesign, icon silhouette swap to v2. Seeded premium_ui_cache_fix_v1 task list.",
       "next": "forgehouse50-v14 released and verified live via GitHub API. build_complete=true."
+    },
+    {
+      "session": 15,
+      "date": "2026-10-08",
+      "did": "Operator feedback: replace font entirely with Plus Jakarta Sans (not fix Nunito), fix widget button being cropped, provide full dynamic theming for widget including dark mode, add expressive wavy progress bar to widget.",
+      "next": "Execute fwd1-replace-font-plus-jakarta-sans -> fwd2-fix-widget-button-crop -> fwd3-widget-dynamic-theme-dark -> fwd4-widget-wavy-progress -> fwd5-validate-and-release."
     }
   ],
   "combined_fixes_v1": {
@@ -1065,7 +1071,7 @@
       }
     ]
   },
-  "target_release": "forgehouse50-v14",
+  "target_release": "forgehouse50-v15",
   "premium_ui_cache_fix_v1": {
     "name": "premium_ui_cache_fix_v1",
     "status": "complete",
@@ -1121,6 +1127,45 @@
         "status": "done",
         "title": "Release forgehouse50-v14 and verify live",
         "notes": "DONE: Dispatched release.yml workflow -> built and signed app-forgehouse50-v14.apk (versionCode=14, versionName=2). Verified live via GitHub Releases API: tag forgehouse50-v14 published with APK (9,577,957 bytes) and forgebuild-manifest.json."
+      }
+    ]
+  },
+  "font_widget_dynamic_v1": {
+    "name": "font_widget_dynamic_v1",
+    "status": "in_progress",
+    "seeded_utc": "2026-10-08T05:42:00Z",
+    "target_release": "forgehouse50-v15",
+    "base_source": "forgehouse50-v14",
+    "tasks": [
+      {
+        "id": "fwd1-replace-font-plus-jakarta-sans",
+        "status": "in_progress",
+        "title": "Replace font family with Plus Jakarta Sans",
+        "notes": "Download official OFL Plus Jakarta Sans TTF into res/font/plus_jakarta_sans.ttf, wire in AppTheme.kt with explicit 400/500/600/700 weight variation, remove nunito.ttf."
+      },
+      {
+        "id": "fwd2-fix-widget-button-crop",
+        "status": "pending",
+        "title": "Fix widget button bottom cropping in forgehouse_widget.xml",
+        "notes": "Tighten vertical padding, collapse empty verse view, reduce button height to compact 38dp, ensure comfortable bottom clearance on standard 2-cell home screen grids."
+      },
+      {
+        "id": "fwd3-widget-dynamic-theme-dark",
+        "status": "pending",
+        "title": "Implement full Material You dynamic theming for widget (dark mode + system colors)",
+        "notes": "Create values/colors.xml, values-night/colors.xml, values-v31/colors.xml, and values-night-v31/colors.xml using system_neutral and system_accent colors; bind drawables and layout."
+      },
+      {
+        "id": "fwd4-widget-wavy-progress",
+        "status": "pending",
+        "title": "Add Material 3 Expressive wavy progress bar to widget",
+        "notes": "Implement custom wavy progress drawable for RemoteViews ProgressBar matching Expressive UI."
+      },
+      {
+        "id": "fwd5-validate-and-release",
+        "status": "pending",
+        "title": "Release forgehouse50-v15 and verify live",
+        "notes": "Dispatch release.yml workflow -> forgehouse50-v15, verify APK and manifest on GitHub Releases API, set build_complete=true."
       }
     ]
   }
