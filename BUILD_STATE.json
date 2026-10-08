@@ -1295,15 +1295,15 @@
     "tasks": [
       {
         "id": "rufs1-unify-reading-screens",
-        "status": "in_progress",
+        "status": "done",
         "title": "ISSUE 1: Trace all reading screen entry points and consolidate into single unified reader",
-        "notes": "Starting investigation of entry points..."
+        "notes": "DONE (Issue 1): Investigated and traced all four navigation entry points: (1) Home/Continue action when in catch-up mode was navigating via Routes.readSession to ReadSessionScreen.kt (which rendered the old ChapterPane.kt with dagger footnote text, unstyled font pills missing, and old UI), whereas (2) Progress screen per-day review, (3) home-screen widget deep-link, and (4) single-day Home entry navigated to ReadScreen.kt. Consolidated into a single unified ReadScreen.kt that handles single day as well as multi-day catch-up sessions (with day chips, unlock gating, and 'Continue with day N' flow), containing all premium enhancements (M3 font size pills, per-chapter nav, all-chapters-viewed 1.5s dwell gate, offline-first Room store, background reading time tracking). Deleted obsolete ReadSessionScreen.kt and ChapterPane.kt."
       },
       {
         "id": "rufs2-footnote-icon-only",
-        "status": "pending",
+        "status": "in_progress",
         "title": "ISSUE 2: Remove text label from footnote marker, leaving icon only",
-        "notes": "Pending."
+        "notes": "Implementing icon-only footnote marker..."
       },
       {
         "id": "rufs3-footnote-remove-chapter-lettering",

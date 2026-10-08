@@ -57,7 +57,6 @@ import com.forgebuild.forgehouse50.ui.profile.ProfileScreen
 import com.forgebuild.forgehouse50.ui.progress.ProgressScreen
 import com.forgebuild.forgehouse50.ui.quiz.QuizScreen
 import com.forgebuild.forgehouse50.ui.read.ReadScreen
-import com.forgebuild.forgehouse50.ui.read.ReadSessionScreen
 import com.forgebuild.forgehouse50.ui.read.TranslationsScreen
 import com.forgebuild.forgehouse50.update.UpdateChecker
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
@@ -236,9 +235,10 @@ fun AppNavHost(
             ) { entry ->
                 val ds = entry.arguments?.getString("days")
                     ?.split(",")?.mapNotNull { it.trim().toIntOrNull() }.orEmpty()
-                ReadSessionScreen(
+                ReadScreen(
                     repo = repo,
-                    days = ds,
+                    day = ds.firstOrNull() ?: 1,
+                    sessionDays = ds.ifEmpty { listOf(1) },
                     onBack = { nav.popBackStack() },
                     onOpenQuiz = { nav.navigate(Routes.quiz(it)) },
                     onAddNote = { d -> nav.navigate(Routes.noteEdit(null, d)) },

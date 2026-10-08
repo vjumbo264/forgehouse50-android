@@ -65,23 +65,25 @@ import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 import com.forgebuild.forgehouse50.ui.ExpressiveButton
 
 /**
- * Read screen (leaderboard_audio_removal_offline_bible_v1).
+ * Unified Read screen for all entry points: Home ("Start"/"Continue"/"Catch up"),
+ * Progress (per-day review & active day), home-screen widget, and multi-day sessions.
  *
- * ISSUE 3: the entire audio player (seek/skip-5s/play, per-chapter +
- * download-all-for-today) and all audio availability/network calls are
- * removed — audio no longer exists upstream.
- *
- * ISSUE 5: scripture resolves offline-first via [Repository] (bundled KJV or
- * a downloaded translation), so reading works with zero network once a
- * translation is on-device. The translation selector only offers translations
- * that are actually available on-device; a "Translations" action opens the
- * download manager.
+ * Consolidates all enhancements:
+ * - Premium Material 3 Expressive top bar with A-/A+ font-size controls
+ * - Multi-day catch-up pill filter chips when sessionDays has > 1 day
+ * - Per-chapter pagination with centered pill chip
+ * - Offline-first scripture via Repository (bundled KJV / downloaded translations)
+ * - Footnote marker: clean, unmistakable interactive accent icon-only chip (Issue 2)
+ * - Footnotes panel: chapter-wide alphabetic lettering removed; local verse-level 1, 2, 3 numbering & dividers (Issue 3)
+ * - All-chapters-viewed gate with 1.5s reading dwell requirement per chapter
+ * - Review-mode vs active-day distinction with server-side viewed_chapters payload
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReadScreen(
     repo: Repository,
-    day: Int,
+    day: Int = 1,
+    sessionDays: List<Int> = listOf(day),
     onBack: () -> Unit,
     onOpenQuiz: (Int) -> Unit,
     onAddNote: (Int) -> Unit,
@@ -89,29 +91,42 @@ fun ReadScreen(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
-    var dayData by remember(day) { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getDay(context, day)) }
-    var dayLoaded by remember(day) { mutableStateOf(dayData != null) }
+
+    val days = remember(sessionDays, day) {
+        val list = sessionDays.distinct().sorted()
+        if (list.isEmpty()) listOf(day) else list
+    }
+    var activeIdx by remember(days) {
+        val idx = days.indexOf(day).coerceAtLeast(0)
+        mutableIntStateOf(idx)
+    }
+    val activeDay = days.getOrElse(activeIdx) { day }
+
+    var dayData by remember(activeDay) { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getDay(context, activeDay)) }
+    var dayLoaded by remember(activeDay) { mutableStateOf(dayData != null) }
     var translation by remember { mutableStateOf(repo.session.translationId ?: Repository.KJV_ID) }
     var availableTranslations by remember { mutableStateOf<List<String>>(listOf(Repository.KJV_ID)) }
     var passageError by remember { mutableStateOf<String?>(null) }
     var reloadToken by remember { mutableIntStateOf(0) }
-    var selected by remember { mutableIntStateOf(0) }
     var passage by remember { mutableStateOf<PassageResponse?>(null) }
     var loadingPassage by remember { mutableStateOf(false) }
-    var completed by remember(day) { mutableStateOf(dayData?.progress?.completed ?: false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    // Part D: Mark-Complete loading/feedback state.
-    var completeBusy by remember { mutableStateOf(false) }
-    // Issue 5: reader font scale, persisted across restarts via SessionStore.
-    var fontScale by remember { mutableFloatStateOf(repo.session.fontScale) }
-    // Issue 4: index into the day's flattened chapter list (one chapter shown at a time).
-    var chapterIdx by remember { mutableIntStateOf(0) }
-    // post_testing_polish_v1 ISSUE 4: exactly one footnote panel open at a time,
-    // keyed by verse number; null = none open. Resets when the chapter changes.
-    var openFootnoteVerse by remember { mutableStateOf<Int?>(null) }
 
-    LaunchedEffect(day) {
-        // Import bundled KJV + discover which translations are on-device.
+    var completedDays by remember(days) {
+        val done = mutableSetOf<Int>()
+        for (d in days) {
+            if (com.forgebuild.forgehouse50.data.AppCache.getDay(context, d)?.progress?.completed == true) {
+                done.add(d)
+            }
+        }
+        mutableStateOf<Set<Int>>(done)
+    }
+    var error by remember { mutableStateOf<String?>(null) }
+    var completeBusy by remember { mutableStateOf(false) }
+    var fontScale by remember { mutableFloatStateOf(repo.session.fontScale) }
+    var chapterIdx by remember(activeDay) { mutableIntStateOf(0) }
+    var openFootnoteVerse by remember(activeDay) { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(activeDay) {
         runCatching { repo.ensureBundledKjvImported() }
         val onDevice = buildList {
             add(Repository.KJV_ID)
@@ -124,29 +139,29 @@ fun ReadScreen(
         }
         translation = resolved
         repo.session.translationId = resolved
-        runCatching { repo.api.day(day) }.onSuccess {
+
+        runCatching { repo.api.day(activeDay) }.onSuccess {
             dayData = it
-            completed = it.progress.completed
-            com.forgebuild.forgehouse50.data.AppCache.saveDay(context, day, it)
+            if (it.progress.completed) completedDays = completedDays + activeDay
+            com.forgebuild.forgehouse50.data.AppCache.saveDay(context, activeDay, it)
         }.onFailure { error = it.message }
         dayLoaded = true
     }
 
     val assignments = dayData?.assignments ?: emptyList()
-    // Issue 4: flatten the day's assignments into an ordered (book, chapter) list;
-    // exactly ONE chapter is fetched and rendered at a time, matching the website.
     val chapters = assignments.flatMap { a -> (a.chapter_start..a.chapter_end).map { a.book to it } }
     if (chapters.isNotEmpty() && chapterIdx > chapters.lastIndex) chapterIdx = 0
     val currentChapter: Pair<String, Int>? = chapters.getOrNull(chapterIdx)
     val scroll = rememberScrollState()
 
-    var tracker by remember(day, chapters.size) { mutableStateOf(ChapterViewTracker(chapters)) }
-    LaunchedEffect(day, chapters.size) {
+    var tracker by remember(activeDay, chapters.size) { mutableStateOf(ChapterViewTracker(chapters)) }
+    LaunchedEffect(activeDay, chapters.size) {
         if (tracker.total != chapters.size) tracker = ChapterViewTracker(chapters)
+        chapterIdx = 0
     }
 
     var viewedTick by remember { mutableIntStateOf(0) }
-    LaunchedEffect(day, chapterIdx, chapters.size) {
+    LaunchedEffect(activeDay, chapterIdx, chapters.size) {
         val ch = chapters.getOrNull(chapterIdx) ?: return@LaunchedEffect
         delay(1500)
         tracker.markViewed(ch)
@@ -155,8 +170,6 @@ fun ReadScreen(
     @Suppress("UNUSED_EXPRESSION")
     viewedTick
 
-    // Passage — keyed on the current chapter + resolved translation. Served from
-    // the on-device store with no network call for bundled/downloaded translations.
     val chapterKey = currentChapter?.let { "${it.first}:${it.second}" } ?: ""
     LaunchedEffect(chapterKey, translation, reloadToken) {
         val cc = currentChapter ?: return@LaunchedEffect
@@ -172,21 +185,15 @@ fun ReadScreen(
         scroll.scrollTo(0)
     }
 
-    // Part C (2026-09-18): foreground reading-time tracking. Report 30s chunks
-    // while the Read screen is composed/foreground. Failures now RETRY with the
-    // pending seconds carried forward and surface as a soft banner after 3
-    // consecutive failures instead of being silently dropped (the old
-    // `runCatching{...}` swallowed every error, so a contract/endpoint failure
-    // produced an all-zero leaderboard with no signal).
     var timeSyncError by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(day) {
+    LaunchedEffect(activeDay) {
         var pending = 0
         var fails = 0
         while (isActive) {
             delay(30_000)
             pending += 30
             try {
-                repo.api.addReadingTime(day, pending)
+                repo.api.addReadingTime(activeDay, pending)
                 pending = 0
                 fails = 0
                 timeSyncError = null
@@ -197,12 +204,18 @@ fun ReadScreen(
         }
     }
 
+    val titleText = if (days.size > 1) {
+        "Catch-up · Days " + days.joinToString(" + ")
+    } else {
+        "Day $activeDay"
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Day $day", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(titleText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         currentChapter?.let {
                             Text("${it.first} ${it.second}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                         }
@@ -241,7 +254,7 @@ fun ReadScreen(
                     IconButton(onClick = onManageTranslations) {
                         Icon(Icons.Filled.LibraryBooks, "Manage translations")
                     }
-                    IconButton(onClick = { onAddNote(day) }) { Icon(Icons.Filled.Edit, "Add note") }
+                    IconButton(onClick = { onAddNote(activeDay) }) { Icon(Icons.Filled.Edit, "Add note") }
                 },
             )
         },
@@ -256,6 +269,30 @@ fun ReadScreen(
                 Text(it, color = MaterialTheme.colorScheme.tertiary,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp))
+            }
+
+            // Multi-day session day chips (only when there are multiple catch-up days)
+            if (days.size > 1) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    days.forEachIndexed { i, d ->
+                        val isDone = completedDays.contains(d)
+                        val unlocked = i == 0 || completedDays.contains(days[i - 1])
+                        FilterChip(
+                            selected = activeIdx == i,
+                            onClick = { if (unlocked) activeIdx = i },
+                            enabled = unlocked,
+                            label = { Text("Day $d" + if (isDone) " done" else "", fontWeight = FontWeight.SemiBold) },
+                            leadingIcon = if (isDone) {
+                                { Icon(Icons.Filled.CheckCircle, null, Modifier.size(16.dp)) }
+                            } else null,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
             }
 
             // Translation selector — only translations available on-device
@@ -329,7 +366,7 @@ fun ReadScreen(
                     }
                     currentChapter == null -> {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No reading assigned for day $day yet.",
+                            Text("No reading assigned for day $activeDay yet.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -375,13 +412,13 @@ fun ReadScreen(
                                     Column(Modifier.weight(1f)) {
                                         Text(v.text, style = MaterialTheme.typography.bodyLarge,
                                             fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale)
-                                        // Footnote marker: unmistakably interactive accent pill chip (streak_reader_support_fix_v1 / Issue 3)
+                                        // Footnote marker: icon-only interactive accent pill chip (Issue 2)
                                         if (v.footnotes.isNotEmpty()) {
                                             val isOpen = openFootnoteVerse == v.verse
                                             Spacer(Modifier.height(4.dp))
                                             Surface(
                                                 onClick = { openFootnoteVerse = if (isOpen) null else v.verse },
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(8.dp),
                                                 color = if (isOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
                                                 contentColor = if (isOpen) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
                                                 tonalElevation = 2.dp,
@@ -389,22 +426,16 @@ fun ReadScreen(
                                                     1.dp,
                                                     if (isOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
                                                 ),
-                                                modifier = Modifier.padding(vertical = 3.dp),
+                                                modifier = Modifier.padding(vertical = 2.dp),
                                             ) {
-                                                Row(
-                                                    Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                Box(
+                                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                                                    contentAlignment = Alignment.Center,
                                                 ) {
                                                     Icon(
                                                         Icons.Filled.Notes,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(13.dp),
-                                                    )
-                                                    Text(
-                                                        text = if (v.footnotes.size > 1) "${v.footnotes.size} Footnotes" else "Footnote",
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        fontWeight = FontWeight.Bold,
+                                                        contentDescription = "Footnotes",
+                                                        modifier = Modifier.size(15.dp),
                                                     )
                                                 }
                                             }
@@ -424,7 +455,7 @@ fun ReadScreen(
                                                             horizontalArrangement = Arrangement.SpaceBetween,
                                                         ) {
                                                             Text(
-                                                                "Footnote · Verse ${v.verse}",
+                                                                if (v.footnotes.size > 1) "Footnotes · Verse ${v.verse}" else "Footnote · Verse ${v.verse}",
                                                                 style = MaterialTheme.typography.labelLarge,
                                                                 fontWeight = FontWeight.Bold,
                                                                 color = MaterialTheme.colorScheme.primary,
@@ -442,14 +473,40 @@ fun ReadScreen(
                                                             }
                                                         }
                                                         Spacer(Modifier.height(6.dp))
-                                                        v.footnotes.forEach { note ->
-                                                            Text(
-                                                                note,
-                                                                style = MaterialTheme.typography.bodyMedium,
-                                                                fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
-                                                                color = MaterialTheme.colorScheme.onSurface,
-                                                            )
-                                                            Spacer(Modifier.height(6.dp))
+                                                        // Footnote list with local verse-level separation only (Issue 3)
+                                                        val cleanedNotes = v.footnotes.map { cleanFootnoteText(it) }
+                                                        cleanedNotes.forEachIndexed { idx, noteText ->
+                                                            if (idx > 0) {
+                                                                androidx.compose.material3.HorizontalDivider(
+                                                                    modifier = Modifier.padding(vertical = 6.dp),
+                                                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                                                )
+                                                            }
+                                                            if (cleanedNotes.size > 1) {
+                                                                Row(Modifier.fillMaxWidth()) {
+                                                                    Text(
+                                                                        "${idx + 1}.",
+                                                                        style = MaterialTheme.typography.bodyMedium,
+                                                                        fontWeight = FontWeight.Bold,
+                                                                        color = MaterialTheme.colorScheme.primary,
+                                                                        modifier = Modifier.width(22.dp),
+                                                                    )
+                                                                    Text(
+                                                                        noteText,
+                                                                        style = MaterialTheme.typography.bodyMedium,
+                                                                        fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
+                                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                                        modifier = Modifier.weight(1f),
+                                                                    )
+                                                                }
+                                                            } else {
+                                                                Text(
+                                                                    noteText,
+                                                                    style = MaterialTheme.typography.bodyMedium,
+                                                                    fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
+                                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                                )
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -470,7 +527,8 @@ fun ReadScreen(
                 }
             }
 
-            // Completion row: enforced all-chapters-viewed gate (streak_reader_support_fix_v1 / Issue 5)
+            // Completion row: enforced all-chapters-viewed gate for active day
+            val isCurrentDone = completedDays.contains(activeDay)
             val gateOpen = (viewedTick >= 0) && tracker.allViewed
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -480,18 +538,32 @@ fun ReadScreen(
                 Column(
                     Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)
                 ) {
-                    if (completed) {
+                    if (isCurrentDone) {
                         Row(
                             Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                             Spacer(Modifier.width(10.dp))
-                            Text("Reading complete", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                            ExpressiveButton(onClick = { onOpenQuiz(day) }) {
+                            Text(
+                                if (days.size > 1) "Day $activeDay reading complete" else "Reading complete",
+                                Modifier.weight(1f),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            ExpressiveButton(onClick = { onOpenQuiz(activeDay) }) {
                                 Icon(Icons.Filled.Quiz, null, Modifier.size(18.dp))
                                 Spacer(Modifier.width(6.dp))
                                 Text("Quiz")
+                            }
+                        }
+                        if (days.size > 1 && activeIdx < days.lastIndex && !completedDays.contains(days[activeIdx + 1])) {
+                            Spacer(Modifier.height(10.dp))
+                            ExpressiveButton(
+                                onClick = { activeIdx++ },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text("Continue with day ${days[activeIdx + 1]}")
                             }
                         }
                     } else {
@@ -510,13 +582,13 @@ fun ReadScreen(
                                 scope.launch {
                                     completeBusy = true
                                     error = null
-                                    runCatching { repo.api.completeDay(day, tracker.viewedKeys()) }
+                                    runCatching { repo.api.completeDay(activeDay, tracker.viewedKeys()) }
                                         .onSuccess {
-                                            completed = true
+                                            completedDays = completedDays + activeDay
                                             dayData?.let { cur ->
                                                 val upd = cur.copy(progress = cur.progress.copy(completed = true))
                                                 dayData = upd
-                                                com.forgebuild.forgehouse50.data.AppCache.saveDay(context, day, upd)
+                                                com.forgebuild.forgehouse50.data.AppCache.saveDay(context, activeDay, upd)
                                             }
                                             com.forgebuild.forgehouse50.widget.WidgetRefreshWorker.refreshWidgetState(context, repo)
                                             com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
@@ -528,10 +600,18 @@ fun ReadScreen(
                             Modifier.fillMaxWidth(),
                             enabled = gateOpen,
                             busy = completeBusy,
-                        ) { Text("Mark day $day reading complete") }
+                        ) { Text("Mark day $activeDay reading complete") }
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * Strips cross-chapter running alphabetic/numeric prefixes like "a ", "b. ", "1) ", "d a " from raw footnote strings (Issue 3).
+ */
+private fun cleanFootnoteText(raw: String): String {
+    val stripped = raw.replace(Regex("^(?:[a-zA-Z]{1,2}[.)\\s]\\s*|\\d{1,2}[.)\\s]\\s*)+"), "")
+    return stripped.trim().ifEmpty { raw.trim() }
 }
