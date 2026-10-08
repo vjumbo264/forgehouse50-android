@@ -606,7 +606,7 @@
     ],
     "completed_utc": "2026-09-15T10:14:30Z"
   },
-  "current_release": "forgehouse50-v14",
+  "current_release": "forgehouse50-v15",
   "testing_phase_and_reader_fixes_v1": {
     "name": "testing_phase_and_reader_fixes_v1",
     "status": "complete",
@@ -1071,7 +1071,7 @@
       }
     ]
   },
-  "target_release": "forgehouse50-v15",
+  "target_release": "forgehouse50-v16",
   "premium_ui_cache_fix_v1": {
     "name": "premium_ui_cache_fix_v1",
     "status": "complete",
@@ -1132,7 +1132,7 @@
   },
   "font_widget_dynamic_v1": {
     "name": "font_widget_dynamic_v1",
-    "status": "in_progress",
+    "status": "complete",
     "seeded_utc": "2026-10-08T05:42:00Z",
     "target_release": "forgehouse50-v15",
     "base_source": "forgehouse50-v14",
@@ -1163,9 +1163,67 @@
       },
       {
         "id": "fwd5-validate-and-release",
-        "status": "in_progress",
+        "status": "done",
         "title": "Release forgehouse50-v15 and verify live",
-        "notes": "Dispatching release.yml workflow for forgehouse50-v15."
+        "notes": "DONE: CI release workflow succeeded -> tag forgehouse50-v15 published live on GitHub Releases API with app-forgehouse50-v15.apk (9,534,057 bytes) and forgebuild-manifest.json."
+      }
+    ]
+  },
+  "widget_icon_leaderboard_fix_v1": {
+    "name": "widget_icon_leaderboard_fix_v1",
+    "status": "in_progress",
+    "seeded_utc": "2026-10-08T07:20:00Z",
+    "target_release": "forgehouse50-v16",
+    "base_source": "forgehouse50-v15",
+    "scope_note": "Seven issues from 2026-10-08 operator prompt: (1) Widget button bottom cropping fix; (2) Remove fake static wave, use supported Material 3 progress bar with honest platform documentation; (3) Widget responsive reflow on resize; (4) Widget DayNight dark mode + dynamic color theme wiring; (5) Standard launcher icon safe zone fit; (6) Themed icon monochrome transparent silhouette; (7) Premium Leaderboard UI redesign.",
+    "tasks": [
+      {
+        "id": "wil1-widget-button-crop-fix",
+        "status": "pending",
+        "title": "ISSUE 1: Fix widget button bottom clipping/cropping at card edge",
+        "notes": "Pending: Adjust padding/sizing and layout weights so primary action button is never clipped by widget card bounds at any supported size."
+      },
+      {
+        "id": "wil2-widget-honest-progress-bar",
+        "status": "pending",
+        "title": "ISSUE 2: Replace fake static wavy progress bar with supported Material 3 progress bar",
+        "notes": "Pending: Document Android RemoteViews limitation honestly (no arbitrary canvas animators for determinate progress in RemoteViews); replace static wave with clean rounded Material 3 progress bar."
+      },
+      {
+        "id": "wil3-widget-responsive-reflow",
+        "status": "pending",
+        "title": "ISSUE 3: Widget layout responsive reflow across resize dimensions",
+        "notes": "Pending: Fix header title squeeze/wrapping (\"ForgeH\nouse\n50\"), ensure proportional reflow and vertical centering across compact and expanded sizes."
+      },
+      {
+        "id": "wil4-widget-dark-mode-theme",
+        "status": "pending",
+        "title": "ISSUE 4: Widget full DayNight dark mode and dynamic Material You theme",
+        "notes": "Pending: Wire DayNight application/widget theme and verify dynamic wallpaper and dark mode container/text/button colors."
+      },
+      {
+        "id": "wil5-standard-icon-safe-zone",
+        "status": "pending",
+        "title": "ISSUE 5: Standard launcher icon safe-zone scale and margin fix",
+        "notes": "Pending: Scale full uncropped mark into inner 66% safe zone on solid brand navy background, verified across circular and squircle launcher masks."
+      },
+      {
+        "id": "wil6-themed-icon-monochrome-fix",
+        "status": "pending",
+        "title": "ISSUE 6: Themed icon monochrome layer silhouette without square card artifact",
+        "notes": "Pending: Rebuild monochrome layer with 100% transparent background outside the glyph so launcher mask determines shape with zero square card artifact."
+      },
+      {
+        "id": "wil7-leaderboard-redesign",
+        "status": "pending",
+        "title": "ISSUE 7: Leaderboard screen premium visual redesign",
+        "notes": "Pending: Card-ized elevated rank rows, segmented pill category tabs, bold rank and score typography, elevated top-3 podium hero treatment, prominent current-user highlight."
+      },
+      {
+        "id": "wil8-validate-and-release",
+        "status": "pending",
+        "title": "Release forgehouse50-v16 and verify live",
+        "notes": "Pending: Build APK via release.yml, verify live on GitHub Releases API, mark build_complete true."
       }
     ]
   }
