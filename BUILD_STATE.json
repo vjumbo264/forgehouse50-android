@@ -1076,13 +1076,13 @@
     "tasks": [
       {
         "id": "puc1-audit-cache-first",
-        "status": "in_progress",
+        "status": "done",
         "title": "ISSUE 1 (Audit): Diagnose stale/default/zeroed data flash across app and widget",
-        "notes": "Investigating data layer and UI lifecycle: identify where state begins as null/default and flashes before network return, and why widget loses state."
+        "notes": "AUDIT COMPLETE: Identified 6 distinct root causes: (1) HomeScreen mutableStateOf initialized with null, causing first-frame render of 0 points/days/streak and Loading plan text; (2) HomeScreen never cached me or progress, making plan resolution impossible on startup so catch-up mode was invisible until network returned; (3) HomeScreen notes_total in me was uncached, forcing My notes (0) on startup; (4) Progress, Leaderboard, Profile, Notes initialized with null/empty state and loading=true, flashing spinners instead of reading cache synchronously; (5) Leaderboard myUserId fetched over network on every launch; (6) WidgetRefreshWorker on network error fell back to empty State() and overwrote WidgetStateStore, wiping widget data to zeroes."
       },
       {
         "id": "puc2-fix-cache-first",
-        "status": "pending",
+        "status": "in_progress",
         "title": "ISSUE 1 (Fix): Implement synchronous/immediate cache-first rendering app-wide",
         "notes": "Provide persistent cache store for Today, Me, Progress, Notes, Leaderboard, Quiz. Initialize Compose state synchronously inside remember; background network updates cache and reconciles seamlessly."
       },
