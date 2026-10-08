@@ -12,16 +12,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LibraryBooks
+import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -49,6 +54,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.data.Assignment
+import com.forgebuild.forgehouse50.data.ChapterViewTracker
 import com.forgebuild.forgehouse50.data.DayResponse
 import com.forgebuild.forgehouse50.data.PassageResponse
 import com.forgebuild.forgehouse50.data.Repository
@@ -134,6 +140,21 @@ fun ReadScreen(
     val currentChapter: Pair<String, Int>? = chapters.getOrNull(chapterIdx)
     val scroll = rememberScrollState()
 
+    var tracker by remember(day, chapters.size) { mutableStateOf(ChapterViewTracker(chapters)) }
+    LaunchedEffect(day, chapters.size) {
+        if (tracker.total != chapters.size) tracker = ChapterViewTracker(chapters)
+    }
+
+    var viewedTick by remember { mutableIntStateOf(0) }
+    LaunchedEffect(day, chapterIdx, chapters.size) {
+        val ch = chapters.getOrNull(chapterIdx) ?: return@LaunchedEffect
+        delay(1500)
+        tracker.markViewed(ch)
+        viewedTick++
+    }
+    @Suppress("UNUSED_EXPRESSION")
+    viewedTick
+
     // Passage — keyed on the current chapter + resolved translation. Served from
     // the on-device store with no network call for bundled/downloaded translations.
     val chapterKey = currentChapter?.let { "${it.first}:${it.second}" } ?: ""
@@ -179,20 +200,44 @@ fun ReadScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Day $day") },
+                title = {
+                    Column {
+                        Text("Day $day", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        currentChapter?.let {
+                            Text("${it.first} ${it.second}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 },
                 actions = {
-                    // Issue 5: font-size controls (A-/A+), persisted per device.
-                    TextButton(onClick = {
-                        fontScale = (fontScale - 0.1f).coerceAtLeast(0.85f)
-                        repo.session.fontScale = fontScale
-                    }) { Text("A\u2212") }
-                    TextButton(onClick = {
-                        fontScale = (fontScale + 0.1f).coerceAtMost(1.6f)
-                        repo.session.fontScale = fontScale
-                    }) { Text("A+") }
+                    // Premium font-size pill controls
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier = Modifier.padding(end = 4.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    fontScale = (fontScale - 0.1f).coerceAtLeast(0.85f)
+                                    repo.session.fontScale = fontScale
+                                },
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            ) { Text("A\u2212", fontWeight = FontWeight.Bold) }
+                            TextButton(
+                                onClick = {
+                                    fontScale = (fontScale + 0.1f).coerceAtMost(1.6f)
+                                    repo.session.fontScale = fontScale
+                                },
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            ) { Text("A+", fontWeight = FontWeight.Bold) }
+                        }
+                    }
                     IconButton(onClick = onManageTranslations) {
                         Icon(Icons.Filled.LibraryBooks, "Manage translations")
                     }
@@ -214,50 +259,53 @@ fun ReadScreen(
             }
 
             // Translation selector — only translations available on-device
-            // (bundled KJV + any downloaded). KJV is the default.
             if (availableTranslations.size > 1) {
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     availableTranslations.forEach { t ->
                         FilterChip(
                             selected = translation == t,
                             onClick = { translation = t; repo.session.translationId = t },
-                            label = { Text(t.removePrefix("versewell-").uppercase()) },
+                            label = { Text(t.removePrefix("versewell-").uppercase(), fontWeight = FontWeight.SemiBold) },
                         )
                     }
                 }
                 Spacer(Modifier.height(4.dp))
             }
 
-            // Issue 4: Previous/Next chapter navigation within this day's range.
-            // post_testing_polish_v1 ISSUE 5: icon-led, button-like controls.
-            // These are plain [TextButton]s with a leading/trailing chevron icon
-            // (NOT ExpressiveButton) so they get the calm default ripple and NOT
-            // the expressive pressed-shape-morph used on primary action buttons.
+            // Previous/Next chapter navigation: calm chevron buttons with elevated center chip
             if (chapters.size > 1) {
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = { if (chapterIdx > 0) chapterIdx-- }, enabled = chapterIdx > 0) {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(2.dp))
-                        Text("Previous chapter")
+                        Text("Previous")
                     }
                     Spacer(Modifier.weight(1f))
-                    Text(
-                        currentChapter?.let { "${it.first} ${it.second}" } ?: "",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                    ) {
+                        Text(
+                            currentChapter?.let { "${it.first} ${it.second}" } ?: "",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        )
+                    }
                     Spacer(Modifier.weight(1f))
                     TextButton(
                         onClick = { if (chapterIdx < chapters.lastIndex) chapterIdx++ },
                         enabled = chapterIdx < chapters.lastIndex,
                     ) {
-                        Text("Next chapter")
+                        Text("Next")
                         Spacer(Modifier.width(2.dp))
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, modifier = Modifier.size(20.dp))
                     }
@@ -327,35 +375,81 @@ fun ReadScreen(
                                     Column(Modifier.weight(1f)) {
                                         Text(v.text, style = MaterialTheme.typography.bodyLarge,
                                             fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale)
-                                        // post_testing_polish_v1 ISSUE 4: ONE small marker after a
-                                        // verse's text when it has any footnotes; tapping toggles the
-                                        // single inline panel showing ALL of that verse's footnotes.
+                                        // Footnote marker: unmistakably interactive accent pill chip (streak_reader_support_fix_v1 / Issue 3)
                                         if (v.footnotes.isNotEmpty()) {
-                                            Text(
-                                                "\u2020 footnote" + if (v.footnotes.size > 1) "s (${v.footnotes.size})" else "",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontWeight = FontWeight.SemiBold,
-                                                modifier = Modifier
-                                                    .clickable {
-                                                        openFootnoteVerse =
-                                                            if (openFootnoteVerse == v.verse) null else v.verse
-                                                    }
-                                                    .padding(vertical = 2.dp),
-                                            )
-                                            if (openFootnoteVerse == v.verse) {
+                                            val isOpen = openFootnoteVerse == v.verse
+                                            Spacer(Modifier.height(4.dp))
+                                            Surface(
+                                                onClick = { openFootnoteVerse = if (isOpen) null else v.verse },
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = if (isOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                                                contentColor = if (isOpen) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
+                                                tonalElevation = 2.dp,
+                                                border = BorderStroke(
+                                                    1.dp,
+                                                    if (isOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                                                ),
+                                                modifier = Modifier.padding(vertical = 3.dp),
+                                            ) {
+                                                Row(
+                                                    Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                ) {
+                                                    Icon(
+                                                        Icons.Filled.Notes,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(13.dp),
+                                                    )
+                                                    Text(
+                                                        text = if (v.footnotes.size > 1) "${v.footnotes.size} Footnotes" else "Footnote",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        fontWeight = FontWeight.Bold,
+                                                    )
+                                                }
+                                            }
+                                            if (isOpen) {
                                                 Spacer(Modifier.height(4.dp))
                                                 Surface(
-                                                    color = MaterialTheme.colorScheme.surfaceVariant,
-                                                    shape = MaterialTheme.shapes.medium,
-                                                    modifier = Modifier.fillMaxWidth(),
+                                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                    shape = MaterialTheme.shapes.large,
+                                                    tonalElevation = 3.dp,
+                                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                                 ) {
-                                                    Column(Modifier.padding(10.dp)) {
+                                                    Column(Modifier.padding(14.dp)) {
+                                                        Row(
+                                                            Modifier.fillMaxWidth(),
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                        ) {
+                                                            Text(
+                                                                "Footnote · Verse ${v.verse}",
+                                                                style = MaterialTheme.typography.labelLarge,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = MaterialTheme.colorScheme.primary,
+                                                            )
+                                                            IconButton(
+                                                                onClick = { openFootnoteVerse = null },
+                                                                modifier = Modifier.size(24.dp),
+                                                            ) {
+                                                                Icon(
+                                                                    Icons.Filled.Close,
+                                                                    contentDescription = "Close footnote",
+                                                                    modifier = Modifier.size(16.dp),
+                                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                )
+                                                            }
+                                                        }
+                                                        Spacer(Modifier.height(6.dp))
                                                         v.footnotes.forEach { note ->
-                                                            Text(note, style = MaterialTheme.typography.bodySmall,
-                                                                fontSize = MaterialTheme.typography.bodySmall.fontSize * fontScale,
-                                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                            Spacer(Modifier.height(4.dp))
+                                                            Text(
+                                                                note,
+                                                                style = MaterialTheme.typography.bodyMedium,
+                                                                fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
+                                                                color = MaterialTheme.colorScheme.onSurface,
+                                                            )
+                                                            Spacer(Modifier.height(6.dp))
                                                         }
                                                     }
                                                 }
@@ -376,44 +470,66 @@ fun ReadScreen(
                 }
             }
 
-            // Completion row
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            // Completion row: enforced all-chapters-viewed gate (streak_reader_support_fix_v1 / Issue 5)
+            val gateOpen = (viewedTick >= 0) && tracker.allViewed
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                tonalElevation = 2.dp,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                if (completed) {
-                    Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Reading complete", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                    ExpressiveButton(onClick = { onOpenQuiz(day) }) { Text("Quiz") }
-                } else {
-                    // Part D: disable + real Expressive loading indicator while the
-                    // completion request is in flight; clear success (transitions to
-                    // the completed state / quiz prompt) and clear actionable error.
-                    ExpressiveButton(
-                        onClick = {
-                            if (completeBusy) return@ExpressiveButton
-                            scope.launch {
-                                completeBusy = true
-                                error = null
-                                runCatching { repo.api.completeDay(day) }
-                                    .onSuccess {
-                                        completed = true
-                                        dayData?.let { cur ->
-                                            val upd = cur.copy(progress = cur.progress.copy(completed = true))
-                                            dayData = upd
-                                            com.forgebuild.forgehouse50.data.AppCache.saveDay(context, day, upd)
-                                        }
-                                        com.forgebuild.forgehouse50.widget.WidgetRefreshWorker.refreshWidgetState(context, repo)
-                                        com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
-                                    }
-                                    .onFailure { error = it.message ?: "Could not mark this day complete." }
-                                completeBusy = false
+                Column(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)
+                ) {
+                    if (completed) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Text("Reading complete", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            ExpressiveButton(onClick = { onOpenQuiz(day) }) {
+                                Icon(Icons.Filled.Quiz, null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Quiz")
                             }
-                        },
-                        Modifier.fillMaxWidth(),
-                        busy = completeBusy,
-                    ) { Text("Mark day $day reading complete") }
+                        }
+                    } else {
+                        if (!gateOpen && tracker.total > 0) {
+                            Text(
+                                tracker.gateHint(),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                        }
+                        ExpressiveButton(
+                            onClick = {
+                                if (completeBusy || !gateOpen) return@ExpressiveButton
+                                scope.launch {
+                                    completeBusy = true
+                                    error = null
+                                    runCatching { repo.api.completeDay(day, tracker.viewedKeys()) }
+                                        .onSuccess {
+                                            completed = true
+                                            dayData?.let { cur ->
+                                                val upd = cur.copy(progress = cur.progress.copy(completed = true))
+                                                dayData = upd
+                                                com.forgebuild.forgehouse50.data.AppCache.saveDay(context, day, upd)
+                                            }
+                                            com.forgebuild.forgehouse50.widget.WidgetRefreshWorker.refreshWidgetState(context, repo)
+                                            com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
+                                        }
+                                        .onFailure { error = it.message ?: "Could not mark this day complete." }
+                                    completeBusy = false
+                                }
+                            },
+                            Modifier.fillMaxWidth(),
+                            enabled = gateOpen,
+                            busy = completeBusy,
+                        ) { Text("Mark day $day reading complete") }
+                    }
                 }
             }
         }

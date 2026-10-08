@@ -32,7 +32,9 @@ import androidx.compose.ui.unit.dp
  */
 object CommunityLinks {
     const val WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/KNt6BxuzOWwFZ9p4LL2Dfq"
-    const val SUPPORT_WA_ME_URL = "https://wa.me/2349139095481" // admin +234 913 909 5481
+    // streak_reader_support_fix_v1 / Issue 4: pre-filled message for support chat
+    const val SUPPORT_MESSAGE = "Hi, I'd like to support ForgeHouse 50"
+    const val SUPPORT_WA_ME_URL = "https://wa.me/2349139095481?text=Hi%2C%20I%27d%20like%20to%20support%20ForgeHouse%2050" // admin +234 913 909 5481
 
     fun open(context: Context, url: String) {
         runCatching {

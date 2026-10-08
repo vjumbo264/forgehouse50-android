@@ -180,6 +180,8 @@ class ChapterViewTracker(
 
     fun unviewedRemaining(): Int = (chapters.size - viewed.size).coerceAtLeast(0)
 
+    fun viewedKeys(): List<String> = viewed.map { "${it.first}:${it.second}" }
+
     /** Gate hint text, e.g. "View all 6 chapters to finish (3/6 viewed)". */
     fun gateHint(): String =
         "View all $total chapters to finish ($viewedCount/$total viewed)"

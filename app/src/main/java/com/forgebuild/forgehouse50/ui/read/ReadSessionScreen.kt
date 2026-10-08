@@ -315,7 +315,7 @@ fun ReadSessionScreen(
                                 scope.launch {
                                     completeBusyDay = day
                                     loadError = null
-                                    runCatching { repo.api.completeDay(day) }
+                                    runCatching { repo.api.completeDay(day, tracker.viewedKeys()) }
                                         .onSuccess {
                                         completedDays = completedDays + day
                                         dayData[day]?.let { cur ->

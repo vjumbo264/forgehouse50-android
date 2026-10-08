@@ -21,6 +21,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.put
 
 /**
@@ -148,8 +150,15 @@ class ApiClient(private val session: SessionStore) {
         }
 
 
-    suspend fun completeDay(n: Int): GenericOk =
-        post("/read/complete", buildJsonObject { put("day_number", n) })
+    suspend fun completeDay(n: Int, viewedChapters: List<String> = emptyList()): GenericOk =
+        post("/read/complete", buildJsonObject {
+            put("day_number", n)
+            if (viewedChapters.isNotEmpty()) {
+                put("viewed_chapters", buildJsonArray {
+                    viewedChapters.forEach { add(it) }
+                })
+            }
+        })
 
 
     suspend fun addReadingTime(n: Int, seconds: Int): GenericOk =
