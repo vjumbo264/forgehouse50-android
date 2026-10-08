@@ -1,6 +1,10 @@
-<resources>
-    <style name="Theme.ForgeBuild" parent="android:Theme.Material.NoActionBar">
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.ForgeBuild" parent="@android:style/Theme.DeviceDefault.DayNight.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">?android:attr/isLightTheme</item>
+    </style>
+
+    <style name="Theme.ForgeHouse.Widget" parent="@android:style/Theme.DeviceDefault.DayNight">
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 </resources>

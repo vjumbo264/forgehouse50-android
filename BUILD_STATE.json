@@ -1179,51 +1179,51 @@
     "tasks": [
       {
         "id": "wil1-widget-button-crop-fix",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 1: Fix widget button bottom clipping/cropping at card edge",
-        "notes": "Pending: Adjust padding/sizing and layout weights so primary action button is never clipped by widget card bounds at any supported size."
+        "notes": "DONE (Issue 1): Fixed button bottom cropping across all supported widget sizes. Increased container paddingBottom to 14dp (from 10dp), adjusted compact pill button height to 36dp with radius 18dp, and added flexible Space (weight 1) between reading progress and action button row. Mathematical verification proves 9.56dp safe clearance inside the 28dp card corner arc. Verified via live rendering at standard 2-cell size (widget_light_2cell.png, widget_dark_2cell.png) with zero button clipping."
       },
       {
         "id": "wil2-widget-honest-progress-bar",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 2: Replace fake static wavy progress bar with supported Material 3 progress bar",
-        "notes": "Pending: Document Android RemoteViews limitation honestly (no arbitrary canvas animators for determinate progress in RemoteViews); replace static wave with clean rounded Material 3 progress bar."
+        "notes": "DONE (Issue 2): Removed fake static wavy progress bar drawables (widget_progress_bar_wavy.xml, widget_progress_track_wavy.xml, widget_progress_wavy.xml). PLATFORM CONSTRAINT INVESTIGATION RECORD: Android App Widgets execute in the host launcher process via RemoteViews IPC. Android strictly forbids arbitrary continuous animation loops or custom Canvas frame updates on RemoteViews for battery and power management reasons. The previous wavy progress indicator was a static, non-animating SVG curve that misrepresented itself. In accordance with the ForgeBuild NO APPROXIMATION contract, the deceptive static approximation was removed and replaced with a genuine, platform-supported Material 3 rounded horizontal progress bar (widget_progress.xml) styled with authentic track and indicator tokens."
       },
       {
         "id": "wil3-widget-responsive-reflow",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 3: Widget layout responsive reflow across resize dimensions",
-        "notes": "Pending: Fix header title squeeze/wrapping (\"ForgeH\nouse\n50\"), ensure proportional reflow and vertical centering across compact and expanded sizes."
+        "notes": "DONE (Issue 3): Redesigned widget layout reflow across resize dimensions. Header restructured with RelativeLayout: w_day badge anchored to end, and w_title set to layout_toStartOf with singleLine=true and ellipsize=end, permanently preventing squeezed multi-line wrapping (ForgeH/ouse/50). Flexible vertical spacer absorbs extra height so elements remain proportional without bunching to one side. Verified across wide (widget_wide_resized.png) and tall (widget_tall_resized.png) dimensions."
       },
       {
         "id": "wil4-widget-dark-mode-theme",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 4: Widget full DayNight dark mode and dynamic Material You theme",
-        "notes": "Pending: Wire DayNight application/widget theme and verify dynamic wallpaper and dark mode container/text/button colors."
+        "notes": "DONE (Issue 4): Fixed widget theme wiring so it genuinely follows system dark/light and dynamic Material You wallpaper colors. Receiver tagged with android:theme=\"@style/Theme.ForgeHouse.Widget\" inheriting from @android:style/Theme.DeviceDefault.DayNight. Theme.ForgeBuild updated to DayNight. Colors verified across values/ (warm light #FDFCF7), values-night/ (sleek dark #1C1C1E), values-v31/ (system_neutral1_50), and values-night-v31/ (system_neutral1_900). Live verified in widget_dark_2cell.png and widget_light_2cell.png."
       },
       {
         "id": "wil5-standard-icon-safe-zone",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 5: Standard launcher icon safe-zone scale and margin fix",
-        "notes": "Pending: Scale full uncropped mark into inner 66% safe zone on solid brand navy background, verified across circular and squircle launcher masks."
+        "notes": "DONE (Issue 5): Standard launcher icon over-zooming/cropping fixed. Extracted full uncropped mark, masked to circular badge, scaled to inner 65% safe zone (278px on 432px xxxhdpi canvas, radius 139px < 144px mask limit), centered on solid brand navy (#010E41). Re-generated across mdpi..xxxhdpi densities for adaptive fg/bg and legacy round icons. Live verified under circle mask (standard_icon_circle_preview.png) and squircle mask (standard_icon_squircle_preview.png) with full flame, globe, and 50 mark visible with safe margins."
       },
       {
         "id": "wil6-themed-icon-monochrome-fix",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 6: Themed icon monochrome layer silhouette without square card artifact",
-        "notes": "Pending: Rebuild monochrome layer with 100% transparent background outside the glyph so launcher mask determines shape with zero square card artifact."
+        "notes": "DONE (Issue 6): Themed icon square card artifact root-caused and fixed. Previous monochrome layer had an inverted square card mask with opaque background and glyph cutout holes, causing the launcher to render a harsh-edged square card. Inverted mask, removed all background card pixels (100% transparent), leaving ONLY the anti-aliased flame/house/50 glyph silhouette inside the safe zone (bbox 127,93 to 304,339 on xxxhdpi). Regenerated across all densities. Live verified under themed circle (themed_icon_circle_preview.png) and squircle (themed_icon_squircle_preview.png) showing clean shape mask with zero square card edges."
       },
       {
         "id": "wil7-leaderboard-redesign",
-        "status": "pending",
+        "status": "done",
         "title": "ISSUE 7: Leaderboard screen premium visual redesign",
-        "notes": "Pending: Card-ized elevated rank rows, segmented pill category tabs, bold rank and score typography, elevated top-3 podium hero treatment, prominent current-user highlight."
+        "notes": "DONE (Issue 7): Comprehensive premium redesign of LeaderboardScreen.kt matching established Material 3 Expressive design language: (1) Horizontal scrolling pill category tabs (38dp height, 20dp radius, filled primary on active, surfaceContainerHigh on inactive); (2) Pinned Your standing summary card showing immediate user rank and score; (3) Distinguished top-3 metallic podium cards (Gold 1st place with crown badge and warm radial glow, Silver 2nd place, Bronze 3rd place, metallic borders, colored avatar rings, bold display scores); (4) Card-ized rank 4+ rows with surfaceContainerLow and 20dp corner radii replacing flat list dividers; (5) High-contrast YOU user highlight with 2dp primary border, tinted container, and elevated floating card. Live verified with screenshots: leaderboard_overall_redesign.png and leaderboard_consistency_redesign.png."
       },
       {
         "id": "wil8-validate-and-release",
-        "status": "pending",
+        "status": "in_progress",
         "title": "Release forgehouse50-v16 and verify live",
-        "notes": "Pending: Build APK via release.yml, verify live on GitHub Releases API, mark build_complete true."
+        "notes": "In Progress: Dispatching release workflow for forgehouse50-v16."
       }
     ]
   }

@@ -8,45 +8,49 @@
     android:paddingStart="16dp"
     android:paddingEnd="16dp"
     android:paddingTop="12dp"
-    android:paddingBottom="10dp">
+    android:paddingBottom="14dp">
 
-    <!-- Top header: App title on left, pill day badge on right -->
-    <LinearLayout
+    <!-- Top header: App title on left (guaranteed single line, never wrapped/squeezed into ForgeH/ouse/50), pill day badge on right -->
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/w_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="ForgeHouse 50"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="@color/widget_text_secondary" />
+        android:layout_height="wrap_content">
 
         <TextView
             android:id="@+id/w_day"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
             android:background="@drawable/widget_chip_bg"
-            android:paddingHorizontal="10dp"
+            android:paddingHorizontal="9dp"
             android:paddingVertical="3dp"
             android:text="Day 1/50"
             android:textSize="11sp"
             android:textStyle="bold"
             android:textColor="@color/widget_chip_text" />
-    </LinearLayout>
+
+        <TextView
+            android:id="@+id/w_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/w_day"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="8dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:text="ForgeHouse 50"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_text_secondary" />
+    </RelativeLayout>
 
     <!-- Reading assignment title -->
     <TextView
         android:id="@+id/w_assignment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:maxLines="1"
+        android:layout_marginTop="3dp"
+        android:singleLine="true"
         android:ellipsize="end"
         android:text="John 1–3"
         android:textSize="16sp"
@@ -59,45 +63,52 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="1dp"
-        android:maxLines="1"
+        android:singleLine="true"
         android:ellipsize="end"
         android:visibility="gone"
         android:textSize="11sp"
         android:textColor="@color/widget_text_secondary" />
 
-    <!-- Expressive wavy progress indicator -->
+    <!-- Supported native Material 3 progress bar (clean rounded straight track, never fake static wave) -->
     <ProgressBar
         android:id="@+id/w_progress"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="10dp"
-        android:layout_marginTop="3dp"
-        android:progressDrawable="@drawable/widget_progress_wavy"
+        android:layout_height="6dp"
+        android:layout_marginTop="5dp"
+        android:progressDrawable="@drawable/widget_progress"
         android:max="100"
         android:progress="0" />
 
     <TextView
         android:id="@+id/w_progress_text"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="1dp"
-        android:text="0/260 chapters"
+        android:layout_marginTop="2dp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:text="0/260 chapters (0%)"
         android:textSize="10sp"
         android:textColor="@color/widget_text_secondary" />
 
-    <!-- Compact pill action button row with generous bottom clearance -->
+    <!-- Flexible vertical spacer so button row stays anchored comfortably at the bottom on all widget heights without clipping -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Action button row with guaranteed comfortable padding and corner clearance -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:layout_marginBottom="2dp"
         android:orientation="horizontal">
 
         <Button
             android:id="@+id/w_primary"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="38dp"
+            android:layout_height="36dp"
             android:background="@drawable/widget_btn_primary"
             android:text="Start Reading"
             android:textAllCaps="false"
@@ -108,7 +119,7 @@
         <Button
             android:id="@+id/w_secondary"
             android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            android:layout_height="36dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/widget_btn_secondary"
             android:visibility="gone"

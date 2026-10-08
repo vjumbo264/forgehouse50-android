@@ -39,6 +39,7 @@
         <!-- catchup_widget_links_v1 / ISSUE 3: genuine home-screen App Widget. -->
         <receiver
             android:name=".widget.ForgeHouseWidgetProvider"
+            android:theme="@style/Theme.ForgeHouse.Widget"
             android:exported="false"
             android:label="@string/widget_label">
             <intent-filter>
