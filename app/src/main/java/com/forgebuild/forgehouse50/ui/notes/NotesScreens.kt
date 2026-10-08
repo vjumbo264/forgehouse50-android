@@ -66,8 +66,8 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var notes by remember { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getNotes(context)?.notes.orEmpty()) }
-    var query by remember { mutableStateOf() }
-    var typeFilter by remember { mutableStateOf() }
+    var query by remember { mutableStateOf("") }
+    var typeFilter by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(notes.isEmpty()) }
 
     suspend fun refresh() {

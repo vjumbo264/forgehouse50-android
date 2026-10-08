@@ -79,7 +79,7 @@ fun ReadSessionScreen(
         for (d in sessionDays) {
             com.forgebuild.forgehouse50.data.AppCache.getDay(context, d)?.let { cached[d] = it }
         }
-        mutableStateOf(cached)
+        mutableStateOf<Map<Int, DayResponse>>(cached)
     }
     var loaded by remember(sessionDays) { mutableStateOf(dayData.isNotEmpty()) }
     var loadError by remember { mutableStateOf<String?>(null) }
@@ -90,7 +90,7 @@ fun ReadSessionScreen(
         for (d in sessionDays) {
             if (dayData[d]?.progress?.completed == true) done.add(d)
         }
-        mutableStateOf(done)
+        mutableStateOf<Set<Int>>(done)
     }
     var completeBusyDay by remember { mutableStateOf<Int?>(null) }
     var activeIdx by remember { mutableIntStateOf(0) }
