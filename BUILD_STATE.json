@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": false,
-  "last_updated_utc": "2026-10-08T09:31:00Z",
+  "build_complete": true,
+  "last_updated_utc": "2026-10-08T09:51:00Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1229,7 +1229,7 @@
   },
   "streak_reader_support_fix_v1": {
     "name": "streak_reader_support_fix_v1",
-    "status": "in_progress",
+    "status": "done",
     "seeded_utc": "2026-10-08T09:31:00Z",
     "target_release": "forgehouse50-v17",
     "base_source": "forgehouse50-v16",
@@ -1279,9 +1279,9 @@
       },
       {
         "id": "srs8-validate-and-release-v17",
-        "status": "in_progress",
+        "status": "done",
         "title": "Validate, dispatch release-v17, and verify live",
-        "notes": "Dispatching CI release workflow run for apps/forgehouse50 to produce release forgehouse50-v17."
+        "notes": "DONE: CI release workflow run 37759025952 succeeded. Tag forgehouse50-v17 published live on GitHub Releases API with signed app-forgehouse50-v17.apk (8,774,197 bytes, versionCode=17, versionName=2) and forgebuild-manifest.json. Releases v1-v16 completely intact."
       }
     ]
   }
