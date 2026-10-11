@@ -24,6 +24,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Thin typed client for the existing ForgeHouse 50 Cloudflare Pages
@@ -268,9 +270,16 @@ class ApiClient(private val session: SessionStore) {
     suspend fun adminLogin(username: String, password: String): AdminLoginResponse =
         post("/admin/login", buildJsonObject { put("username", username); put("password", password) })
 
-    /** Admin: Delete single user permanently with name/id confirmation (contract Part A). */
-    suspend fun adminDeleteUser(userId: String, confirm: String): GenericOk =
+    /** Admin: Delete single user permanently with confirm: true or name/id confirmation. */
+    suspend fun adminDeleteUser(userId: String, confirm: Boolean = true): GenericOk =
         post("/admin/users/$userId/delete", buildJsonObject { put("confirm", confirm) })
+
+    /** Admin: Batch delete multiple users with confirmation word DELETE. */
+    suspend fun adminBatchDelete(userIds: List<String>, confirmWord: String = "DELETE"): BatchDeleteResponse =
+        post("/admin/users/delete", buildJsonObject {
+            put("ids", JsonArray(userIds.map { JsonPrimitive(it) }))
+            put("confirm_word", confirmWord)
+        })
 
     /** Admin: Change password and invalidate other sessions (contract Part B). */
     suspend fun adminChangePassword(currentPassword: String, newPassword: String): GenericOk =

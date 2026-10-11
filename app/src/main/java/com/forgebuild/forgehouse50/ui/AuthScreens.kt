@@ -1,6 +1,12 @@
 package com.forgebuild.forgehouse50.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -69,12 +75,12 @@ fun AuthScreen(
     when (val m = mode) {
         Mode.Login -> LoginForm(repo, registrationOpen,
             onSignup = { mode = Mode.Signup },
-            onAdminLogin = { mode = Mode.AdminLogin },
+            onAdminLogin = { mode = Mode.AdminLogin(it) },
             onNeedsVerification = { mode = Mode.Otp(it) },
             onAuthenticated = onAuthenticated)
         Mode.Signup -> SignupForm(repo, onBack = { mode = Mode.Login }, onNeedsVerification = { mode = Mode.Otp(it) })
         is Mode.Otp -> OtpForm(repo, m.email, onAuthenticated, onBack = { mode = Mode.Login })
-        Mode.AdminLogin -> AdminLoginForm(repo, onBack = { mode = Mode.Login }, onAuthenticated = onAuthenticated)
+        is Mode.AdminLogin -> AdminLoginForm(repo, initialUsername = m.initialUsername, onBack = { mode = Mode.Login }, onAuthenticated = onAuthenticated)
     }
 }
 
@@ -82,7 +88,7 @@ private sealed interface Mode {
     data object Login : Mode
     data object Signup : Mode
     data class Otp(val email: String) : Mode
-    data object AdminLogin : Mode
+    data class AdminLogin(val initialUsername: String = "") : Mode
 }
 
 @Composable
@@ -99,6 +105,7 @@ private fun AuthScaffold(subtitle: String, content: @Composable () -> Unit) {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
+            .imePadding()
             .padding(horizontal = 28.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -146,7 +153,7 @@ private fun LoginForm(
     repo: Repository,
     registrationOpen: Boolean,
     onSignup: () -> Unit,
-    onAdminLogin: () -> Unit,
+    onAdminLogin: (String) -> Unit,
     onNeedsVerification: (String) -> Unit,
     onAuthenticated: () -> Unit,
 ) {
@@ -158,10 +165,36 @@ private fun LoginForm(
 
     AuthScaffold("Read the New Testament in 50 reading days.") {
         OutlinedTextField(
-            value = email, onValueChange = { email = it }, label = { Text("Email") },
+            value = email, onValueChange = { email = it; error = null }, label = { Text("Email") },
             singleLine = true, modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         )
+        val looksLikeAdmin = email.isNotBlank() && !email.contains("@")
+        if (looksLikeAdmin) {
+            Spacer(Modifier.height(6.dp))
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAdminLogin(email.trim()) }
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Info, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Looks like an admin username. Tap to use Admin sign in.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = password, onValueChange = { password = it }, label = { Text("Password") },
@@ -176,6 +209,10 @@ private fun LoginForm(
         Spacer(Modifier.height(24.dp))
         ExpressiveButton(
             onClick = {
+                if (!email.contains("@")) {
+                    error = "Email address must contain '@'. If you are an administrator, use Admin sign in."
+                    return@ExpressiveButton
+                }
                 scope.launch {
                     busy = true; error = null
                     try {
@@ -214,12 +251,11 @@ private fun LoginForm(
             )
         }
         Spacer(Modifier.height(16.dp))
-        TextButton(onClick = onAdminLogin) {
-            Text(
-                "Admin sign in",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        OutlinedButton(
+            onClick = { onAdminLogin(if (looksLikeAdmin) email.trim() else "") },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Admin sign in")
         }
     }
 }
@@ -383,11 +419,12 @@ private fun OtpForm(
 @Composable
 private fun AdminLoginForm(
     repo: Repository,
+    initialUsername: String = "",
     onBack: () -> Unit,
     onAuthenticated: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    var username by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf(initialUsername) }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }

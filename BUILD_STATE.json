@@ -1508,20 +1508,20 @@
       {
         "id": "b05",
         "title": "Part 3 Android — tabs, participant cards, search/sort, overflow menu, single-delete dialog, select mode, batch delete, snackbars, tidy of the other tabs. Unit/UI tests for sorting, search and selection logic; screenshots (dark and light, large font, 0/1/40+ participants) only if the Actions emulator works, otherwise list the screens in needs_operator_visual_check.",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (b05): Rewrote AdminScreen.kt with full M3 Expressive design. Tabs fit on one line using ScrollableTabRow. Each participant is rendered in an accessible card with avatar, full name (wrapping, never truncated), secondary line, and short tag (#xxxx). Moved row actions to overflow menu (3 dots) with Award/remove points and Delete. Implemented single delete confirmation dialog with no typing required. Implemented batch delete selection mode with top bar selected count, Select all toggle, Select inactive accounts shortcut, and bottom action bar. Batch delete dialog prompts for word DELETE to confirm, calling adminBatchDelete. Replaced top text with snackbars via SnackbarHost. Tidied Stats, Programme, and Password tabs. Created AdminParticipantsLogicTest.kt covering search, sort, selection, and batch confirm validation. Visual check marked needs_operator_visual_check."
       },
       {
         "id": "b06",
         "title": "Part 3 website admin (if present, per rules above).",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (b06): Updated website admin in public/admin.html with full names, short tags, search and sort controls, cards with avatar and stats, no-typing single delete confirmation modal calling POST /api/admin/users/:id/delete with confirm:true, batch select mode with Select all and Select inactive shortcuts, and batch delete modal requiring word DELETE calling POST /api/admin/users/delete. Merged changes into site-v2 branch."
       },
       {
         "id": "b07",
         "title": "Part 4 — admin sign-in visibility and hint, app and website.",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (b07): Enhanced admin sign-in visibility and hint on both clients: (1) In Android AuthScreens.kt LoginForm, added admin username detection under the Email field with tap-to-open hint, made Admin sign in a prominent full-width OutlinedButton, added imePadding to AuthScaffold for keyboard avoidance, and prefilled username into AdminLoginForm. (2) In public/login.html, added admin username input listener with direct hint link to admin-login.html and prominent secondary button. Updated public/admin-login.html to read username query param."
       },
       {
         "id": "b08",

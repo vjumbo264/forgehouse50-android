@@ -386,6 +386,9 @@ data class Participant(
     val id: String,
     val name: String = "",
     val surname: String = "",
+    val full_name: String = "",
+    val short_tag: String = "",
+    val status: String = "member",
     val email: String = "",
     val role: String = "member",
     val avatar_id: String? = null,
@@ -395,6 +398,35 @@ data class Participant(
     val reading_seconds: Long = 0,
     val points: Long = 0,
     val notes_count: Int = 0,
+) {
+    val displayName: String
+        get() = full_name.ifBlank {
+            listOf(name, surname).filter { it.isNotBlank() }.joinToString(" ").ifBlank { name.ifBlank { "Member" } }
+        }
+    val displayTag: String
+        get() = if (short_tag.isNotBlank()) "#$short_tag" else "#${id.takeLast(4)}"
+    val isInactive: Boolean
+        get() = points == 0L && days_completed == 0 && notes_count == 0
+}
+
+@Serializable
+data class BatchDeleteResultItem(
+    val id: String = "",
+    val status: String = "",
+    val reason: String? = null,
+    val error: String? = null,
+    val display_name: String? = null,
+)
+
+@Serializable
+data class BatchDeleteResponse(
+    val ok: Boolean = false,
+    val total: Int = 0,
+    val deleted_count: Int = 0,
+    val skipped_count: Int = 0,
+    val failed_count: Int = 0,
+    val results: List<BatchDeleteResultItem> = emptyList(),
+    val error: String? = null,
 )
 
 @Serializable

@@ -113,7 +113,6 @@ fun ReadScreen(
     var translation by remember { mutableStateOf(repo.session.translationId ?: Repository.KJV_ID) }
     var availableTranslations by remember { mutableStateOf<List<String>>(listOf(Repository.KJV_ID)) }
     var passageError by remember { mutableStateOf<String?>(null) }
-    var selectedVerses by remember(chapterIdx, activeIdx) { mutableStateOf<Set<Int>>(emptySet()) }
     var reloadToken by remember { mutableIntStateOf(0) }
     var passage by remember { mutableStateOf<PassageResponse?>(null) }
     var loadingPassage by remember { mutableStateOf(false) }
@@ -131,6 +130,7 @@ fun ReadScreen(
     var completeBusy by remember { mutableStateOf(false) }
     var fontScale by remember { mutableFloatStateOf(repo.session.fontScale) }
     var chapterIdx by remember(activeDay) { mutableIntStateOf(0) }
+    var selectedVerses by remember(chapterIdx, activeIdx) { mutableStateOf<Set<Int>>(emptySet()) }
     var openFootnoteVerse by remember(activeDay) { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(activeDay) {
