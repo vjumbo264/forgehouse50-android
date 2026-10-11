@@ -1411,17 +1411,20 @@
       {
         "id": "a03",
         "title": "Implement POST /api/admin/users/:id/delete (and bulk) with all server rules. Test against preview with self-created test users: delete works, cascade leaves zero orphans, admins and self cannot be deleted, wrong confirmation is rejected, deleted user session dies, leaderboard and participant counts update.",
-        "status": "pending"
+        "status": "done",
+        "notes": "DONE (a03): Implemented POST /api/admin/users/:id/delete, DELETE /api/admin/users/:id, and POST /api/admin/users/delete (bulk, max 50). Server enforces: valid admin session required, cannot delete self or admin account, confirmation required matching name/id/email, atomic cascade deletion across all 14 child tables, admin_audit row written, zero orphan rows. Tested against remote D1 with live test users."
       },
       {
         "id": "a04",
         "title": "Implement POST /api/admin/login, hashing, lockout, 12-hour sessions, change-password, and the no email path grants admin guarantee. Test: correct login, wrong password, lockout after 5 failures, expired session, change-password invalidates other sessions, OTP login for the operator email no longer yields admin.",
-        "status": "pending"
+        "status": "done",
+        "notes": "DONE (a04): Implemented POST /api/admin/login with PBKDF2-SHA256 (100,000 iterations, 16-byte salt), 5-failure/15-minute brute-force lockout, 12-hour session expiry, and POST /api/admin/change_password with 12+ char strength check and invalidation of other sessions. Email OTP logins strictly yield participant role=member; admin access is exclusively via admin_credentials & admin_sessions. Tested all scenarios against remote D1."
       },
       {
         "id": "a05",
         "title": "Confirm every existing admin function works with the new admin session (real requests for each).",
-        "status": "pending"
+        "status": "done",
+        "notes": "DONE (a05): Verified existing admin endpoints (/api/admin/stats, /api/admin/programme, /api/admin/participants, etc.) succeed with 200 OK using new admin session. Verified real requests against remote D1."
       },
       {
         "id": "a06",
