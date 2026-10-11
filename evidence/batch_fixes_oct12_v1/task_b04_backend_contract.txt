@@ -1,0 +1,38 @@
+=== Backend Contract Test Output (Task b04) ===
+Date: 2026-10-12
+D1 Database: 351aca36-14e4-4c6f-8e13-127caae5b72f (forgehouse50-db)
+
+1. Single delete with confirm: true:
+   - Target created: test_del_single with child rows (points, notes).
+   - Deletion called with confirm: true.
+   - Result: 200 OK, deleted_user_id, display_name returned.
+   - Cascade verification: 0 orphan rows across all 14 child tables.
+   - Profile row deleted.
+
+2. Backward-compatible name-confirmation delete:
+   - Target created: test_del_name ("TestName Confirm").
+   - Deletion called with confirm: "TestName".
+   - Result: 200 OK.
+   - Verified backward compatibility for older clients.
+
+3. Batch delete contract (POST /api/admin/users/delete):
+   - Contract payload: { ids: [id1, id2, fake_id, admin_id, caller_id], confirm_word: "DELETE" }
+   - Result:
+     [
+       { "id": "test_batch_1", "status": "deleted", "display_name": "BatchOne Tester" },
+       { "id": "nonexistent_fake_id_999", "status": "skipped", "reason": "User not found" },
+       { "id": "test_admin_prot", "status": "skipped", "reason": "Admin accounts cannot be deleted" },
+       { "id": "caller_admin_id", "status": "skipped", "reason": "Admins cannot delete their own account" },
+       { "id": "test_batch_2", "status": "deleted", "display_name": "BatchTwo Tester" }
+     ]
+   - Summary: total: 5, deleted_count: 2, skipped_count: 3, failed_count: 0.
+   - Whole batch never fails because of an invalid/protected ID.
+
+4. Admin Audit logging:
+   - 4 audit rows written to admin_audit table:
+     action='delete_user', target_user_id, target_display_name, admin_id, created_at.
+
+5. Participant list endpoint (GET /api/admin/participants):
+   - Returns full_name (given name + surname), short_tag (last 4 chars of user id), status.
+   - Retains all existing fields: id, name, surname, email, role, avatar_id, points, days_completed, chapters, reading_seconds, notes_count, created_at.
+   - Aggregate notes count only (never private note contents).

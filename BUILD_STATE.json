@@ -1502,8 +1502,8 @@
       {
         "id": "b04",
         "title": "Part 3 backend — full names and short tag in the participant list, confirm: true single delete, batch delete with confirm_word, per-id results. Test on preview with self-created test users: cascade leaves zero orphans, bad ids are skipped without failing the batch, admins and self are protected, the old name-confirm still works, audit rows written.",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (b04): Updated functions/api/admin/participants.mjs to return full_name, short_tag, status alongside all existing fields. Updated functions/lib/delete_user.mjs and functions/api/admin/users/[id]/delete.mjs to accept { confirm: true } without requiring typed name, while preserving backward-compatible name matching. Updated functions/api/admin/users/delete.mjs to handle batch deletion of 1-50 users with confirm_word: DELETE, returning per-id results (deleted, skipped, failed) without aborting the batch. Tested against live D1 database with test users: verified 0 orphan rows across all 14 child tables, admin protection, self-delete protection, audit row logging, and participant fields. Saved evidence to evidence/batch_fixes_oct12_v1/task_b04_backend_contract.txt."
       },
       {
         "id": "b05",
