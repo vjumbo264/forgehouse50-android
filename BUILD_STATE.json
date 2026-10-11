@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": false,
-  "last_updated_utc": "2026-10-11T21:48:51Z",
+  "build_complete": true,
+  "last_updated_utc": "2026-10-11T21:53:35Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -356,6 +356,11 @@
       "date": "2026-10-08",
       "did": "Operator feedback: replace font entirely with Plus Jakarta Sans (not fix Nunito), fix widget button being cropped, provide full dynamic theming for widget including dark mode, add expressive wavy progress bar to widget.",
       "next": "Execute fwd1-replace-font-plus-jakarta-sans -> fwd2-fix-widget-button-crop -> fwd3-widget-dynamic-theme-dark -> fwd4-widget-wavy-progress -> fwd5-validate-and-release."
+    },
+    {
+      "timestamp_utc": "2026-10-11T21:53:35Z",
+      "release": "forgehouse50-v19",
+      "summary": "Surgical fix for translation selector chips: implemented horizontally scrolling TranslationChipsRow with auto-scroll to selected chip and exact wrap height; released forgehouse50-v19."
     }
   ],
   "combined_fixes_v1": {
@@ -606,7 +611,7 @@
     ],
     "completed_utc": "2026-09-15T10:14:30Z"
   },
-  "current_release": "forgehouse50-v18",
+  "current_release": "forgehouse50-v19",
   "testing_phase_and_reader_fixes_v1": {
     "name": "testing_phase_and_reader_fixes_v1",
     "status": "complete",
@@ -819,7 +824,7 @@
     "notes": "2026-09-16 session 3: final audit sweep complete. Auth screens' three primary Buttons + the resend-code OutlinedButton converted to ExpressiveButton (bouncy press-scale physics + integrated wavy busy loader); the manual `if (busy) ExpressiveButtonLoader()` content collapse removes double-loader risk. Audit justification for remaining standard M3 controls: AlertDialog TextButtons (Cancel/confirm), top-app-bar back-arrow IconButtons and small action IconButtons are canonical M3 idioms kept per Expressive guidance (Expressive press treatment applies to primary actionable buttons, which are now all ExpressiveButton); determinate LinearProgressIndicators (Progress screen, translation downloads) are progress bars not loading spinners \u2014 all indeterminate loading states app-wide use ExpressiveLoading/ExpressiveButtonLoader. Part A coverage: dynamic Material You color + static fallback (AppTheme), Nunito rounded type scale (Google Sans Flex is proprietary/non-redistributable \u2014 documented substi",
     "complete": true
   },
-  "latest_release": "forgehouse50-v14",
+  "latest_release": "forgehouse50-v19",
   "material3_expressive_correction_v1": {
     "name": "material3_expressive_correction_v1",
     "status": "complete",
@@ -1328,8 +1333,8 @@
   },
   "reader_version_chips_scroll_fix": {
     "name": "reader_version_chips_scroll_fix",
-    "status": "in_progress",
-    "work_complete": false,
+    "status": "complete",
+    "work_complete": true,
     "seeded_utc": "2026-10-11T21:42:08Z",
     "target_release": "forgehouse50-v19",
     "base_source": "forgehouse50-v18",
@@ -1369,15 +1374,17 @@
       {
         "id": "c06",
         "title": "Bump version, build release APK, publish GitHub release with next tag forgehouse50-v19",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (c06): Dispatched CI release workflow run 38177930127 on GitHub Actions. Released forgehouse50-v19 (versionCode=19, versionName=2) with signed APK app-forgehouse50-v19.apk and forgebuild-manifest.json. Verified live via GitHub Releases API."
       },
       {
         "id": "c07",
         "title": "Final commit and push, set work_complete to true with summary",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (c07): Final verification and commit. Created shared TranslationChipsRow.kt using LazyRow with auto-scroll to selected chip and exact wrap height. Replaced bare non-scrolling Row in ReadScreen.kt. Verified release live on GitHub Releases API: forgehouse50-v19."
       }
-    ]
+    ],
+    "completed_utc": "2026-10-11T21:53:35Z",
+    "release_tag": "forgehouse50-v19"
   }
 }
