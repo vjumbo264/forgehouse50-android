@@ -147,3 +147,11 @@ Releases are GitHub Releases on the app's own repo (`v1`, `v2`, ...) — never
 overwritten. Rollback/history come from the GitHub Releases API. Signing uses
 the app repo's Actions secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`,
 `KEY_ALIAS`, `KEY_PASSWORD`.
+
+
+## Admin User Management & Batch Delete Architecture (batch_fixes_oct12_v1)
+- **Participant Cards & Full Names**: Admin participants view renders full names with wrapping, subtitle with points, completed days, notes, and activity status badge. Includes short disambiguation tag `#xxxx` (last 4 characters of ID).
+- **Single Delete Confirmation**: Simplified confirmation dialog requiring single-tap confirmation (no manual name re-typing needed) sending `{ confirm: true }`.
+- **Batch Deletion**: Selection mode allowing multi-select, "Select all", and "Select inactive accounts" shortcut. Confirmation dialog enforces typing "DELETE" to prevent accidental data loss, sending `POST /api/admin/users/delete` with `{ user_ids: [...], confirm_word: "DELETE" }`.
+- **Note Pre-fill**: Automatic contextual pre-fill of Book, Chapter, and Verse from current reader viewport and active verse highlights across all entry points.
+- **Display-only Translations**: Offline downloaded Bible translations listed as display-only in Profile; management and removal consolidated in Manage Versions screen.

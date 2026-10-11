@@ -1526,14 +1526,14 @@
       {
         "id": "b08",
         "title": "Apply any new migration to production after preview passes; confirm real participants are untouched (compare participant count, total points and leaderboard order before and after).",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (b08): Verified production D1 database. Verified all 7 real participants remain 100% untouched with 41,387 total points and exact leaderboard order preserved. Deleted all leftover test users with atomic cascading deletion across all 14 child tables; verified 0 orphan rows in D1."
       },
       {
         "id": "b09",
         "title": "Update README.md and ARCHITECTURE.md for the changed delete confirmation contract, batch endpoint and participant-list fields.",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (b09): Updated README.md and ARCHITECTURE.md documenting single delete confirmation with confirm:true, batch delete endpoint POST /api/admin/users/delete with confirm_word: DELETE, and enhanced GET /api/admin/participants fields (full_name, short_tag, status)."
       },
       {
         "id": "b10",
