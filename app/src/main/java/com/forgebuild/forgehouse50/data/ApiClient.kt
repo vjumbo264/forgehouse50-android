@@ -264,6 +264,21 @@ class ApiClient(private val session: SessionStore) {
     suspend fun adminEndTesting(confirm: String = "END_TESTING"): GenericOk =
         post("/admin/end_testing", buildJsonObject { put("confirm", confirm) })
 
+    /** Admin: Dedicated username+password login (contract Part B). */
+    suspend fun adminLogin(username: String, password: String): AdminLoginResponse =
+        post("/admin/login", buildJsonObject { put("username", username); put("password", password) })
+
+    /** Admin: Delete single user permanently with name/id confirmation (contract Part A). */
+    suspend fun adminDeleteUser(userId: String, confirm: String): GenericOk =
+        post("/admin/users/$userId/delete", buildJsonObject { put("confirm", confirm) })
+
+    /** Admin: Change password and invalidate other sessions (contract Part B). */
+    suspend fun adminChangePassword(currentPassword: String, newPassword: String): GenericOk =
+        post("/admin/change_password", buildJsonObject {
+            put("current_password", currentPassword)
+            put("new_password", newPassword)
+        })
+
     companion object {
         const val BASE = "https://forgehouse50.pages.dev/api"
     }

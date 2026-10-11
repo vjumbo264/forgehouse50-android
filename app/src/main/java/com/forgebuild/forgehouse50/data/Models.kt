@@ -80,6 +80,17 @@ data class SignupResponse(
 )
 
 @Serializable
+data class AdminLoginResponse(
+    val ok: Boolean = false,
+    val token: String? = null,
+    val role: String? = null,
+    val username: String? = null,
+    val error: String? = null,
+    val locked: Boolean = false,
+    val retry_after_seconds: Int? = null,
+)
+
+@Serializable
 data class LoginResponse(
     val ok: Boolean = false,
     val name: String? = null,

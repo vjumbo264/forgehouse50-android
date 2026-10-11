@@ -16,6 +16,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.IconButton
+
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -64,10 +69,12 @@ fun AuthScreen(
     when (val m = mode) {
         Mode.Login -> LoginForm(repo, registrationOpen,
             onSignup = { mode = Mode.Signup },
+            onAdminLogin = { mode = Mode.AdminLogin },
             onNeedsVerification = { mode = Mode.Otp(it) },
             onAuthenticated = onAuthenticated)
         Mode.Signup -> SignupForm(repo, onBack = { mode = Mode.Login }, onNeedsVerification = { mode = Mode.Otp(it) })
         is Mode.Otp -> OtpForm(repo, m.email, onAuthenticated, onBack = { mode = Mode.Login })
+        Mode.AdminLogin -> AdminLoginForm(repo, onBack = { mode = Mode.Login }, onAuthenticated = onAuthenticated)
     }
 }
 
@@ -75,6 +82,7 @@ private sealed interface Mode {
     data object Login : Mode
     data object Signup : Mode
     data class Otp(val email: String) : Mode
+    data object AdminLogin : Mode
 }
 
 @Composable
@@ -138,6 +146,7 @@ private fun LoginForm(
     repo: Repository,
     registrationOpen: Boolean,
     onSignup: () -> Unit,
+    onAdminLogin: () -> Unit,
     onNeedsVerification: (String) -> Unit,
     onAuthenticated: () -> Unit,
 ) {
@@ -202,6 +211,14 @@ private fun LoginForm(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
+            )
+        }
+        Spacer(Modifier.height(16.dp))
+        TextButton(onClick = onAdminLogin) {
+            Text(
+                "Admin sign in",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -360,5 +377,86 @@ private fun OtpForm(
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Resend code") }
         TextButton(onClick = onBack) { Text("Back") }
+    }
+}
+
+@Composable
+private fun AdminLoginForm(
+    repo: Repository,
+    onBack: () -> Unit,
+    onAuthenticated: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    AuthScaffold("Administrator access only") {
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it; error = null },
+            label = { Text("Admin username") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it; error = null },
+            label = { Text("Password") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            trailingIcon = {
+                IconButton(onClick = { showPassword = !showPassword }) {
+                    Icon(
+                        if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                        contentDescription = if (showPassword) "Hide password" else "Show password",
+                    )
+                }
+            },
+        )
+        error?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
+        Spacer(Modifier.height(24.dp))
+        ExpressiveButton(
+            onClick = {
+                scope.launch {
+                    busy = true
+                    error = null
+                    try {
+                        val res = repo.api.adminLogin(username.trim(), password)
+                        if (res.ok) {
+                            repo.session.userName = res.username ?: username.trim()
+                            repo.session.userRole = "admin"
+                            if (res.token != null) {
+                                repo.session.sessionToken = res.token
+                            }
+                            onAuthenticated()
+                        } else {
+                            error = res.error ?: "Sign-in failed"
+                        }
+                    } catch (e: Exception) {
+                        error = friendlyNetError(e, "Admin sign-in failed")
+                    } finally {
+                        busy = false
+                    }
+                }
+            },
+            enabled = !busy && username.isNotBlank() && password.isNotBlank(),
+            busy = busy,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Sign in as admin")
+        }
+        Spacer(Modifier.height(8.dp))
+        TextButton(onClick = onBack) {
+            Text("Back to participant sign in")
+        }
     }
 }
