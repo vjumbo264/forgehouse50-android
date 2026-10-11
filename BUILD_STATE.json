@@ -1386,5 +1386,77 @@
     ],
     "completed_utc": "2026-10-11T21:53:35Z",
     "release_tag": "forgehouse50-v19"
+  },
+  "admin_delete_and_login_v1": {
+    "name": "admin_delete_and_login_v1",
+    "status": "pending",
+    "work_complete": false,
+    "seeded_utc": "2026-10-11T22:15:00Z",
+    "target_release": "forgehouse50-v20",
+    "base_source": "forgehouse50-v19",
+    "scope_note": "Admin: Delete Users + New Generated Admin Login (contract admin_delete_and_login_v1)",
+    "tasks": [
+      {
+        "id": "a01",
+        "title": "Clone both repos, inspect admin code, schema, existing admin auth, branches (site-v2), and the current frontend state. Seed the section, commit and push.",
+        "status": "done",
+        "notes": "DONE (a01): Cloned vjumbo264/forgebuild and vjumbo264/forgehouse50. Inspected schema, D1 database (13 active profiles), purge_user.mjs, auth.mjs, AdminScreen.kt, site-v2 branch (rebuild frontend with AdminView.tsx). Appended operator contract to PROMPT_HISTORY/forgehouse50.md. Seeded admin_delete_and_login_v1 in both repos."
+      },
+      {
+        "id": "a02",
+        "title": "Write the migration (admin_audit, admin credential table, login attempt tracking) and the user-deletion routine. Include a cascade check script that lists every table with a user reference and reports orphans.",
+        "status": "pending"
+      },
+      {
+        "id": "a03",
+        "title": "Implement POST /api/admin/users/:id/delete (and bulk) with all server rules. Test against preview with self-created test users: delete works, cascade leaves zero orphans, admins and self cannot be deleted, wrong confirmation is rejected, deleted user session dies, leaderboard and participant counts update.",
+        "status": "pending"
+      },
+      {
+        "id": "a04",
+        "title": "Implement POST /api/admin/login, hashing, lockout, 12-hour sessions, change-password, and the no email path grants admin guarantee. Test: correct login, wrong password, lockout after 5 failures, expired session, change-password invalidates other sessions, OTP login for the operator email no longer yields admin.",
+        "status": "pending"
+      },
+      {
+        "id": "a05",
+        "title": "Confirm every existing admin function works with the new admin session (real requests for each).",
+        "status": "pending"
+      },
+      {
+        "id": "a06",
+        "title": "Android app: admin sign-in, delete flow with confirmation, change-password. Emulator screenshots.",
+        "status": "pending"
+      },
+      {
+        "id": "a07",
+        "title": "Website: the same admin UI (per Part C rules). Screenshots at 390x844 and 1280x800, light and dark.",
+        "status": "pending"
+      },
+      {
+        "id": "a08",
+        "title": "Apply the migration to production, confirm the operator participant account lost admin rights but kept all points and progress (compare before and after totals), and that existing participants are untouched.",
+        "status": "pending"
+      },
+      {
+        "id": "a09",
+        "title": "Update README.md and ARCHITECTURE.md (admin login model, rotate script usage with placeholders, deletion rules). Remove all references to the old email-based admin.",
+        "status": "pending"
+      },
+      {
+        "id": "a10",
+        "title": "Publish the Android release (forgehouse50-v20) with the APK attached.",
+        "status": "pending"
+      },
+      {
+        "id": "a11",
+        "title": "Delete every test user and test artifact you created (use the new delete endpoint to prove it works), confirm the participant list contains only real users.",
+        "status": "pending"
+      },
+      {
+        "id": "a12",
+        "title": "Rotate the admin credential as the very last step (tools/rotate-admin.mjs --remote), record only non-secret metadata in BUILD_STATE.json, set admin_delete_and_login_v1.work_complete to true, push, and print the one-time credential block in the final response as described above.",
+        "status": "pending"
+      }
+    ]
   }
 }
