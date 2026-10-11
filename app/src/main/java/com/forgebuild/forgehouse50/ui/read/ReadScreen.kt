@@ -26,6 +26,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LibraryBooks
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
+import com.forgebuild.forgehouse50.data.ScriptureReferenceUtils
+
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -87,7 +92,7 @@ fun ReadScreen(
     sessionDays: List<Int> = listOf(day),
     onBack: () -> Unit,
     onOpenQuiz: (Int) -> Unit,
-    onAddNote: (Int) -> Unit,
+    onAddNote: (day: Int, book: String, chapter: Int, verse: String?, type: String?) -> Unit,
     onManageTranslations: () -> Unit,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -108,6 +113,7 @@ fun ReadScreen(
     var translation by remember { mutableStateOf(repo.session.translationId ?: Repository.KJV_ID) }
     var availableTranslations by remember { mutableStateOf<List<String>>(listOf(Repository.KJV_ID)) }
     var passageError by remember { mutableStateOf<String?>(null) }
+    var selectedVerses by remember(chapterIdx, activeIdx) { mutableStateOf<Set<Int>>(emptySet()) }
     var reloadToken by remember { mutableIntStateOf(0) }
     var passage by remember { mutableStateOf<PassageResponse?>(null) }
     var loadingPassage by remember { mutableStateOf(false) }
@@ -255,7 +261,14 @@ fun ReadScreen(
                     IconButton(onClick = onManageTranslations) {
                         Icon(Icons.Filled.LibraryBooks, "Manage translations")
                     }
-                    IconButton(onClick = { onAddNote(activeDay) }) { Icon(Icons.Filled.Edit, "Add note") }
+                    IconButton(onClick = {
+                        val cur = currentChapter
+                        val b = cur?.first.orEmpty()
+                        val c = cur?.second ?: 0
+                        val v = ScriptureReferenceUtils.formatVerseRange(selectedVerses)
+                        selectedVerses = emptySet()
+                        onAddNote(activeDay, b, c, v, null)
+                    }) { Icon(Icons.Filled.Edit, "Add note") }
                 },
             )
         },
@@ -402,11 +415,20 @@ fun ReadScreen(
                                     }
                                     Spacer(Modifier.height(6.dp))
                                 }
-                                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                                    Text("${v.verse}", style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.width(28.dp).padding(top = 3.dp))
-                                    Column(Modifier.weight(1f)) {
+                                val isSelected = selectedVerses.contains(v.verse)
+                                Surface(
+                                    onClick = {
+                                        selectedVerses = if (isSelected) selectedVerses - v.verse else selectedVerses + v.verse
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else androidx.compose.ui.graphics.Color.Transparent,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
+                                ) {
+                                    Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                        Text("${v.verse}", style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.width(28.dp).padding(top = 3.dp))
+                                        Column(Modifier.weight(1f)) {
                                         Text(v.text, style = MaterialTheme.typography.bodyLarge,
                                             fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale)
                                         // Footnote marker: icon-only interactive accent pill chip (Issue 2)
@@ -509,6 +531,7 @@ fun ReadScreen(
                                                 }
                                             }
                                         }
+                                        }
                                     }
                                 }
                             }
@@ -520,6 +543,69 @@ fun ReadScreen(
                             Spacer(Modifier.height(24.dp))
                         }
                     }
+                    }
+                }
+            }
+
+            // Highlighted verse action bar
+            if (selectedVerses.isNotEmpty()) {
+                val rangeText = ScriptureReferenceUtils.formatVerseRange(selectedVerses).orEmpty()
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    tonalElevation = 6.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "v. $rangeText",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                        Spacer(Modifier.weight(1f))
+                        FilledTonalButton(
+                            onClick = {
+                                val cur = currentChapter
+                                val b = cur?.first.orEmpty()
+                                val c = cur?.second ?: 0
+                                val v = rangeText
+                                selectedVerses = emptySet()
+                                onAddNote(activeDay, b, c, v, "question")
+                            },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        ) {
+                            Icon(Icons.Filled.HelpOutline, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Question", style = MaterialTheme.typography.labelMedium)
+                        }
+                        Button(
+                            onClick = {
+                                val cur = currentChapter
+                                val b = cur?.first.orEmpty()
+                                val c = cur?.second ?: 0
+                                val v = rangeText
+                                selectedVerses = emptySet()
+                                onAddNote(activeDay, b, c, v, "observation")
+                            },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        ) {
+                            Icon(Icons.Filled.Edit, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Add note", style = MaterialTheme.typography.labelMedium)
+                        }
+                        IconButton(
+                            onClick = { selectedVerses = emptySet() },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(Icons.Filled.Close, "Clear selection", Modifier.size(16.dp))
+                        }
                     }
                 }
             }

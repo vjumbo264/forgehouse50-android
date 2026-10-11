@@ -70,14 +70,25 @@ object Routes {
     const val READ_SESSION = "readsession/{days}"
     const val QUIZ = "quiz/{day}"
     const val NOTES = "notes"
-    const val NOTE_EDIT = "note_edit?noteId={noteId}&day={day}"
+    const val NOTE_EDIT = "note_edit?noteId={noteId}&day={day}&book={book}&chapter={chapter}&verse={verse}&type={type}"
     const val ADMIN = "admin"
     const val TRANSLATIONS = "translations"
     fun read(day: Int) = "read/$day"
     fun readSession(days: List<Int>) = "readsession/${days.joinToString(",")}"
     fun quiz(day: Int) = "quiz/$day"
-    fun noteEdit(noteId: String?, day: Int?) =
-        "note_edit?noteId=${noteId ?: ""}&day=${day ?: 0}"
+    fun noteEdit(
+        noteId: String? = null,
+        day: Int? = null,
+        book: String? = null,
+        chapter: Int? = null,
+        verse: String? = null,
+        type: String? = null
+    ): String {
+        val b = android.net.Uri.encode(book ?: "")
+        val v = android.net.Uri.encode(verse ?: "")
+        val t = android.net.Uri.encode(type ?: "")
+        return "note_edit?noteId=${noteId ?: ""}&day=${day ?: 0}&book=$b&chapter=${chapter ?: 0}&verse=$v&type=$t"
+    }
 }
 
 private data class Tab(
@@ -222,7 +233,7 @@ fun AppNavHost(
                     day = entry.arguments?.getInt("day") ?: 1,
                     onBack = { nav.popBackStack() },
                     onOpenQuiz = { nav.navigate(Routes.quiz(it)) },
-                    onAddNote = { d -> nav.navigate(Routes.noteEdit(null, d)) },
+                    onAddNote = { d, b, c, v, t -> nav.navigate(Routes.noteEdit(day = d, book = b, chapter = c, verse = v, type = t)) },
                     onManageTranslations = { nav.navigate(Routes.TRANSLATIONS) },
                 )
             }
@@ -241,7 +252,7 @@ fun AppNavHost(
                     sessionDays = ds.ifEmpty { listOf(1) },
                     onBack = { nav.popBackStack() },
                     onOpenQuiz = { nav.navigate(Routes.quiz(it)) },
-                    onAddNote = { d -> nav.navigate(Routes.noteEdit(null, d)) },
+                    onAddNote = { d, b, c, v, t -> nav.navigate(Routes.noteEdit(day = d, book = b, chapter = c, verse = v, type = t)) },
                     onManageTranslations = { nav.navigate(Routes.TRANSLATIONS) },
                 )
             }
@@ -268,12 +279,20 @@ fun AppNavHost(
                 arguments = listOf(
                     navArgument("noteId") { type = NavType.StringType; defaultValue = "" },
                     navArgument("day") { type = NavType.IntType; defaultValue = 0 },
+                    navArgument("book") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("chapter") { type = NavType.IntType; defaultValue = 0 },
+                    navArgument("verse") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("type") { type = NavType.StringType; defaultValue = "" },
                 ),
             ) { entry ->
                 NoteEditScreen(
                     repo = repo,
                     noteId = entry.arguments?.getString("noteId")?.takeIf { it.isNotBlank() },
                     dayNumber = entry.arguments?.getInt("day")?.takeIf { it > 0 },
+                    initialBook = entry.arguments?.getString("book")?.takeIf { it.isNotBlank() },
+                    initialChapter = entry.arguments?.getInt("chapter")?.takeIf { it > 0 },
+                    initialVerse = entry.arguments?.getString("verse")?.takeIf { it.isNotBlank() },
+                    initialType = entry.arguments?.getString("type")?.takeIf { it.isNotBlank() },
                     onBack = { nav.popBackStack() },
                 )
             }

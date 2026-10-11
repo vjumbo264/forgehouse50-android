@@ -1490,8 +1490,8 @@
       {
         "id": "b02",
         "title": "Part 1 — implement note auto-fill for all entry points; unit tests for each entry point; screenshots only if the Actions emulator works.",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (b02): Implemented note auto-fill across all entry points: ReadScreen (current chapter, viewed day in catch-up, single verse and verse range highlight, Add Note and Question action pills), NotesScreens NoteEditScreen (reference banner, book/chapter/verse inputs, canonical NT validation via ScriptureReferenceUtils, fallback to today reading assignment, starting verse parse for api.createNote), and AppNavHost route parameter propagation. Created NotesAutoFillLogicTest.kt testing all entry points and validation. Added .github/workflows/app-tests.yml for CI verification. Visual check marked needs_operator_visual_check."
       },
       {
         "id": "b03",

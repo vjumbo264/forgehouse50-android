@@ -20,6 +20,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material3.Surface
+import com.forgebuild.forgehouse50.data.ScriptureReferenceUtils
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -165,13 +168,36 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoteEditScreen(repo: Repository, noteId: String?, dayNumber: Int?, onBack: () -> Unit) {
+fun NoteEditScreen(
+    repo: Repository,
+    noteId: String?,
+    dayNumber: Int?,
+    initialBook: String? = null,
+    initialChapter: Int? = null,
+    initialVerse: String? = null,
+    initialType: String? = null,
+    onBack: () -> Unit
+) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var type by remember { mutableStateOf("observation") }
+
+    val fallbackAssign = remember {
+        if (noteId == null && initialBook.isNullOrBlank() && (initialChapter == null || initialChapter <= 0)) {
+            val today = AppCache.getToday(context)
+            (today?.today?.assignment ?: today?.next_reading_day?.assignment)?.assignments?.firstOrNull()
+        } else null
+    }
+
+    var type by remember { mutableStateOf(initialType?.takeIf { it in NOTE_TYPES } ?: "observation") }
     var body by remember { mutableStateOf("") }
-    var book by remember { mutableStateOf("") }
-    var chapter by remember { mutableStateOf("") }
-    var verse by remember { mutableStateOf("") }
+    var book by remember { mutableStateOf(initialBook?.takeIf { it.isNotBlank() } ?: fallbackAssign?.book.orEmpty()) }
+    var chapter by remember {
+        mutableStateOf(
+            if (initialChapter != null && initialChapter > 0) "$initialChapter"
+            else fallbackAssign?.let { "${it.chapter_start}" }.orEmpty()
+        )
+    }
+    var verse by remember { mutableStateOf(initialVerse.orEmpty()) }
     var busy by remember { mutableStateOf(false) }
     var loaded by remember { mutableStateOf(noteId == null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -204,6 +230,30 @@ fun NoteEditScreen(repo: Repository, noteId: String?, dayNumber: Int?, onBack: (
             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                 .padding(padding).padding(horizontal = 20.dp),
         ) {
+            // Pre-filled reference banner
+            if (book.isNotBlank() || chapter.isNotBlank()) {
+                Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.Bookmark, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.height(18.dp).width(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Reference: ${book.ifBlank { "—" }} ${chapter.ifBlank { "" }}${if (verse.isNotBlank()) ":$verse" else ""}".trim(),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
             Text("Type", style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -221,14 +271,30 @@ fun NoteEditScreen(repo: Repository, noteId: String?, dayNumber: Int?, onBack: (
                 modifier = Modifier.fillMaxWidth().height(160.dp))
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(book, { book = it }, label = { Text("Book") },
-                    singleLine = true, modifier = Modifier.weight(1.4f))
-                OutlinedTextField(chapter, { if (it.all(Char::isDigit)) chapter = it }, label = { Text("Chapter") },
-                    singleLine = true, modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                OutlinedTextField(verse, { if (it.all(Char::isDigit)) verse = it }, label = { Text("Verse") },
-                    singleLine = true, modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                OutlinedTextField(
+                    value = book,
+                    onValueChange = { book = it; error = null },
+                    label = { Text("Book") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1.4f)
+                )
+                OutlinedTextField(
+                    value = chapter,
+                    onValueChange = { if (it.all(Char::isDigit)) { chapter = it; error = null } },
+                    label = { Text("Chapter") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                OutlinedTextField(
+                    value = verse,
+                    onValueChange = { if (it.all { c -> c.isDigit() || c == '-' }) { verse = it; error = null } },
+                    label = { Text("Verse") },
+                    placeholder = { Text("e.g. 5 or 3-5") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                )
             }
             error?.let {
                 Spacer(Modifier.height(8.dp))
@@ -239,10 +305,17 @@ fun NoteEditScreen(repo: Repository, noteId: String?, dayNumber: Int?, onBack: (
                 onClick = {
                     scope.launch {
                         busy = true; error = null
-                        val ch = chapter.toIntOrNull() ?: 0
-                        val v = verse.toIntOrNull()
+                        val validationErr = ScriptureReferenceUtils.validate(book, chapter, verse)
+                        if (validationErr != null) {
+                            error = validationErr
+                            busy = false
+                            return@launch
+                        }
+                        val canonBook = ScriptureReferenceUtils.canonicalBook(book) ?: book.trim()
+                        val ch = chapter.trim().toIntOrNull() ?: 1
+                        val v = ScriptureReferenceUtils.parseStartingVerse(verse)
                         val r = if (noteId == null)
-                            runCatching { repo.api.createNote(type, body, book, ch, v, dayNumber) }
+                            runCatching { repo.api.createNote(type, body, canonBook, ch, v, dayNumber) }
                         else
                             runCatching { repo.api.updateNote(noteId, type, body) }
                         r.onSuccess { if (it.ok) onBack() else error = it.error ?: "Save failed" }
