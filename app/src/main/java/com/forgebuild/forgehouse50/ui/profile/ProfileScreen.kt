@@ -207,6 +207,12 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Manage downloads in Manage translations.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
 
         if (translations.isEmpty()) {
             Spacer(Modifier.height(6.dp))
@@ -219,7 +225,7 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
             Spacer(Modifier.height(10.dp))
             translations.forEach { t ->
                 Row(
-                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    Modifier.fillMaxWidth().padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -229,14 +235,6 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    }
-                    IconButton(onClick = {
-                        scope.launch {
-                            runCatching { repo.removeTranslation(t.translation) }
-                            refreshTranslations()
-                        }
-                    }) {
-                        Icon(Icons.Filled.Delete, "Remove ${t.name}", tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }

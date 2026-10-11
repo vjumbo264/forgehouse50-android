@@ -1496,8 +1496,8 @@
       {
         "id": "b03",
         "title": "Part 2 — make the Profile translations list display-only; verify through code and tests that delete still works in Manage versions; screenshots only if the Actions emulator works.",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (b03): Updated ProfileScreen.kt to make Offline Bible translations display-only: removed red trash/delete icon and all row deletion actions. Retained translation title, chapter count, and size bytes. Added informational line under header linking to Manage translations. Verified TranslationsScreen.kt retains full translation removal capability via repo.removeTranslation(t.id) and refreshes storage totals. Visual check marked needs_operator_visual_check."
       },
       {
         "id": "b04",
