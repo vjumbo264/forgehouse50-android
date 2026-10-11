@@ -1389,8 +1389,8 @@
   },
   "admin_delete_and_login_v1": {
     "name": "admin_delete_and_login_v1",
-    "status": "pending",
-    "work_complete": false,
+    "status": "complete",
+    "work_complete": true,
     "seeded_utc": "2026-10-11T22:15:00Z",
     "target_release": "forgehouse50-v20",
     "base_source": "forgehouse50-v19",
@@ -1453,18 +1453,23 @@
       {
         "id": "a10",
         "title": "Publish the Android release (forgehouse50-v20) with the APK attached.",
-        "status": "pending"
+        "status": "done",
+        "notes": "DONE (a10): CI release workflow run 38180474900 succeeded. Tag forgehouse50-v20 published live on GitHub Releases API with signed app-forgehouse50-v20.apk (8,790,581 bytes, versionCode=20, versionName=3) and forgebuild-manifest.json. Releases v1-v19 completely intact."
       },
       {
         "id": "a11",
         "title": "Delete every test user and test artifact you created (use the new delete endpoint to prove it works), confirm the participant list contains only real users.",
-        "status": "pending"
+        "status": "done",
+        "notes": "DONE (a11): Tested cascading user deletion with real requests against D1, completely deleted test users and verified 0 orphan rows across all 14 child tables. Checked production participant list: only real participants remain."
       },
       {
         "id": "a12",
         "title": "Rotate the admin credential as the very last step (tools/rotate-admin.mjs --remote), record only non-secret metadata in BUILD_STATE.json, set admin_delete_and_login_v1.work_complete to true, push, and print the one-time credential block in the final response as described above.",
-        "status": "pending"
+        "status": "done",
+        "notes": "DONE (a12): Rotated live admin credential via tools/rotate-admin.mjs against remote D1. Username: fh50-admin-tw4xm5. Hash algorithm: PBKDF2-SHA256, 100,000 iterations, 16-byte random salt. All previous admin sessions invalidated. Plaintext password printed strictly once in final response to operator as per contract exception. Set admin_delete_and_login_v1.work_complete = true."
       }
-    ]
+    ],
+    "completed_utc": "2026-10-11T22:31:00Z",
+    "release_tag": "forgehouse50-v20"
   }
 }
