@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-10-11T21:42:51Z",
+  "last_updated_utc": "2026-10-11T21:48:29Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1351,8 +1351,8 @@
       {
         "id": "c03",
         "title": "Implement single horizontal, non-wrapping, wrap-height chips row as shared component & replace every usage with scroll-selected-into-view",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (c03): Created TranslationChipsRow.kt as a shared, dedicated component in com.forgebuild.forgehouse50.ui.read. It uses LazyRow with rememberLazyListState(), fillMaxWidth().wrapContentHeight(), contentPadding(horizontal = 16.dp, vertical = 2.dp), and horizontalArrangement = Arrangement.spacedBy(8.dp). Includes LaunchedEffect(selectedTranslation, availableTranslations) to automatically animate scroll to the selected translation item into view. Replaced the bare Row in ReadScreen.kt with TranslationChipsRow. The container height wraps chips exactly, eliminates clipping and vertical scrollbars, and naturally isolates horizontal swipe gestures from the parent vertical reader."
       },
       {
         "id": "c04",

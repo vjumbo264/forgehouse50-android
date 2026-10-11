@@ -298,18 +298,14 @@ fun ReadScreen(
 
             // Translation selector — only translations available on-device
             if (availableTranslations.size > 1) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    availableTranslations.forEach { t ->
-                        FilterChip(
-                            selected = translation == t,
-                            onClick = { translation = t; repo.session.translationId = t },
-                            label = { Text(t.removePrefix("versewell-").uppercase(), fontWeight = FontWeight.SemiBold) },
-                        )
-                    }
-                }
+                TranslationChipsRow(
+                    availableTranslations = availableTranslations,
+                    selectedTranslation = translation,
+                    onSelectTranslation = { t ->
+                        translation = t
+                        repo.session.translationId = t
+                    },
+                )
                 Spacer(Modifier.height(4.dp))
             }
 
