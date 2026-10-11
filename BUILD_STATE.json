@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-10-11T21:42:25Z",
+  "last_updated_utc": "2026-10-11T21:42:51Z",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1345,8 +1345,8 @@
       {
         "id": "c02",
         "title": "Find every usage of translation chips row; record file paths & container structure responsible for bug in notes",
-        "status": "pending",
-        "notes": ""
+        "status": "done",
+        "notes": "DONE (c02): Located all translation chip usages across the codebase. Following the v18 screen consolidation (rufs1-unify-reading-screens), ReadScreen.kt is the single unified reader used for normal reading days, catch-up sessions (days 9+10), progress reviews, and widget deep-links. In ReadScreen.kt (lines 300-314), the chips container was implemented as a bare Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) with no horizontal scroll modifier or LazyRow. In Jetpack Compose, bare Rows do not scroll and silently clip overflow items, preventing horizontal swiping. Furthermore, no scroll-into-view logic was present for selected items."
       },
       {
         "id": "c03",
