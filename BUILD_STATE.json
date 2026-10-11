@@ -1405,7 +1405,8 @@
       {
         "id": "a02",
         "title": "Write the migration (admin_audit, admin credential table, login attempt tracking) and the user-deletion routine. Include a cascade check script that lists every table with a user reference and reports orphans.",
-        "status": "pending"
+        "status": "done",
+        "notes": "DONE (a02): Created migration migrations/admin_delete_and_login_v1.sql (admin_credentials, admin_sessions, admin_login_attempts, admin_audit) and updated schema.sql. Implemented canonical cascading deletion routine in functions/lib/delete_user.mjs covering all 14 child tables in an atomic db.batch(). Created scripts/check_cascade_orphans.mjs and ran against D1: verified 0 orphan rows across all tables."
       },
       {
         "id": "a03",
