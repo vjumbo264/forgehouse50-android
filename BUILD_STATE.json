@@ -1591,9 +1591,9 @@
       {
         "id": "w3",
         "title": "Item 3 \u2014 forgot password: backend, then app, then website, each pushed before the next",
-        "status": "pending",
+        "status": "done",
         "gate": "w2",
-        "notes": "Backend & Android app complete: ApiClient.kt with forgotPassword and resetPassword, AuthScreens.kt with ForgotPasswordForm and ResetPasswordForm (6-digit OTP, password validation, confirmation matching, resend button, expressive styling)."
+        "notes": "DONE (w3): Forgot password full-stack flow implemented across backend, Android app, and website. Backend: /api/auth/forgot_password issues 6-digit Brevo OTP with purpose 'password_reset' and no account enumeration; /api/auth/reset_password validates 6-digit OTP, updates password hash, revokes existing sessions, and sets fresh session cookie; unit test suite in scripts/test_forgot_password.mjs passing. Android app: ApiClient forgotPassword/resetPassword methods added; AuthScreens.kt expanded with ForgotPasswordForm & ResetPasswordForm composables with 6-digit input, password confirmation, validation, resend, and expressive styling. Website: index-CQfSSHWX.js updated with Forgot password link on login form, forgot_password email submission form, reset_password 6-digit code and new password form, automatic login on success, and sw.js bumped to fh50-v2-03."
       },
       {
         "id": "w4",
