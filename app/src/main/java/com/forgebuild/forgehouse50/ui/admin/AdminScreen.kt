@@ -831,21 +831,45 @@ private fun ProgrammeTab(programme: AdminProgramme?, onStart: () -> Unit, onEndT
     ) {
         Text("Programme controls", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
+
+        // Contract: "Started Mon 12 Oct 2026 · Joining closes Wed 21 Oct 2026 · 8 days left"
+        val statusLine = programme.status_summary ?: when {
+            programme.concluded -> "Concluded"
+            programme.started -> "Started ${programme.start_formatted ?: (programme.start_at?.take(10) ?: "")} · Joining closes ${programme.join_window_last_day_formatted ?: (programme.join_window_closes_at?.take(10) ?: "")} · ${programme.days_remaining} days left"
+            else -> "Not started"
+        }
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text(
+                    text = statusLine,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
         StatRow("Status", when {
             programme.concluded -> "Concluded"
             programme.started -> "Running"
             else -> "Not started"
         })
         Spacer(Modifier.height(8.dp))
-        StatRow("Start date", programme.start_at?.take(10) ?: "Not set")
+        StatRow("Start date", programme.start_formatted ?: (programme.start_at?.take(10) ?: "Not set"))
         Spacer(Modifier.height(8.dp))
-        StatRow("Join window closes", programme.join_window_closes_at?.take(10) ?: "Not set")
+        StatRow("Join window closes", programme.join_window_last_day_formatted ?: (programme.join_window_closes_at?.take(10) ?: "Not set"))
         Spacer(Modifier.height(8.dp))
-        StatRow("Programme end date", programme.programme_end_date?.take(10) ?: "Pending")
+        StatRow("Days remaining", if (programme.started) "${programme.days_remaining} days left" else "10 days")
+        Spacer(Modifier.height(8.dp))
+        StatRow("Programme end date", programme.programme_end_date?.take(10) ?: (programme.end_date_preview?.take(10) ?: "2026-12-28"))
         Spacer(Modifier.height(8.dp))
         StatRow("Registration", if (programme.registration_open) "Open" else "Closed")
-
         Spacer(Modifier.height(20.dp))
+
         if (!programme.started) {
             ExpressiveButton(onClick = onStart, modifier = Modifier.fillMaxWidth()) {
                 Text("Start programme")
@@ -853,13 +877,30 @@ private fun ProgrammeTab(programme: AdminProgramme?, onStart: () -> Unit, onEndT
             Spacer(Modifier.height(12.dp))
         }
 
+        val resetEnabled = programme.reset_enabled && !programme.started
         OutlinedButton(
             onClick = onEndTesting,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+            enabled = resetEnabled,
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error,
+                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            ),
+            border = BorderStroke(
+                1.dp,
+                if (resetEnabled) MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            ),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("End testing phase & reset")
+        }
+        if (!resetEnabled) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                programme.reset_disabled_reason ?: "The programme has started; reset is disabled",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

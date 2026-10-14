@@ -155,3 +155,21 @@ the app repo's Actions secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`,
 - **Batch Deletion**: Selection mode allowing multi-select, "Select all", and "Select inactive accounts" shortcut. Confirmation dialog enforces typing "DELETE" to prevent accidental data loss, sending `POST /api/admin/users/delete` with `{ user_ids: [...], confirm_word: "DELETE" }`.
 - **Note Pre-fill**: Automatic contextual pre-fill of Book, Chapter, and Verse from current reader viewport and active verse highlights across all entry points.
 - **Display-only Translations**: Offline downloaded Bible translations listed as display-only in Profile; management and removal consolidated in Manage Versions screen.
+
+
+## Programme Window, End-Date Integrity & Reset Guard (ops_batch_oct14_v1)
+
+### 1. Join Window Rule
+- 10 calendar days in WAT (UTC+1) counted from start date, start day as Day 1.
+- Started Mon 12 Oct 2026, closes Wed 21 Oct 2026 at 23:59:59 WAT.
+- On Wed 14 Oct 2026, exactly 8 days remain including today.
+- Signup screen shows "Joining closes on 21 Oct 2026" while open, and friendly closed state afterwards.
+- Admin Programme tab shows "Started Mon 12 Oct 2026 · Joining closes Wed 21 Oct 2026 · 8 days left".
+
+### 2. Programme End Date
+- Latest possible joiner Day 1 on 2026-10-21 ends on 2026-12-28 (50 reading days skipping Tue/Fri).
+- Programme end date is 2026-12-28.
+
+### 3. Reset Guard
+- End Testing Phase & Reset is disabled with "The programme has started; reset is disabled" (HTTP 409).
+- Start Programme is idempotent.

@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": true,
-  "last_updated_utc": "2026-10-14T07:04:26.770597+00:00",
+  "last_updated_utc": "2026-10-14T07:15:09.835447+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1577,9 +1577,9 @@
       {
         "id": "w1",
         "title": "Item 1 \u2014 programme window and end-date integrity, reset guard, read-only audit, tests, preview, production deploy",
-        "status": "pending",
+        "status": "done",
         "gate": "w0",
-        "notes": ""
+        "notes": "DONE (w1): Programme window & end-date integrity enforced. Audited production D1 (14 verified members, 50 days each, 0 orphans, total points 41387 intact; saved to evidence/ops_batch_oct14_v1/programme_audit.md). Join window rule enforced as 10 calendar days in WAT from start date (started Mon 12 Oct 2026, closes Wed 21 Oct 2026 at 23:59:59 WAT; 8 days remaining on Wed 14 Oct 2026). Registration rejects with \"Joining has closed\" when window ends. Derived programme end date is 2026-12-28 based on latest joiner day 50 skipping Tue/Fri. Reset guard: /api/admin/end_testing blocked server-side with HTTP 409 conflict (\"The programme has started; reset is disabled\"), admin button disabled. Start programme made idempotent. All unit tests passed."
       },
       {
         "id": "w2",

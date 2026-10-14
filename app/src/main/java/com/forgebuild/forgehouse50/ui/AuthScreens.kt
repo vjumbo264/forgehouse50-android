@@ -73,16 +73,17 @@ import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 fun AuthScreen(
     repo: Repository,
     registrationOpen: Boolean,
+    signupLabel: String = "Joining closes on 21 Oct 2026",
     onAuthenticated: () -> Unit,
 ) {
     var mode by remember { mutableStateOf<Mode>(Mode.Login) }
     when (val m = mode) {
-        Mode.Login -> LoginForm(repo, registrationOpen,
+        Mode.Login -> LoginForm(repo, registrationOpen, signupLabel,
             onSignup = { mode = Mode.Signup },
             onAdminLogin = { mode = Mode.AdminLogin(it) },
             onNeedsVerification = { mode = Mode.Otp(it) },
             onAuthenticated = onAuthenticated)
-        Mode.Signup -> SignupForm(repo, onBack = { mode = Mode.Login }, onNeedsVerification = { mode = Mode.Otp(it) })
+        Mode.Signup -> SignupForm(repo, registrationOpen, signupLabel, onBack = { mode = Mode.Login }, onNeedsVerification = { mode = Mode.Otp(it) })
         is Mode.Otp -> OtpForm(repo, m.email, onAuthenticated, onBack = { mode = Mode.Login })
         is Mode.AdminLogin -> AdminLoginForm(repo, initialUsername = m.initialUsername, onBack = { mode = Mode.Login }, onAuthenticated = onAuthenticated)
     }
@@ -156,6 +157,7 @@ private fun friendlyNetError(e: Throwable, fallback: String): String {
 private fun LoginForm(
     repo: Repository,
     registrationOpen: Boolean,
+    signupLabel: String,
     onSignup: () -> Unit,
     onAdminLogin: (String) -> Unit,
     onNeedsVerification: (String) -> Unit,
@@ -244,11 +246,20 @@ private fun LoginForm(
         }
         if (registrationOpen) {
             Spacer(Modifier.height(8.dp))
-            TextButton(onClick = onSignup) { Text("New here? Create an account") }
+            TextButton(onClick = onSignup) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("New here? Create an account")
+                    Text(
+                        signupLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         } else {
             Spacer(Modifier.height(8.dp))
             Text(
-                "Registration for this programme run is closed.",
+                "Joining has closed",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -267,6 +278,8 @@ private fun LoginForm(
 @Composable
 private fun SignupForm(
     repo: Repository,
+    registrationOpen: Boolean,
+    signupLabel: String,
     onBack: () -> Unit,
     onNeedsVerification: (String) -> Unit,
 ) {
@@ -281,7 +294,23 @@ private fun SignupForm(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    AuthScaffold("Create your account — a verification code will be emailed to you.") {
+    val subtitle = if (registrationOpen) "Create your account — $signupLabel" else "Joining has closed"
+    AuthScaffold(subtitle) {
+        if (!registrationOpen) {
+            Spacer(Modifier.height(16.dp))
+            Text(
+                "Registration for this ForgeHouse 50 run has closed — the programme is already underway.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(24.dp))
+            OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+                Text("Return to sign in")
+            }
+            return@AuthScaffold
+        }
         OutlinedTextField(
             value = name, onValueChange = { name = it }, label = { Text("Given name") },
             singleLine = true, modifier = Modifier.fillMaxWidth(),

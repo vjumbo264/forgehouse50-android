@@ -116,12 +116,16 @@ fun AppNavHost(
     val context = LocalContext.current
     val nav: NavHostController = rememberNavController()
     var registrationOpen by remember { mutableStateOf(true) }
+    var signupLabel by remember { mutableStateOf("Joining closes on 21 Oct 2026") }
     var configLoaded by remember { mutableStateOf(false) }
     var pendingUpdate by remember { mutableStateOf<UpdateChecker.PendingUpdate?>(null) }
 
     // Public config (join window state) — fetched once per cold start.
     LaunchedEffect(Unit) {
-        runCatching { repo.api.config() }.onSuccess { registrationOpen = it.programme.registration_open }
+        runCatching { repo.api.config() }.onSuccess {
+            registrationOpen = it.programme.registration_open
+            it.programme.signup_label?.let { lbl -> signupLabel = lbl }
+        }
         configLoaded = true
     }
 
@@ -143,6 +147,7 @@ fun AppNavHost(
         AuthScreen(
             repo = repo,
             registrationOpen = registrationOpen,
+            signupLabel = signupLabel,
             onAuthenticated = { onAuthChanged(true) },
         )
         return
