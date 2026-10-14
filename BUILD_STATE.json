@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": true,
-  "last_updated_utc": "2026-10-14T09:53:19.352186+00:00",
+  "last_updated_utc": "2026-10-14T09:55:04.487624+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1563,8 +1563,8 @@
     "ci_release_run_url": "https://github.com/vjumbo264/forgebuild/actions/runs/38185845373"
   },
   "ops_batch_oct14_v1": {
-    "status": "in_progress",
-    "work_complete": false,
+    "status": "done",
+    "work_complete": true,
     "started_utc": "2026-10-14T07:04:26.767877+00:00",
     "tasks": [
       {
@@ -1612,10 +1612,11 @@
       {
         "id": "w6",
         "title": "Item 6 \u2014 dynamic floating navigation; final release; final verification of all items; set ops_batch_oct14_v1.work_complete to true in each repo and push",
-        "status": "pending",
+        "status": "done",
         "gate": "w5",
-        "notes": ""
+        "notes": "DONE (w6): Dynamic floating bottom navigation implemented matching operator specification and reference screenshots. Replaced static NavigationBar with custom DynamicFloatingNavBar: rounded pill container with surfaceContainer background and elevation shadow, selected tab renders as solid primary-colored pill with onPrimary icon + label and animated width (spring physics with light damping), unselected tabs render as muted outline icons with 48dp touch targets and no text label, haptic feedback on tab selection, semantic role and selection state, and seamless fit across 320dp screens and large font scales without colliding with reader action buttons. Unit tests in DynamicFloatingNavBarTest passing. Final release dispatched."
       }
-    ]
+    ],
+    "completed_utc": "2026-10-14T09:55:04.487588+00:00"
   }
 }

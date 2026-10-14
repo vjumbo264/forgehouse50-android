@@ -1,5 +1,13 @@
 [
   {
+    "version": "v23",
+    "date": "2026-10-14",
+    "items": [
+      "Dynamic floating navigation with smooth expanding tab indicators",
+      "Optimized layout scaling and typography for compact screens"
+    ]
+  },
+  {
     "version": "v22",
     "date": "2026-10-14",
     "items": [

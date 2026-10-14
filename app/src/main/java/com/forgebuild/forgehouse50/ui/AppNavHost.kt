@@ -103,18 +103,11 @@ object Routes {
     }
 }
 
-private data class Tab(
-    val route: String,
-    val label: String,
-    val selectedIcon: ImageVector,
-    val icon: ImageVector,
-)
-
 private val Tabs = listOf(
-    Tab(Routes.HOME, "Today", Icons.Filled.Home, Icons.Outlined.Home),
-    Tab(Routes.LEADERBOARD, "Leaderboard", Icons.Filled.EmojiEvents, Icons.Outlined.EmojiEvents),
-    Tab(Routes.PROGRESS, "Progress", Icons.Filled.TrendingUp, Icons.Outlined.TrendingUp),
-    Tab(Routes.PROFILE, "Profile", Icons.Filled.Person, Icons.Outlined.Person),
+    NavItem(Routes.HOME, "Today", Icons.Filled.Home, Icons.Outlined.Home),
+    NavItem(Routes.LEADERBOARD, "Leaderboard", Icons.Filled.EmojiEvents, Icons.Outlined.EmojiEvents),
+    NavItem(Routes.PROGRESS, "Progress", Icons.Filled.TrendingUp, Icons.Outlined.TrendingUp),
+    NavItem(Routes.PROFILE, "Profile", Icons.Filled.Person, Icons.Outlined.Person),
 )
 
 @Composable
@@ -193,40 +186,17 @@ fun AppNavHost(
     Scaffold(
         bottomBar = {
             if (currentRoute in Tabs.map { it.route }) {
-                // M3 Expressive floating pill navigation: inset, rounded card.
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 12.dp)
-                        .clip(RoundedCornerShape(28.dp)),
-                    shape = RoundedCornerShape(28.dp),
-                    tonalElevation = 3.dp,
-                    shadowElevation = 8.dp,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ) {
-                    NavigationBar(
-                        containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                        tonalElevation = 0.dp,
-                        windowInsets = WindowInsets(0, 0, 0, 0),
-                    ) {
-                    Tabs.forEach { tab ->
-                        val selected = currentRoute == tab.route
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                nav.navigate(tab.route) {
-                                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(if (selected) tab.selectedIcon else tab.icon, tab.label) },
-                            label = { Text(tab.label) },
-                        )
-                    }
-                    }
-                }
+                DynamicFloatingNavBar(
+                    items = Tabs,
+                    currentRoute = currentRoute,
+                    onItemSelected = { route ->
+                        nav.navigate(route) {
+                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
             }
         }
     ) { padding ->
