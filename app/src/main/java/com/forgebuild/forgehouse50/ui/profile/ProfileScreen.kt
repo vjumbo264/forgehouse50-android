@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -68,7 +69,7 @@ private val AVATAR_IDS = AvatarAssets.IDS
  * Synchronous cache-first: renders instantly using AppCache before first composition.
  */
 @Composable
-fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslations: () -> Unit) {
+fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslations: () -> Unit, onOpenChangelog: () -> Unit = {}) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var me by remember { mutableStateOf(AppCache.getMe(context)) }
@@ -271,6 +272,49 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
                 Spacer(Modifier.width(14.dp))
                 Text(
                     "Manage translations",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Action row: What's new
+        Surface(
+            onClick = onOpenChangelog,
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 2.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Filled.NewReleases,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+                Spacer(Modifier.width(14.dp))
+                Text(
+                    "What's new",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),

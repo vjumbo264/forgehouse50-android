@@ -25,6 +25,7 @@ import com.forgebuild.forgehouse50.ui.ForgeHouseTheme
 import com.forgebuild.forgehouse50.work.ReminderWorker
 import com.forgebuild.forgehouse50.work.KeepAliveService
 import com.forgebuild.forgehouse50.widget.WidgetRefreshWorker
+import com.forgebuild.forgehouse50.update.UpdateWorker
 import android.os.PowerManager
 import android.provider.Settings
 
@@ -74,10 +75,12 @@ private fun App(repo: Repository, deepLink: String?) {
             ReminderWorker.schedule(context)
             KeepAliveService.start(context)
             WidgetRefreshWorker.schedule(context)   // ISSUE 3: periodic widget refresh
+            UpdateWorker.schedule(context)
         } else {
             ReminderWorker.cancel(context)
             KeepAliveService.stop(context)
             WidgetRefreshWorker.cancel(context)
+            UpdateWorker.cancel(context)
         }
     }
 

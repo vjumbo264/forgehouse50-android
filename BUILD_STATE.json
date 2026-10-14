@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": true,
-  "last_updated_utc": "2026-10-14T07:24:21.990430+00:00",
+  "last_updated_utc": "2026-10-14T09:42:10.820124+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1598,9 +1598,9 @@
       {
         "id": "w4",
         "title": "Item 4 \u2014 update prompt + changelog (the only paired item), release workflow changes, release",
-        "status": "pending",
+        "status": "done",
         "gate": "w3",
-        "notes": ""
+        "notes": "DONE (w4): In-app update prompt and changelog paired implementation complete. Workflow: extended .github/workflows/release.yml to generate and attach release.json ({versionName, versionCode, sha256, sizeBytes, changelog}) containing the latest entry from changelog.json, added CI check that fails if changelog contains 'admin' or 'delete user', and added release metadata to release notes. Changelog: backfilled apps/forgehouse50/changelog.json and assets/changelog.json with past and current releases leaving out all admin references. Android: UpdateLogic pure helper with unit tests for version comparison, 30-min throttling, 2-hr in-use 'Later' reappearance schedule, 24-hr daily notification schedule, SHA-256 and size checksum verification, and display-time admin filter safeguard. UpdateChecker expanded with progress download, SHA-256 checksum verification, FileProvider APK install, unknown app sources permission flow, offline messaging, and 12-hr WorkManager periodic check. ChangelogScreen added to routes and wired to 'What's new' row in Profile screen."
       },
       {
         "id": "w5",

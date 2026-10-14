@@ -58,6 +58,17 @@ import com.forgebuild.forgehouse50.ui.progress.ProgressScreen
 import com.forgebuild.forgehouse50.ui.quiz.QuizScreen
 import com.forgebuild.forgehouse50.ui.read.ReadScreen
 import com.forgebuild.forgehouse50.ui.read.TranslationsScreen
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import com.forgebuild.forgehouse50.ui.changelog.ChangelogScreen
+import com.forgebuild.forgehouse50.update.DownloadResult
+import com.forgebuild.forgehouse50.update.PendingUpdate
 import com.forgebuild.forgehouse50.update.UpdateChecker
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 
@@ -73,6 +84,7 @@ object Routes {
     const val NOTE_EDIT = "note_edit?noteId={noteId}&day={day}&book={book}&chapter={chapter}&verse={verse}&type={type}"
     const val ADMIN = "admin"
     const val TRANSLATIONS = "translations"
+    const val CHANGELOG = "changelog"
     fun read(day: Int) = "read/$day"
     fun readSession(days: List<Int>) = "readsession/${days.joinToString(",")}"
     fun quiz(day: Int) = "quiz/$day"
@@ -118,7 +130,14 @@ fun AppNavHost(
     var registrationOpen by remember { mutableStateOf(true) }
     var signupLabel by remember { mutableStateOf("Joining closes on 21 Oct 2026") }
     var configLoaded by remember { mutableStateOf(false) }
-    var pendingUpdate by remember { mutableStateOf<UpdateChecker.PendingUpdate?>(null) }
+    val scope = rememberCoroutineScope()
+    var pendingUpdate by remember { mutableStateOf<PendingUpdate?>(null) }
+    var isDownloadingUpdate by remember { mutableStateOf(false) }
+    var downloadProgress by remember { mutableStateOf(0f) }
+    var updateErrorDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var updateErrorApkUrl by remember { mutableStateOf<String?>(null) }
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    var downloadedApkToInstall by remember { mutableStateOf<java.io.File?>(null) }
 
     // Public config (join window state) — fetched once per cold start.
     LaunchedEffect(Unit) {
@@ -129,10 +148,19 @@ fun AppNavHost(
         configLoaded = true
     }
 
-    // In-app update check: skippable but recurring, newest-always.
+    // In-app update check: checked on launch/resume and periodically while in use.
     LaunchedEffect(loggedIn, authenticatedTick) {
         if (loggedIn) {
             pendingUpdate = UpdateChecker.check(context, repo.session)
+            while (isActive) {
+                delay(15 * 60 * 1000L)
+                if (pendingUpdate == null) {
+                    val u = UpdateChecker.check(context, repo.session, isInUseCheck = true)
+                    if (u != null) {
+                        pendingUpdate = u
+                    }
+                }
+            }
         }
     }
 
@@ -227,7 +255,11 @@ fun AppNavHost(
                     repo,
                     onSignedOut = { onAuthChanged(false) },
                     onManageTranslations = { nav.navigate(Routes.TRANSLATIONS) },
+                    onOpenChangelog = { nav.navigate(Routes.CHANGELOG) },
                 )
+            }
+            composable(Routes.CHANGELOG) {
+                ChangelogScreen(onBack = { nav.popBackStack() })
             }
             composable(
                 Routes.READ,
@@ -325,29 +357,148 @@ fun AppNavHost(
             }
         }
 
-        // Non-blocking, skippable update prompt.
+        // Update dialog and installation flow
         pendingUpdate?.let { update ->
+            val formattedSize = remember(update.sizeBytes) {
+                if (update.sizeBytes > 0) {
+                    val mb = update.sizeBytes / (1024f * 1024f)
+                    " · %.1f MB".format(mb)
+                } else ""
+            }
             AlertDialog(
-                onDismissRequest = { pendingUpdate = null },
+                onDismissRequest = {
+                    repo.session.updateLaterDismissedAt = System.currentTimeMillis()
+                    pendingUpdate = null
+                },
                 title = { Text("Update available") },
                 text = {
                     Text(
-                        buildString {
-                            append("Version ${update.versionName} of ForgeHouse 50 is available.")
-                            if (update.notes.isNotBlank()) append("\n\n${update.notes}")
-                            append("\n\nYou can keep using the app either way.")
-                        },
+                        "Version ${update.versionName} is ready to install$formattedSize.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        UpdateChecker.openDownload(context, update.apkUrl)
-                        pendingUpdate = null
-                    }) { Text("Download") }
+                        if (!UpdateChecker.isOnline(context)) {
+                            updateErrorDialog = Pair("Offline", "Connect to the internet to update.")
+                            updateErrorApkUrl = null
+                            return@TextButton
+                        }
+                        isDownloadingUpdate = true
+                        downloadProgress = 0f
+                        scope.launch {
+                            val res = UpdateChecker.downloadAndVerify(context, update) { p ->
+                                downloadProgress = p
+                            }
+                            isDownloadingUpdate = false
+                            when (res) {
+                                is DownloadResult.Success -> {
+                                    pendingUpdate = null
+                                    downloadedApkToInstall = res.apkFile
+                                    if (!UpdateChecker.canRequestPackageInstalls(context)) {
+                                        showPermissionDialog = true
+                                    } else {
+                                        UpdateChecker.installApk(context, res.apkFile)
+                                    }
+                                }
+                                is DownloadResult.VerificationFailed -> {
+                                    updateErrorDialog = Pair("Update verification failed", res.reason)
+                                    updateErrorApkUrl = res.apkUrl
+                                }
+                                is DownloadResult.Failure -> {
+                                    updateErrorDialog = Pair("Download failed", res.message)
+                                    updateErrorApkUrl = res.apkUrl
+                                }
+                            }
+                        }
+                    }) { Text("Update now") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { pendingUpdate = null }) { Text("Skip for now") }
+                    TextButton(onClick = {
+                        repo.session.updateLaterDismissedAt = System.currentTimeMillis()
+                        pendingUpdate = null
+                    }) { Text("Later") }
+                },
+            )
+        }
+
+        if (isDownloadingUpdate) {
+            AlertDialog(
+                onDismissRequest = { /* Modal during download */ },
+                title = { Text("Downloading update") },
+                text = {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                        Text(
+                            "${(downloadProgress * 100).toInt()}% completed",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = { downloadProgress },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                },
+                confirmButton = {},
+            )
+        }
+
+        if (showPermissionDialog) {
+            AlertDialog(
+                onDismissRequest = { showPermissionDialog = false },
+                title = { Text("Permission required") },
+                text = {
+                    Text(
+                        "To install this update directly, ForgeHouse 50 needs permission to install unknown apps. Tap Settings to allow.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showPermissionDialog = false
+                        UpdateChecker.openUnknownAppSourcesSettings(context)
+                    }) { Text("Settings") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPermissionDialog = false }) { Text("Cancel") }
+                },
+            )
+        }
+
+        updateErrorDialog?.let { (title, msg) ->
+            AlertDialog(
+                onDismissRequest = {
+                    updateErrorDialog = null
+                    updateErrorApkUrl = null
+                },
+                title = { Text(title) },
+                text = {
+                    Text(
+                        if (updateErrorApkUrl != null) "$msg\n\nTap below to open in your browser instead." else msg,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                },
+                confirmButton = {
+                    if (updateErrorApkUrl != null) {
+                        TextButton(onClick = {
+                            UpdateChecker.openInBrowser(context, updateErrorApkUrl!!)
+                            updateErrorDialog = null
+                            updateErrorApkUrl = null
+                        }) { Text("Open in browser") }
+                    } else {
+                        TextButton(onClick = {
+                            updateErrorDialog = null
+                        }) { Text("OK") }
+                    }
+                },
+                dismissButton = {
+                    if (updateErrorApkUrl != null) {
+                        TextButton(onClick = {
+                            updateErrorDialog = null
+                            updateErrorApkUrl = null
+                        }) { Text("Cancel") }
+                    }
                 },
             )
         }

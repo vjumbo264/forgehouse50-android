@@ -1,0 +1,105 @@
+[
+  {
+    "version": "v22",
+    "date": "2026-10-14",
+    "items": [
+      "Password reset with 6-digit email verification code",
+      "In-app update checks and new version notifications",
+      "What's new changelog viewer in Profile"
+    ]
+  },
+  {
+    "version": "v21",
+    "date": "2026-10-11",
+    "items": [
+      "Notes automatically prefill the current book, chapter, and verse",
+      "Downloaded translations list updated for easier offline access"
+    ]
+  },
+  {
+    "version": "v20",
+    "date": "2026-10-11",
+    "items": [
+      "Sign-in improvements and session stability enhancements"
+    ]
+  },
+  {
+    "version": "v19",
+    "date": "2026-10-11",
+    "items": [
+      "Smooth horizontal scrolling for translation options in the Bible reader"
+    ]
+  },
+  {
+    "version": "v18",
+    "date": "2026-10-08",
+    "items": [
+      "Unified reading experience across Home, Progress, and catch-up views",
+      "Clean icon-only footnote markers beside relevant verses",
+      "Direct navigation to the daily quiz upon completing reading"
+    ]
+  },
+  {
+    "version": "v17",
+    "date": "2026-10-08",
+    "items": [
+      "Inactivity reset for reading streaks",
+      "Pre-filled WhatsApp community support message"
+    ]
+  },
+  {
+    "version": "v16",
+    "date": "2026-10-08",
+    "items": [
+      "Home screen widget layout and progress display improvements"
+    ]
+  },
+  {
+    "version": "v15",
+    "date": "2026-10-08",
+    "items": [
+      "Material You dynamic theming and Plus Jakarta Sans typography"
+    ]
+  },
+  {
+    "version": "v14",
+    "date": "2026-10-08",
+    "items": [
+      "Pill-style stat cards and faster cache-first screen rendering"
+    ]
+  },
+  {
+    "version": "v13",
+    "date": "2026-09-27",
+    "items": [
+      "Two-day catch-up reading sessions",
+      "Home screen widget with automatic progress refresh",
+      "Direct WhatsApp community and support links"
+    ]
+  },
+  {
+    "version": "v8",
+    "date": "2026-09-16",
+    "items": [
+      "Per-chapter reader navigation and font size controls",
+      "Single-file offline translation bundles"
+    ]
+  },
+  {
+    "version": "v7",
+    "date": "2026-09-16",
+    "items": [
+      "Offline Bible reading with bundled King James Version and downloadable translations",
+      "Streak-based leaderboard consistency rankings"
+    ]
+  },
+  {
+    "version": "v1",
+    "date": "2026-09-14",
+    "items": [
+      "Read the New Testament in 50 reading days with chapter-by-chapter tracking",
+      "Daily comprehension quizzes and confidence-weighted leaderboards",
+      "Personal reading notes and highlights"
+    ]
+  }
+]

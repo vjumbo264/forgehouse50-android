@@ -65,6 +65,26 @@ class SessionStore(context: Context) {
         get() = prefs.getFloat(KEY_FONT_SCALE, 1.0f)
         set(value) = prefs.edit().putFloat(KEY_FONT_SCALE, value).apply()
 
+    /** Epoch millis when we last checked the network for an update (throttled to 30 min). */
+    var lastUpdateCheckAt: Long
+        get() = prefs.getLong(KEY_LAST_UPDATE_CHECK_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_UPDATE_CHECK_AT, value).apply()
+
+    /** Epoch millis when the system notification for update was last posted (at most once/day). */
+    var lastUpdateNotifAt: Long
+        get() = prefs.getLong(KEY_LAST_UPDATE_NOTIF_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_UPDATE_NOTIF_AT, value).apply()
+
+    /** Epoch millis when the user tapped "Later" on the update prompt in the current session. */
+    var updateLaterDismissedAt: Long
+        get() = prefs.getLong(KEY_UPDATE_LATER_DISMISSED_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_UPDATE_LATER_DISMISSED_AT, value).apply()
+
+    /** Cached JSON string of the latest AppRelease response for offline checks. */
+    var cachedReleaseJson: String?
+        get() = prefs.getString(KEY_CACHED_RELEASE_JSON, null)
+        set(value) = prefs.edit().putString(KEY_CACHED_RELEASE_JSON, value).apply()
+
     var keepAliveExplained: Boolean
         get() = prefs.getBoolean(KEY_KEEPALIVE_EXPLAINED, false)
         set(value) = prefs.edit().putBoolean(KEY_KEEPALIVE_EXPLAINED, value).apply()
@@ -84,5 +104,9 @@ class SessionStore(context: Context) {
         const val KEY_UPDATE_SHOWN_AT = "update_prompt_shown_at"
         const val KEY_KEEPALIVE_EXPLAINED = "keepalive_explained"
         const val KEY_FONT_SCALE = "reader_font_scale"
+        const val KEY_LAST_UPDATE_CHECK_AT = "last_update_check_at"
+        const val KEY_LAST_UPDATE_NOTIF_AT = "last_update_notif_at"
+        const val KEY_UPDATE_LATER_DISMISSED_AT = "update_later_dismissed_at"
+        const val KEY_CACHED_RELEASE_JSON = "cached_release_json"
     }
 }
