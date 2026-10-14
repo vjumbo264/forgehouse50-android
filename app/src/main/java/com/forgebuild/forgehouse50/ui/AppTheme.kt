@@ -148,6 +148,9 @@ fun ForgeHouseTheme(
         motionScheme = MotionScheme.expressive(),
         shapes = Shapes(),
         typography = AppTypography,
-        content = content,
-    )
+    ) {
+        ResponsiveScreenProvider {
+            content()
+        }
+    }
 }

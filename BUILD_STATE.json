@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": true,
-  "last_updated_utc": "2026-10-14T09:42:10.820124+00:00",
+  "last_updated_utc": "2026-10-14T09:53:19.352186+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1605,9 +1605,9 @@
       {
         "id": "w5",
         "title": "Item 5 \u2014 minimum UI size on small and low-density screens",
-        "status": "pending",
+        "status": "done",
         "gate": "w4",
-        "notes": ""
+        "notes": "DONE (w5): Minimum UI size and scaling on small and low-density screens implemented. Defined 360dp reference layout width in ResponsiveScaling. Wrapped ForgeHouseTheme with ResponsiveScreenProvider so that when screenWidthDp < 360, density scales down by screenWidthDp / 360 (providing 360dp equivalent layout width) and font scale is capped at min(systemFontScale, 1.15). Screens 360dp and wider remain unscaled, preventing any unwanted magnification. JVM unit tests in ResponsiveScalingLogicTest verify 320dp, 340dp, 360dp, 411dp, 600dp and fontScale 1.0, 1.3, 2.0 behaviour."
       },
       {
         "id": "w6",
