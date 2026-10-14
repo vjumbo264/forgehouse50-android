@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": true,
-  "last_updated_utc": "2026-10-14T07:15:09.835447+00:00",
+  "last_updated_utc": "2026-10-14T07:24:21.990430+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1584,9 +1584,9 @@
       {
         "id": "w2",
         "title": "Item 2 \u2014 website: 2a foundations, 2b data layer and scripture, 2c landing + /api/app-release, 2d app parity, 2e navigation to spec, 2f PWA + service-worker migration, 2g verify and merge",
-        "status": "pending",
+        "status": "done",
         "gate": "w1",
-        "notes": ""
+        "notes": "DONE (w2): Website repaired, rebuilt and merged to main. Root causes diagnosed: (1) main branch was serving legacy unmerged frontend with broken read.html calling /api/read/passage with raw KJV instead of versewell prefix, (2) missing landing page at /, (3) old service worker caching legacy scripts. Rebuilt frontend merged from site-v2 to main: landing page at /, full SPA web app at /app/ with 100% app parity, IndexedDB scripture store with gzip 1f 8b magic bytes check, platform-aware download button via /api/app-release, dynamic floating pill bottom navigation to Item 6 spec matching operator screenshots, v2 service worker with skipWaiting and clients.claim, _redirects for legacy routes. Verified all 14 E2E steps via scripts/verify_task_s15.mjs with 0 orphans and real participants untouched."
       },
       {
         "id": "w3",
