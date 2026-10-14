@@ -130,6 +130,16 @@ class ApiClient(private val session: SessionStore) {
     suspend fun resend(email: String): GenericOk =
         post("/auth/resend", buildJsonObject { put("email", email) })
 
+    suspend fun forgotPassword(email: String): GenericOk =
+        post("/auth/forgot_password", buildJsonObject { put("email", email) })
+
+    suspend fun resetPassword(email: String, code: String, newPassword: String): LoginResponse =
+        post("/auth/reset_password", buildJsonObject {
+            put("email", email)
+            put("code", code)
+            put("new_password", newPassword)
+        })
+
     suspend fun login(email: String, password: String): LoginResponse =
         post("/auth/login", buildJsonObject { put("email", email); put("password", password) })
 

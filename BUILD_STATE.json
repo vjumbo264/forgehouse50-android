@@ -1593,7 +1593,7 @@
         "title": "Item 3 \u2014 forgot password: backend, then app, then website, each pushed before the next",
         "status": "pending",
         "gate": "w2",
-        "notes": ""
+        "notes": "Backend & Android app complete: ApiClient.kt with forgotPassword and resetPassword, AuthScreens.kt with ForgotPasswordForm and ResetPasswordForm (6-digit OTP, password validation, confirmation matching, resend button, expressive styling)."
       },
       {
         "id": "w4",

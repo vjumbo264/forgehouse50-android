@@ -80,12 +80,15 @@ fun AuthScreen(
     when (val m = mode) {
         Mode.Login -> LoginForm(repo, registrationOpen, signupLabel,
             onSignup = { mode = Mode.Signup },
+            onForgotPassword = { mode = Mode.ForgotPassword(it) },
             onAdminLogin = { mode = Mode.AdminLogin(it) },
             onNeedsVerification = { mode = Mode.Otp(it) },
             onAuthenticated = onAuthenticated)
         Mode.Signup -> SignupForm(repo, registrationOpen, signupLabel, onBack = { mode = Mode.Login }, onNeedsVerification = { mode = Mode.Otp(it) })
         is Mode.Otp -> OtpForm(repo, m.email, onAuthenticated, onBack = { mode = Mode.Login })
         is Mode.AdminLogin -> AdminLoginForm(repo, initialUsername = m.initialUsername, onBack = { mode = Mode.Login }, onAuthenticated = onAuthenticated)
+        is Mode.ForgotPassword -> ForgotPasswordForm(repo, initialEmail = m.initialEmail, onCodeSent = { mode = Mode.ResetPassword(it) }, onBack = { mode = Mode.Login })
+        is Mode.ResetPassword -> ResetPasswordForm(repo, email = m.email, onSuccess = onAuthenticated, onBack = { mode = Mode.Login })
     }
 }
 
@@ -94,6 +97,8 @@ private sealed interface Mode {
     data object Signup : Mode
     data class Otp(val email: String) : Mode
     data class AdminLogin(val initialUsername: String = "") : Mode
+    data class ForgotPassword(val initialEmail: String = "") : Mode
+    data class ResetPassword(val email: String) : Mode
 }
 
 @Composable
@@ -159,6 +164,7 @@ private fun LoginForm(
     registrationOpen: Boolean,
     signupLabel: String,
     onSignup: () -> Unit,
+    onForgotPassword: (String) -> Unit,
     onAdminLogin: (String) -> Unit,
     onNeedsVerification: (String) -> Unit,
     onAuthenticated: () -> Unit,
@@ -208,6 +214,18 @@ private fun LoginForm(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(onClick = { onForgotPassword(email.trim()) }) {
+                Text(
+                    "Forgot password?",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
         error?.let {
             Spacer(Modifier.height(12.dp))
             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -527,6 +545,222 @@ private fun AdminLoginForm(
         Spacer(Modifier.height(8.dp))
         TextButton(onClick = onBack) {
             Text("Back to participant sign in")
+        }
+    }
+}
+
+
+@Composable
+private fun ForgotPasswordForm(
+    repo: Repository,
+    initialEmail: String,
+    onCodeSent: (String) -> Unit,
+    onBack: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    var email by remember { mutableStateOf(initialEmail) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    AuthScaffold("Reset your password") {
+        Text(
+            "Enter your email address and we will send you a 6-digit verification code to reset your password.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it; error = null },
+            label = { Text("Email") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        )
+        error?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
+        Spacer(Modifier.height(24.dp))
+        ExpressiveButton(
+            onClick = {
+                if (!email.contains("@")) {
+                    error = "A valid email address is required"
+                    return@ExpressiveButton
+                }
+                scope.launch {
+                    busy = true
+                    error = null
+                    try {
+                        val res = repo.api.forgotPassword(email.trim())
+                        if (res.ok) {
+                            onCodeSent(email.trim())
+                        } else {
+                            error = res.error ?: "Unable to send reset code"
+                        }
+                    } catch (e: Exception) {
+                        error = friendlyNetError(e, "Unable to send reset code")
+                    } finally {
+                        busy = false
+                    }
+                }
+            },
+            enabled = !busy && email.isNotBlank(),
+            busy = busy,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Send reset code")
+        }
+        Spacer(Modifier.height(12.dp))
+        TextButton(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Back to sign in")
+        }
+    }
+}
+
+@Composable
+private fun ResetPasswordForm(
+    repo: Repository,
+    email: String,
+    onSuccess: () -> Unit,
+    onBack: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    var code by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    var resendBusy by remember { mutableStateOf(false) }
+    var infoMessage by remember { mutableStateOf<String?>("Code sent to $email") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    AuthScaffold("Choose a new password") {
+        infoMessage?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+        }
+        OutlinedTextField(
+            value = code,
+            onValueChange = { if (it.length <= 6 && it.all(Char::isDigit)) { code = it; error = null } },
+            label = { Text("6-digit code") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = newPassword,
+            onValueChange = { newPassword = it; error = null },
+            label = { Text("New password (8+ characters)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            trailingIcon = {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                        contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                    )
+                }
+            }
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = confirmPassword,
+            onValueChange = { confirmPassword = it; error = null },
+            label = { Text("Confirm new password") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        )
+        error?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
+        Spacer(Modifier.height(24.dp))
+        ExpressiveButton(
+            onClick = {
+                if (code.length != 6) {
+                    error = "Enter the 6-digit code from your email"
+                    return@ExpressiveButton
+                }
+                if (newPassword.length < 8) {
+                    error = "Password must be at least 8 characters"
+                    return@ExpressiveButton
+                }
+                if (newPassword != confirmPassword) {
+                    error = "Passwords do not match"
+                    return@ExpressiveButton
+                }
+                scope.launch {
+                    busy = true
+                    error = null
+                    try {
+                        val res = repo.api.resetPassword(email, code, newPassword)
+                        if (res.ok) {
+                            repo.session.userName = res.name
+                            repo.session.userRole = res.role
+                            onSuccess()
+                        } else {
+                            error = res.error ?: "Password reset failed"
+                        }
+                    } catch (e: Exception) {
+                        error = friendlyNetError(e, "Password reset failed")
+                    } finally {
+                        busy = false
+                    }
+                }
+            },
+            enabled = !busy && code.length == 6 && newPassword.length >= 8 && confirmPassword.isNotBlank(),
+            busy = busy,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Reset password")
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        resendBusy = true
+                        error = null
+                        try {
+                            val res = repo.api.forgotPassword(email)
+                            if (res.ok) {
+                                infoMessage = "A fresh 6-digit code was sent to $email"
+                            } else {
+                                error = res.error ?: "Unable to resend code"
+                            }
+                        } catch (e: Exception) {
+                            error = friendlyNetError(e, "Unable to resend code")
+                        } finally {
+                            resendBusy = false
+                        }
+                    }
+                },
+                enabled = !resendBusy
+            ) {
+                Text(if (resendBusy) "Sending..." else "Resend code")
+            }
+            TextButton(onClick = onBack) {
+                Text("Back to sign in")
+            }
         }
     }
 }
