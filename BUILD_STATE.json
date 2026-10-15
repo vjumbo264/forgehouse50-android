@@ -1648,9 +1648,9 @@
       {
         "id": "f3",
         "title": "Item 3 \u2014 website nav contrast fix plus automated contrast checks in both themes",
-        "status": "pending",
+        "status": "in_progress",
         "gate": "f2",
-        "notes": ""
+        "notes": "In progress (f3): Diagnosing nav contrast tokens and updating floating nav styling in light/dark mode with automated contrast checks."
       },
       {
         "id": "f4",
