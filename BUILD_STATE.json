@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": false,
-  "last_updated_utc": "2026-10-15T06:53:53.455745+00:00",
+  "build_complete": true,
+  "last_updated_utc": "2026-10-15T08:19:47.601579+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1680,6 +1680,7 @@
         "gate": "f6",
         "notes": "DONE (f7): Item 7 Profile pictures implemented across backend, Android app, website, and admin moderation. 7a Backend: D1 profile_pictures & profile_picture_uploads tables with migration profile_pictures_v1.sql; PUT/DELETE /api/profile/picture, GET /api/users/:id/picture (ETag, 304, immutable cache), POST /api/admin/users/:id/remove-picture; magic bytes detection; 100KB payload limit; 5/24h upload rate limit; user deletion cascade. 7b Android App: UserAvatar composable with Coil AsyncImage, Cookie session auth, deterministic ?v=<version> busting, circular clipping and instant illustration fallback; ProfilePictureProcessor with EXIF normalization, square crop, zoom scaling, 256x256 resizing, and stepped WebP/JPEG compression <= 100KB; ProfileScreen photo picker bottom sheet (take photo, choose from gallery, use illustration avatar, remove my picture), interactive crop dialog with zoom slider, and upload progress; LeaderboardScreen podium, rankings list, and Your Standing banner integration; AdminScreen participant list and detail card integration with admin moderation (Remove picture dialog); ProfilePictureLogicTest passing suite. 7c Website: index-CQfSSHWX.js updated across home header, podium, ranking list, profile card, and admin list with versioned photo URLs and fallback; Profile view provides photo upload file picker with canvas square crop/resize/compression to 256x256 <= 100KB, remove picture button, and avatar grid; sw.js bumped to fh50-v2-08. 7d Admin moderation: admin participant detail in both Android app and website offers honest Remove Picture moderation action reverting participant to illustration avatar."
       }
-    ]
+    ],
+    "verified_release": "forgehouse50-v25"
   }
 }
