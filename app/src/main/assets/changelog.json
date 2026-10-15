@@ -3,7 +3,9 @@
     "version": "v25",
     "date": "2026-10-15",
     "items": [
-      "Observation and Question notes are now shared with your leaders"
+      "Observation and Question notes are now shared with your leaders",
+      "Floating navigation with slide transitions and swipe gestures between tabs",
+      "Personal profile pictures with crop, zoom, and moderation support"
     ]
   },
   {
