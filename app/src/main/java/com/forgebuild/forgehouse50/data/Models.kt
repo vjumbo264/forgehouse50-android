@@ -418,7 +418,6 @@ data class Participant(
 }
 
 @Serializable
-@Serializable
 data class ParticipantDayRow(
     val day_number: Int,
     val date: String? = null,
