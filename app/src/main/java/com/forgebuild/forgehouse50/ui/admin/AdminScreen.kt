@@ -223,8 +223,9 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
             ) {
                 Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Stats") })
                 Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Participants") })
-                Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Programme") })
-                Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Password") })
+                Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Notes") })
+                Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Programme") })
+                Tab(selected = tab == 4, onClick = { tab = 4 }, text = { Text("Password") })
             }
 
             if (inspectingParticipantId != null) {
@@ -262,7 +263,11 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
                         onAdjust = { adjustTarget = it },
                         onDelete = { singleDeleteTarget = it }
                     )
-                    2 -> ProgrammeTab(
+                    2 -> AdminNotesTab(
+                        repo = repo,
+                        participants = participants,
+                    )
+                    3 -> ProgrammeTab(
                         programme = programme,
                         onStart = { confirmStart = true },
                         onEndTesting = { confirmEndTesting = true }
@@ -1311,6 +1316,266 @@ private fun ParticipantDetailScreen(
                     }
                 }
             )
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AdminNotesTab(
+    repo: Repository,
+    participants: List<Participant>,
+) {
+    val scope = rememberCoroutineScope()
+    var notes by remember { mutableStateOf<List<com.forgebuild.forgehouse50.data.AdminNoteItem>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var typeFilter by remember { mutableStateOf("all-visible") }
+    var selectedUserId by remember { mutableStateOf("") }
+    var selectedDay by remember { mutableStateOf<Int?>(null) }
+    var query by remember { mutableStateOf("") }
+    var userMenuOpen by remember { mutableStateOf(false) }
+    var dayMenuOpen by remember { mutableStateOf(false) }
+
+    fun refreshNotes() {
+        scope.launch {
+            loading = true
+            runCatching {
+                repo.api.adminNotes(
+                    type = typeFilter,
+                    userId = selectedUserId.ifBlank { null },
+                    day = selectedDay,
+                    q = query.ifBlank { null }
+                )
+            }.onSuccess {
+                notes = it.notes
+            }.onFailure {
+                notes = emptyList()
+            }
+            loading = false
+        }
+    }
+
+    LaunchedEffect(typeFilter, selectedUserId, selectedDay) {
+        refreshNotes()
+    }
+
+    LaunchedEffect(query) {
+        kotlinx.coroutines.delay(300)
+        refreshNotes()
+    }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        // Search bar
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Search notes or references") },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            trailingIcon = {
+                if (query.isNotBlank()) {
+                    IconButton(onClick = { query = "" }) {
+                        Icon(Icons.Filled.Close, contentDescription = "Clear")
+                    }
+                }
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        // Type filter row
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            FilterChip(
+                selected = typeFilter == "all-visible",
+                onClick = { typeFilter = "all-visible" },
+                label = { Text("All Visible") }
+            )
+            FilterChip(
+                selected = typeFilter == "observation",
+                onClick = { typeFilter = "observation" },
+                label = { Text("Observations") }
+            )
+            FilterChip(
+                selected = typeFilter == "question",
+                onClick = { typeFilter = "question" },
+                label = { Text("Questions") }
+            )
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        // Dropdown filter chips for Person and Day
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Box {
+                val selectedUser = participants.firstOrNull { it.id == selectedUserId }
+                FilterChip(
+                    selected = selectedUserId.isNotBlank(),
+                    onClick = { userMenuOpen = true },
+                    label = { Text(selectedUser?.full_name?.ifBlank { null } ?: selectedUser?.name ?: "All People") }
+                )
+                DropdownMenu(
+                    expanded = userMenuOpen,
+                    onDismissRequest = { userMenuOpen = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("All People") },
+                        onClick = {
+                            selectedUserId = ""
+                            userMenuOpen = false
+                        }
+                    )
+                    participants.forEach { p ->
+                        DropdownMenuItem(
+                            text = { Text(p.full_name?.ifBlank { null } ?: p.name) },
+                            onClick = {
+                                selectedUserId = p.id
+                                userMenuOpen = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Box {
+                FilterChip(
+                    selected = selectedDay != null,
+                    onClick = { dayMenuOpen = true },
+                    label = { Text(if (selectedDay != null) "Day $selectedDay" else "All Days") }
+                )
+                DropdownMenu(
+                    expanded = dayMenuOpen,
+                    onDismissRequest = { dayMenuOpen = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("All Days") },
+                        onClick = {
+                            selectedDay = null
+                            dayMenuOpen = false
+                        }
+                    )
+                    (1..50).forEach { d ->
+                        DropdownMenuItem(
+                            text = { Text("Day $d") },
+                            onClick = {
+                                selectedDay = d
+                                dayMenuOpen = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        if (loading && notes.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (notes.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    "No observation or question notes found matching the filters.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(notes, key = { it.id }) { item ->
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = item.author_full_name.ifBlank { item.author_name.ifBlank { "Participant" } },
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text("·", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        text = item.reference.ifBlank { "${item.book} ${item.chapter}" },
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    if (item.day != null) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = MaterialTheme.colorScheme.surfaceContainerHighest
+                                        ) {
+                                            Text(
+                                                "Day ${item.day}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (item.type == "observation") MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.tertiaryContainer
+                                ) {
+                                    Text(
+                                        text = if (item.type == "observation") "Observation" else "Question",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (item.type == "observation") MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onTertiaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(6.dp))
+
+                            Text(
+                                text = item.text.ifBlank { item.body },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            if (item.created_at.isNotBlank()) {
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    text = item.created_at.take(10),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

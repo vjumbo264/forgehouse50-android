@@ -82,6 +82,37 @@ fun HomeScreen(
     onOpenAdmin: () -> Unit,
 ) {
     val context = LocalContext.current
+    var showNotesPrivacyNotice by remember {
+        mutableStateOf(repo.sessionStore.userId != null && !repo.sessionStore.hasNotesPrivacyNoticeBeenAcknowledged())
+    }
+    if (showNotesPrivacyNotice) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = {},
+            title = {
+                Text(
+                    "Notes Sharing Update",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    "Observations and Questions you write can now be read by your leaders so they can help you. Insights, Prayers and Applications stay private.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        repo.sessionStore.acknowledgeNotesPrivacyNotice()
+                        showNotesPrivacyNotice = false
+                    }
+                ) {
+                    Text("OK", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
 
     // Synchronous cache read for instantaneous first-frame render
     var today by remember { mutableStateOf(AppCache.getToday(context)) }

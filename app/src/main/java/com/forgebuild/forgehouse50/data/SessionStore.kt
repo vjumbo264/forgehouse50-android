@@ -92,6 +92,16 @@ class SessionStore(context: Context) {
     val isLoggedIn: Boolean get() = !sessionToken.isNullOrBlank()
     val isAdmin: Boolean get() = userRole == "admin"
 
+    fun hasNotesPrivacyNoticeBeenAcknowledged(uid: String? = userId): Boolean {
+        val id = uid ?: return false
+        return prefs.getBoolean("notes_notice_ack_$id", false)
+    }
+
+    fun acknowledgeNotesPrivacyNotice(uid: String? = userId) {
+        val id = uid ?: return
+        prefs.edit().putBoolean("notes_notice_ack_$id", true).apply()
+    }
+
     fun clear() = prefs.edit().clear().apply()
 
     private companion object {

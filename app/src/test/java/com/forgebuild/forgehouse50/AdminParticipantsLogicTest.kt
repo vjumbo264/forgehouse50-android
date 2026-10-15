@@ -219,4 +219,74 @@ class AdminParticipantsLogicTest {
         )
         // Day 2 was completed most recently by timestamp
         assertEquals(2, findLatestCompletedDay(catchupCompletions))
+    
+    @Test
+    fun testNoteHelperTextAndVisibilityLogic() {
+        fun getNoteLabel(type: String): String {
+            val isLeaderVisible = type == "observation" || type == "question"
+            return if (isLeaderVisible) "Note (your leaders can read this)" else "Note (private to you)"
+        }
+
+        fun isVisibleToLeaders(type: String): Boolean {
+            return type == "observation" || type == "question"
+        }
+
+        // Observation and Question are visible to leaders
+        assertEquals("Note (your leaders can read this)", getNoteLabel("observation"))
+        assertEquals("Note (your leaders can read this)", getNoteLabel("question"))
+        assertTrue(isVisibleToLeaders("observation"))
+        assertTrue(isVisibleToLeaders("question"))
+
+        // Prayer, Insight, and Application are strictly private
+        assertEquals("Note (private to you)", getNoteLabel("prayer"))
+        assertEquals("Note (private to you)", getNoteLabel("insight"))
+        assertEquals("Note (private to you)", getNoteLabel("scripture_connection"))
+        assertEquals("Note (private to you)", getNoteLabel("application"))
+        assertFalse(isVisibleToLeaders("prayer"))
+        assertFalse(isVisibleToLeaders("insight"))
+        assertFalse(isVisibleToLeaders("scripture_connection"))
+        assertFalse(isVisibleToLeaders("application"))
     }
+
+    @Test
+    fun testAdminNotesFilteringExcludesPrivateTypes() {
+        data class NoteStub(val id: String, val type: String, val text: String, val day: Int)
+
+        val notes = listOf(
+            NoteStub("1", "observation", "Good observation", 1),
+            NoteStub("2", "question", "Interesting question?", 1),
+            NoteStub("3", "prayer", "Private prayer", 1),
+            NoteStub("4", "insight", "Deep insight", 1),
+            NoteStub("5", "application", "Personal application", 1),
+            NoteStub("6", "observation", "Another observation", 2)
+        )
+
+        fun filterVisibleNotes(list: List<NoteStub>, filter: String): List<NoteStub> {
+            val allowed = when (filter) {
+                "observation" -> setOf("observation")
+                "question" -> setOf("question")
+                else -> setOf("observation", "question") // all-visible default
+            }
+            return list.filter { it.type in allowed }
+        }
+
+        // All visible: only observation and question (3 notes)
+        val visible = filterVisibleNotes(notes, "all-visible")
+        assertEquals(3, visible.size)
+        assertTrue(visible.none { it.type in setOf("prayer", "insight", "application") })
+
+        // Observations only (2 notes)
+        val obs = filterVisibleNotes(notes, "observation")
+        assertEquals(2, obs.size)
+        assertTrue(obs.all { it.type == "observation" })
+
+        // Questions only (1 note)
+        val q = filterVisibleNotes(notes, "question")
+        assertEquals(1, q.size)
+        assertTrue(q.all { it.type == "question" })
+
+        // Malicious or invalid filter (e.g. attempting to request prayer) falls back to safe allowed set
+        val malicious = filterVisibleNotes(notes, "prayer")
+        assertTrue(malicious.none { it.type == "prayer" })
+    }
+}

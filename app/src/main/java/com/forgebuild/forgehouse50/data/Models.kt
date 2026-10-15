@@ -591,3 +591,34 @@ data class BundleManifest(
     val generated: String = "",
     val bundles: List<BundleEntry> = emptyList(),
 )
+
+// ── Item 5: Admin Observation and Question Notes ────────────────────────
+@Serializable
+data class AdminNoteItem(
+    val id: String = "",
+    val user_id: String = "",
+    val author_full_name: String = "",
+    val author_name: String = "",
+    val type: String = "observation",
+    val note_type: String = "observation",
+    val text: String = "",
+    val body: String = "",
+    val book: String = "",
+    val chapter: Int = 1,
+    val verse: Int? = null,
+    val reference: String = "",
+    val day: Int? = null,
+    val day_number: Int? = null,
+    val created_at: String = "",
+    val updated_at: String = "",
+)
+
+@Serializable
+data class AdminNotesResponse(
+    val ok: Boolean = true,
+    val notes: List<AdminNoteItem> = emptyList(),
+    val page: Int = 1,
+    val limit: Int = 25,
+    val total: Int = 0,
+    val has_more: Boolean = false,
+)

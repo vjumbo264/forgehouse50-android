@@ -67,6 +67,37 @@ import com.forgebuild.forgehouse50.ui.ExpressiveButton
 @Composable
 fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) -> Unit) {
     val context = LocalContext.current
+    var showNoticeDialog by remember {
+        mutableStateOf(repo.sessionStore.userId != null && !repo.sessionStore.hasNotesPrivacyNoticeBeenAcknowledged())
+    }
+    if (showNoticeDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = {},
+            title = {
+                Text(
+                    "Notes Sharing Update",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    "Observations and Questions you write can now be read by your leaders so they can help you. Insights, Prayers and Applications stay private.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        repo.sessionStore.acknowledgeNotesPrivacyNotice()
+                        showNoticeDialog = false
+                    }
+                ) {
+                    Text("OK", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
     val scope = rememberCoroutineScope()
     var notes by remember { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getNotes(context)?.notes.orEmpty()) }
     var query by remember { mutableStateOf("") }
@@ -146,6 +177,20 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
                                             Text("  ·  ${n.book} ${n.chapter}${n.verse?.let { ":$it" } ?: ""}",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    if (n.note_type == "observation" || n.note_type == "question") {
+                                        Spacer(Modifier.height(2.dp))
+                                        Surface(
+                                            shape = MaterialTheme.shapes.extraSmall,
+                                            color = MaterialTheme.colorScheme.secondaryContainer,
+                                        ) {
+                                            Text(
+                                                "Visible to leaders",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
                                         }
                                     }
                                     Spacer(Modifier.height(4.dp))
@@ -267,7 +312,9 @@ fun NoteEditScreen(
                 }
             }
             Spacer(Modifier.height(14.dp))
-            OutlinedTextField(body, { body = it }, label = { Text("Note (private to you)") },
+            val isLeaderVisible = type == "observation" || type == "question"
+            val noteLabel = if (isLeaderVisible) "Note (your leaders can read this)" else "Note (private to you)"
+            OutlinedTextField(body, { body = it }, label = { Text(noteLabel) },
                 modifier = Modifier.fillMaxWidth().height(160.dp))
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

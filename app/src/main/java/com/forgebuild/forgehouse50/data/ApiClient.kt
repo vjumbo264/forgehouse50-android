@@ -229,9 +229,27 @@ class ApiClient(private val session: SessionStore) {
 
     // ── Admin ─────────────────────────────────────────────────────────────
     suspend fun adminParticipants(): ParticipantsResponse = get("/admin/participants")
-    suspend fun adminParticipantDetail(userId: String): ParticipantDetailResponse = get("/admin/users/")
+    suspend fun adminParticipantDetail(userId: String): ParticipantDetailResponse = get("/admin/users/$userId")
     suspend fun adminResetLatestDay(userId: String, requestId: String = java.util.UUID.randomUUID().toString()): ResetLatestDayResponse =
-        post("/admin/users//reset-latest-day", buildJsonObject { put("request_id", requestId) })
+        post("/admin/users/$userId/reset-latest-day", buildJsonObject { put("request_id", requestId) })
+    suspend fun adminNotes(
+        type: String = "all-visible",
+        userId: String? = null,
+        day: Int? = null,
+        q: String? = null,
+        page: Int = 1,
+        limit: Int = 25
+    ): AdminNotesResponse {
+        val params = mutableListOf<String>()
+        if (type.isNotBlank()) params.add("type=" + java.net.URLEncoder.encode(type, "UTF-8"))
+        if (!userId.isNullOrBlank()) params.add("userId=" + java.net.URLEncoder.encode(userId, "UTF-8"))
+        if (day != null && day in 1..50) params.add("day=$day")
+        if (!q.isNullOrBlank()) params.add("q=" + java.net.URLEncoder.encode(q, "UTF-8"))
+        params.add("page=$page")
+        params.add("limit=$limit")
+        val qs = if (params.isNotEmpty()) "?" + params.joinToString("&") else ""
+        return get("/admin/notes$qs")
+    }
     suspend fun adminStats(): AdminStats = get("/admin/stats")
     suspend fun adminProgramme(): AdminProgramme = get("/admin/programme")
 

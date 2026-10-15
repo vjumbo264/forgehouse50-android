@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-10-15T05:09:53.324816+00:00",
+  "last_updated_utc": "2026-10-15T06:22:08.680282+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1662,9 +1662,9 @@
       {
         "id": "f5",
         "title": "Item 5 \u2014 admin Observation/Question notes view, honest wording and one-time notice, release",
-        "status": "in_progress",
+        "status": "done",
         "gate": "f4",
-        "notes": "In progress (f5): Implementing admin Observation and Question notes view, user-facing honest visibility copy and one-time notice, and admin Notes tab."
+        "notes": "DONE (f5): Admin Observation & Question notes view and privacy safeguards implemented across Android app, backend, and website. Android App: (1) Added AdminNoteItem and AdminNotesResponse models; (2) Implemented ApiClient.adminNotes endpoint; (3) Added hasNotesPrivacyNoticeBeenAcknowledged and acknowledgeNotesPrivacyNotice to SessionStore; (4) Updated NotesScreens.kt so note creation label displays \"Note (your leaders can read this)\" for observations/questions and \"Note (private to you)\" for others; (5) Note cards display \"Visible to leaders\" badge; (6) Added one-time notice dialog on first open across HomeScreen and NotesScreen; (7) Implemented AdminNotesTab in AdminScreen with filters (type, person, day, query) and card UI; (8) Added v25 changelog entry \"Observation and Question notes are now shared with your leaders\"; (9) Added unit tests in AdminParticipantsLogicTest.kt."
       },
       {
         "id": "f6",
