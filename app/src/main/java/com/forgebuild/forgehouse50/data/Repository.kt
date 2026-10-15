@@ -155,7 +155,7 @@ class Repository(
                 key = AppDatabase.chapterKey(translation, book, chNum),
                 translation = translation, book = book, chapter = chNum,
                 reference = "$book $chNum",
-                versesJson = json.encodeToString(ch.v.map { Verse(chNum, it.n, it.t, it.f) }),
+                versesJson = json.encodeToString(ch.v.map { Verse(chNum, it.n, it.t, it.f, it.h) }),
                 introsJson = json.encodeToString(ch.i.map { Intro(chNum, it.s, it.e, it.t) }),
                 attribution = "Scripture text: $name, via VerseWell (versewell.pages.dev).",
             ))

@@ -1,5 +1,15 @@
 [
   {
+    "version": "v26",
+    "date": "2026-10-15",
+    "items": [
+      "Continuous scripture reading across all chapters of the day",
+      "Full-height reading view with edge-to-edge layout",
+      "Chapter progress indicator and reading position restore",
+      "Active reading timer with idle pause status and encouragement"
+    ]
+  },
+  {
     "version": "v25",
     "date": "2026-10-15",
     "items": [

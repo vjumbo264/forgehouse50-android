@@ -228,6 +228,7 @@ data class Verse(
     val verse: Int,
     val text: String,
     val footnotes: List<String> = emptyList(),
+    val heading_before: String? = null,
 )
 
 @Serializable
@@ -570,7 +571,7 @@ data class GenericOk(val ok: Boolean = false, val error: String? = null, val poi
 // ── Bundled KJV asset (bible/kjv.json.gz) — compact field names to keep the
 // bundled file small; decoded then mapped to the full Verse/Intro DTOs. ────
 @Serializable
-data class BundledVerse(val n: Int, val t: String, val f: List<String> = emptyList())
+data class BundledVerse(val n: Int, val t: String, val f: List<String> = emptyList(), val h: String? = null)
 
 @Serializable
 data class BundledIntro(val s: Int = 0, val e: Int = 0, val t: String = "")

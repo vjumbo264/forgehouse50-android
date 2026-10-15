@@ -272,8 +272,17 @@ fun HomeScreen(
                     )
                     if (a != null) {
                         Spacer(Modifier.height(4.dp))
+                        val posStorage = remember { com.forgebuild.forgehouse50.data.PrefsReaderPositionStorage(context) }
+                        val savedPos = if (!block.completed && block.reading_seconds > 0) {
+                            posStorage.getPosition(repo.session.userId ?: "local", block.day_number, repo.session.translationId ?: com.forgebuild.forgehouse50.data.Repository.KJV_ID)
+                        } else null
+                        val chapterLabel = if (savedPos != null && a.chapter_count > 1) {
+                            "Chapter ${(savedPos.chapterIdx + 1).coerceIn(1, a.chapter_count)} of ${a.chapter_count} · about ${a.est_minutes} min"
+                        } else {
+                            "${a.chapter_count} chapter${if (a.chapter_count > 1) "s" else ""} · about ${a.est_minutes} min"
+                        }
                         Text(
-                            "${a.chapter_count} chapters · about ${a.est_minutes} min",
+                            chapterLabel,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

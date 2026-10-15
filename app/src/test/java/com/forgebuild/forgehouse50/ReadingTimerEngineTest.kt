@@ -1,11 +1,16 @@
 package com.forgebuild.forgehouse50
 
+import com.forgebuild.forgehouse50.data.InMemoryReaderPositionStorage
 import com.forgebuild.forgehouse50.data.InMemoryTimerStorage
 import com.forgebuild.forgehouse50.data.MonotonicClock
+import com.forgebuild.forgehouse50.data.ReaderEncouragement
 import com.forgebuild.forgehouse50.data.ReadingTimer
+import com.forgebuild.forgehouse50.data.SavedReaderPosition
 import com.forgebuild.forgehouse50.data.WallClock
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -21,13 +26,67 @@ class FakeWallClock(var currentIso: String = "2026-10-15T08:00:00Z") : WallClock
 class ReadingTimerEngineTest {
 
     @Test
+    fun testContinuousCountingWhileScrollingNoChapterChange() {
+        val clock = FakeMonotonicClock(10_000L)
+        val storage = InMemoryTimerStorage()
+        val timer = ReadingTimer("user1", 1, storage, clock, FakeWallClock(), idleTimeoutMs = 60_000L)
+        timer.start()
+
+        // User reads and scrolls within Chapter 1 for 10 minutes (600 seconds) without changing chapter
+        // Interaction occurs every 20 seconds as user scrolls through verses
+        repeat(30) {
+            clock.advance(20_000L)
+            timer.onInteraction()
+            timer.tick()
+        }
+
+        assertEquals(600, timer.getReadingSeconds())
+        assertFalse(timer.isIdlePaused())
+        assertTrue(timer.hasReachedMinimum())
+        assertEquals("10:00", timer.formattedTimer())
+    }
+
+    @Test
+    fun testIdleDetectionAndImmediateTouchResume() {
+        val clock = FakeMonotonicClock(10_000L)
+        val storage = InMemoryTimerStorage()
+        val timer = ReadingTimer("user1", 1, storage, clock, FakeWallClock(), idleTimeoutMs = 60_000L)
+        timer.start()
+
+        // 40 seconds of reading
+        clock.advance(40_000L)
+        assertEquals(40, timer.tick())
+        assertFalse(timer.isIdlePaused())
+
+        // User goes idle for 70 seconds (> 60s timeout)
+        clock.advance(70_000L)
+        timer.tick()
+        assertTrue(timer.isIdlePaused())
+        val frozenSec = timer.getReadingSeconds()
+
+        // Advance 30s more while idle
+        clock.advance(30_000L)
+        assertEquals(frozenSec, timer.tick())
+        assertTrue(timer.isIdlePaused())
+
+        // User touches screen -> resumes immediately, idle time is NOT credited
+        timer.onInteraction()
+        assertFalse(timer.isIdlePaused())
+
+        // Next 10 seconds of reading
+        clock.advance(10_000L)
+        assertEquals(frozenSec + 10, timer.tick())
+        assertFalse(timer.isIdlePaused())
+    }
+
+    @Test
     fun testPauseResume() {
         val clock = FakeMonotonicClock(10_000L)
         val wallClock = FakeWallClock()
         val storage = InMemoryTimerStorage()
         val timer = ReadingTimer("user1", 1, storage, clock, wallClock)
-
         timer.start()
+
         clock.advance(50_000L) // 50s
         assertEquals(50, timer.tick())
 
@@ -38,31 +97,6 @@ class ReadingTimerEngineTest {
         timer.start()
         clock.advance(20_000L) // 20s
         assertEquals(70, timer.tick())
-    }
-
-    @Test
-    fun testIdleDetection() {
-        val clock = FakeMonotonicClock(10_000L)
-        val storage = InMemoryTimerStorage()
-        val timer = ReadingTimer("user1", 1, storage, clock, FakeWallClock(), idleTimeoutMs = 60_000L)
-
-        timer.start()
-        clock.advance(40_000L) // 40s with interaction at start
-        assertEquals(40, timer.tick())
-
-        // Now user stops interacting for > 60 seconds
-        clock.advance(70_000L) // idle for 70s (> 60s timeout)
-        timer.tick() // idle, so time should NOT be counted once idle > 60s
-        val idleSec = timer.getReadingSeconds()
-
-        // Advancing further without interaction adds 0
-        clock.advance(30_000L)
-        assertEquals(idleSec, timer.tick())
-
-        // User interacts (taps or scrolls)
-        timer.onInteraction()
-        clock.advance(10_000L)
-        assertEquals(idleSec + 10, timer.tick())
     }
 
     @Test
@@ -102,7 +136,6 @@ class ReadingTimerEngineTest {
     fun testMultiDayCatchupIndependence() {
         val clock = FakeMonotonicClock(10_000L)
         val storage = InMemoryTimerStorage()
-
         val timerDay1 = ReadingTimer("user1", 1, storage, clock, FakeWallClock("2026-10-15T08:00:00Z"))
         val timerDay2 = ReadingTimer("user1", 2, storage, clock, FakeWallClock("2026-10-15T08:30:00Z"))
 
@@ -140,22 +173,60 @@ class ReadingTimerEngineTest {
 
     @Test
     fun testButtonStateLogic() {
-        // Condition: hasMinTime (seconds >= 300) AND finalChapterReached
         fun canComplete(seconds: Int, finalChapterReached: Boolean): Boolean {
             val hasMinTime = seconds >= 300
             return hasMinTime && finalChapterReached
         }
 
-        // Below minimum, not at final chapter
         assertFalse(canComplete(100, false))
-        // Below minimum, at final chapter
         assertFalse(canComplete(299, true))
-        // Above minimum, not at final chapter
         assertFalse(canComplete(300, false))
         assertFalse(canComplete(500, false))
-        // Exactly minimum, at final chapter
         assertTrue(canComplete(300, true))
-        // Above minimum, at final chapter
         assertTrue(canComplete(350, true))
+    }
+
+    @Test
+    fun testEncouragementMessagesMinutes5To30AndStaticAfter() {
+        // Assert never shown before 5:00
+        assertNull(ReaderEncouragement.getMessage(0))
+        assertNull(ReaderEncouragement.getMessage(299)) // 4:59
+
+        // Assert an exact message exists for each minute 5..30 (26 distinct messages)
+        for (m in 5..30) {
+            val msg = ReaderEncouragement.getMessage(m * 60)
+            assertNotNull("Message for minute $m must exist", msg)
+            assertTrue("Message for minute $m should not be empty", msg!!.isNotBlank())
+            assertEquals(ReaderEncouragement.messagesByMinute[m], msg)
+        }
+        assertEquals(26, ReaderEncouragement.messagesByMinute.size)
+
+        // Assert static closing message for 31+ minutes
+        assertEquals(ReaderEncouragement.STATIC_OVER_30, ReaderEncouragement.getMessage(31 * 60))
+        assertEquals(ReaderEncouragement.STATIC_OVER_30, ReaderEncouragement.getMessage(60 * 60))
+    }
+
+    @Test
+    fun testReaderPositionPersistenceAndClearOnComplete() {
+        val storage = InMemoryReaderPositionStorage()
+        val pos = SavedReaderPosition(chapterIdx = 2, scrollItemIndex = 14, scrollOffsetPx = 85)
+
+        storage.setPosition("user1", 3, "versewell-kjv", pos)
+        val loaded = storage.getPosition("user1", 3, "versewell-kjv")
+
+        assertNotNull(loaded)
+        assertEquals(2, loaded!!.chapterIdx)
+        assertEquals(14, loaded.scrollItemIndex)
+        assertEquals(85, loaded.scrollOffsetPx)
+
+        // Translation switch isolation
+        assertNull(storage.getPosition("user1", 3, "versewell-voice"))
+
+        // Day switch isolation
+        assertNull(storage.getPosition("user1", 4, "versewell-kjv"))
+
+        // Clear when day completed
+        storage.clear("user1", 3)
+        assertNull(storage.getPosition("user1", 3, "versewell-kjv"))
     }
 }

@@ -1,11 +1,16 @@
 package com.forgebuild.forgehouse50.ui.read
 
-import androidx.compose.foundation.layout.PaddingValues
-import com.forgebuild.forgehouse50.data.AppCache
-
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,81 +19,89 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
-import com.forgebuild.forgehouse50.data.ScriptureReferenceUtils
-
+import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Quiz
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.forgebuild.forgehouse50.data.Assignment
-import com.forgebuild.forgehouse50.data.ReadingTimer
-import com.forgebuild.forgehouse50.data.PrefsTimerStorage
-import com.forgebuild.forgehouse50.data.OfflineCompletionQueue
-import com.forgebuild.forgehouse50.data.PendingCompletion
-import androidx.compose.runtime.DisposableEffect
+import com.forgebuild.forgehouse50.data.AppCache
 import com.forgebuild.forgehouse50.data.DayResponse
+import com.forgebuild.forgehouse50.data.OfflineCompletionQueue
 import com.forgebuild.forgehouse50.data.PassageResponse
+import com.forgebuild.forgehouse50.data.PendingCompletion
+import com.forgebuild.forgehouse50.data.PrefsReaderPositionStorage
+import com.forgebuild.forgehouse50.data.PrefsTimerStorage
+import com.forgebuild.forgehouse50.data.ReaderEncouragement
+import com.forgebuild.forgehouse50.data.ReadingTimer
 import com.forgebuild.forgehouse50.data.Repository
+import com.forgebuild.forgehouse50.data.SavedReaderPosition
+import com.forgebuild.forgehouse50.data.ScriptureReferenceUtils
+import com.forgebuild.forgehouse50.data.Verse
+import com.forgebuild.forgehouse50.ui.ExpressiveButton
+import com.forgebuild.forgehouse50.ui.ExpressiveLinearProgress
+import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import com.forgebuild.forgehouse50.ui.ExpressiveLoading
-import com.forgebuild.forgehouse50.ui.ExpressiveButton
 
 /**
- * Unified Read screen for all entry points: Home ("Start"/"Continue"/"Catch up"),
- * Progress (per-day review & active day), home-screen widget, and multi-day sessions.
- *
- * Consolidates all enhancements:
- * - Premium Material 3 Expressive top bar with A-/A+ font-size controls
- * - Multi-day catch-up pill filter chips when sessionDays has > 1 day
- * - Per-chapter pagination with centered pill chip
- * - Offline-first scripture via Repository (bundled KJV / downloaded translations)
- * - Footnote marker: clean, unmistakable interactive accent icon-only chip (Issue 2)
- * - Footnotes panel: chapter-wide alphabetic lettering removed; local verse-level 1, 2, 3 numbering & dividers (Issue 3)
- * - All-chapters-viewed gate with 1.5s reading dwell requirement per chapter
- * - Review-mode vs active-day distinction with server-side viewed_chapters payload
+ * Rebuilt Continuous Reader screen (Item 3):
+ * - Continuous scroll across all chapters of the day (LazyColumn)
+ * - Full-height content extending to bottom edge behind floating translucent bottom panel
+ * - Monotonic active reading timer with idle detection (60s) and immediate touch resume
+ * - Live status line with "Paused. Touch the screen to continue" on idle pause
+ * - 26 sincere encouragement messages from minute 5 to 30, static after 30
+ * - Chapter progress bar (0..100%) resetting per chapter
+ * - "Chapter X of Y" indicators in compact top header
+ * - Restores exact day, chapter, and scroll offset across navigation & restarts
+ * - Less prominent chapter intro styling (muted, normal weight, subtle accent)
+ * - Verse-level headings (heading_before) rendered as distinct section headings
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,8 +114,9 @@ fun ReadScreen(
     onAddNote: (day: Int, book: String, chapter: Int, verse: String?, type: String?) -> Unit,
     onManageTranslations: () -> Unit,
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val uid = repo.session.userId ?: "local"
 
     val days = remember(sessionDays, day) {
         val list = sessionDays.distinct().sorted()
@@ -114,30 +128,28 @@ fun ReadScreen(
     }
     val activeDay = days.getOrElse(activeIdx) { day }
 
-    var dayData by remember(activeDay) { mutableStateOf(com.forgebuild.forgehouse50.data.AppCache.getDay(context, activeDay)) }
+    var dayData by remember(activeDay) { mutableStateOf(AppCache.getDay(context, activeDay)) }
     var dayLoaded by remember(activeDay) { mutableStateOf(dayData != null) }
+
     var translation by remember { mutableStateOf(repo.session.translationId ?: Repository.KJV_ID) }
     var availableTranslations by remember { mutableStateOf<List<String>>(listOf(Repository.KJV_ID)) }
-    var passageError by remember { mutableStateOf<String?>(null) }
-    var reloadToken by remember { mutableIntStateOf(0) }
-    var passage by remember { mutableStateOf<PassageResponse?>(null) }
-    var loadingPassage by remember { mutableStateOf(false) }
 
+    var reloadToken by remember { mutableIntStateOf(0) }
     var completedDays by remember(days) {
         val done = mutableSetOf<Int>()
         for (d in days) {
-            if (com.forgebuild.forgehouse50.data.AppCache.getDay(context, d)?.progress?.completed == true) {
+            if (AppCache.getDay(context, d)?.progress?.completed == true) {
                 done.add(d)
             }
         }
         mutableStateOf<Set<Int>>(done)
     }
+
     var error by remember { mutableStateOf<String?>(null) }
     var completeBusy by remember { mutableStateOf(false) }
     var fontScale by remember { mutableFloatStateOf(repo.session.fontScale) }
-    var chapterIdx by remember(activeDay) { mutableIntStateOf(0) }
-    var selectedVerses by remember(chapterIdx, activeIdx) { mutableStateOf<Set<Int>>(emptySet()) }
-    var openFootnoteVerse by remember(activeDay) { mutableStateOf<Int?>(null) }
+
+    val posStorage = remember { PrefsReaderPositionStorage(context) }
 
     LaunchedEffect(activeDay) {
         runCatching { repo.ensureBundledKjvImported() }
@@ -156,70 +168,186 @@ fun ReadScreen(
         runCatching { repo.api.day(activeDay) }.onSuccess {
             dayData = it
             if (it.progress.completed) completedDays = completedDays + activeDay
-            com.forgebuild.forgehouse50.data.AppCache.saveDay(context, activeDay, it)
+            AppCache.saveDay(context, activeDay, it)
         }.onFailure { error = it.message }
         dayLoaded = true
     }
 
     val assignments = dayData?.assignments ?: emptyList()
-    val chapters = assignments.flatMap { a -> (a.chapter_start..a.chapter_end).map { a.book to it } }
-    if (chapters.isNotEmpty() && chapterIdx > chapters.lastIndex) chapterIdx = 0
-    val currentChapter: Pair<String, Int>? = chapters.getOrNull(chapterIdx)
-    val scroll = rememberScrollState()
+    val chapters = remember(assignments) {
+        assignments.flatMap { a -> (a.chapter_start..a.chapter_end).map { a.book to it } }
+    }
 
-    var finalChapterReached by remember(activeDay) { mutableStateOf(false) }
-    LaunchedEffect(activeDay) {
-        chapterIdx = 0
-        finalChapterReached = false
-    }
-    LaunchedEffect(chapterIdx, chapters.size) {
-        if (chapters.isNotEmpty() && chapterIdx >= chapters.lastIndex) {
-            finalChapterReached = true
-        }
-    }
-    val timer = remember(activeDay, repo.session.userId) {
-        ReadingTimer(repo.session.userId ?: "local", activeDay, PrefsTimerStorage(context))
+    // Active reading timer with monotonic clock & idle detection
+    val timer = remember(activeDay, uid) {
+        ReadingTimer(uid, activeDay, PrefsTimerStorage(context))
     }
     var timerTick by remember(activeDay) { mutableIntStateOf(timer.getReadingSeconds()) }
+    var isIdlePaused by remember { mutableStateOf(false) }
+
     LaunchedEffect(timer) {
         timer.start()
         while (true) {
             delay(1000L)
             val s = timer.tick()
             timerTick = s
+            isIdlePaused = timer.isIdlePaused()
             if (s % 5 == 0) timer.persist()
         }
     }
+
     DisposableEffect(timer) {
         onDispose {
             timer.pause()
         }
     }
-    LaunchedEffect(chapterIdx) {
-        timer.onInteraction()
-    }
-    LaunchedEffect(repo.session.userId) {
-        repo.session.userId?.let { uid ->
+
+    LaunchedEffect(uid) {
+        if (uid != "local") {
             runCatching { OfflineCompletionQueue(context).processQueue(uid, repo.api) }
         }
     }
 
-    val chapterKey = currentChapter?.let { "${it.first}:${it.second}" } ?: ""
-    LaunchedEffect(chapterKey, translation, reloadToken) {
-        val cc = currentChapter ?: return@LaunchedEffect
-        if (translation.isBlank()) return@LaunchedEffect
-        loadingPassage = true
-        passageError = null
-        passage = null
-        runCatching { repo.getPassage(cc.first, cc.second, cc.second, translation) }
-            .onSuccess { passage = it }
-            .onFailure { passage = null; passageError = it.message ?: "Could not load this chapter." }
-        loadingPassage = false
-        openFootnoteVerse = null
-        scroll.scrollTo(0)
+    // Passages cache for all chapters of the day
+    val chapterPassages = remember(activeDay, translation, reloadToken) {
+        mutableStateMapOf<Pair<String, Int>, PassageResponse>()
+    }
+    val chapterLoading = remember(activeDay, translation, reloadToken) {
+        mutableStateMapOf<Pair<String, Int>, Boolean>()
+    }
+    val chapterErrors = remember(activeDay, translation, reloadToken) {
+        mutableStateMapOf<Pair<String, Int>, String>()
     }
 
-    var timeSyncError by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(chapters, translation, reloadToken) {
+        for (ch in chapters) {
+            if (!chapterPassages.containsKey(ch)) {
+                scope.launch {
+                    chapterLoading[ch] = true
+                    runCatching { repo.getPassage(ch.first, ch.second, ch.second, translation) }
+                        .onSuccess {
+                            chapterPassages[ch] = it
+                            chapterLoading[ch] = false
+                        }
+                        .onFailure {
+                            chapterErrors[ch] = it.message ?: "Could not load ${ch.first} ${ch.second}"
+                            chapterLoading[ch] = false
+                        }
+                }
+            }
+        }
+    }
+
+    val listState = rememberLazyListState()
+
+    // Restore saved reading position on entry
+    var restoredPosition by remember(activeDay, translation) { mutableStateOf(false) }
+    LaunchedEffect(chapters, activeDay, translation) {
+        if (chapters.isNotEmpty() && !restoredPosition) {
+            val saved = posStorage.getPosition(uid, activeDay, translation)
+            if (saved != null) {
+                runCatching {
+                    listState.scrollToItem(saved.scrollItemIndex, saved.scrollOffsetPx)
+                }
+            }
+            restoredPosition = true
+        }
+    }
+
+    // Map each chapter to its item indices in LazyColumn
+    data class ChapterItemBounds(
+        val chapterIdx: Int,
+        val book: String,
+        val chapter: Int,
+        val startIndex: Int,
+        val itemCount: Int,
+    )
+
+    val chapterBoundsList by remember(chapters, chapterPassages.toMap()) {
+        derivedStateOf {
+            var currentIndex = 0
+            chapters.mapIndexed { idx, ch ->
+                val p = chapterPassages[ch]
+                // 1 item for header, 1 item for intro (if present), verses (1 each), 1 item for attribution
+                var count = 1 // header
+                if (p != null) {
+                    if (p.intros.isNotEmpty()) count += p.intros.size
+                    count += p.verses.size
+                    if (p.attribution.isNotBlank()) count += 1
+                } else {
+                    count += 1 // loading or error row
+                }
+                val bounds = ChapterItemBounds(
+                    chapterIdx = idx,
+                    book = ch.first,
+                    chapter = ch.second,
+                    startIndex = currentIndex,
+                    itemCount = count,
+                )
+                currentIndex += count
+                bounds
+            }
+        }
+    }
+
+    // Determine currently visible chapter and progress through it
+    val currentChapterInfo by remember(chapterBoundsList) {
+        derivedStateOf {
+            val firstVisible = listState.firstVisibleItemIndex
+            val bounds = chapterBoundsList.lastOrNull { it.startIndex <= firstVisible }
+                ?: chapterBoundsList.firstOrNull()
+            bounds
+        }
+    }
+
+    val currentChapterIdx = currentChapterInfo?.chapterIdx ?: 0
+    val currentChapter = chapters.getOrNull(currentChapterIdx)
+
+    val currentChapterProgress by remember(currentChapterInfo, listState) {
+        derivedStateOf {
+            val bounds = currentChapterInfo ?: return@derivedStateOf 0f
+            if (bounds.itemCount <= 1) return@derivedStateOf 0f
+            val offset = (listState.firstVisibleItemIndex - bounds.startIndex).coerceIn(0, bounds.itemCount - 1)
+            offset.toFloat() / (bounds.itemCount - 1).toFloat()
+        }
+    }
+
+    var finalChapterReached by remember(activeDay) { mutableStateOf(false) }
+    LaunchedEffect(currentChapterIdx, chapters.size) {
+        if (chapters.isNotEmpty() && currentChapterIdx >= chapters.lastIndex) {
+            finalChapterReached = true
+        }
+    }
+
+    // Check if the last chapter heading is visible
+    val visibleItems = listState.layoutInfo.visibleItemsInfo
+    if (chapterBoundsList.isNotEmpty()) {
+        val lastStart = chapterBoundsList.last().startIndex
+        if (visibleItems.any { it.index >= lastStart }) {
+            finalChapterReached = true
+        }
+    }
+
+    // Save reading position continuously as user scrolls
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset, currentChapterIdx) {
+        if (dayLoaded && chapters.isNotEmpty()) {
+            posStorage.setPosition(
+                uid,
+                activeDay,
+                translation,
+                SavedReaderPosition(
+                    chapterIdx = currentChapterIdx,
+                    scrollItemIndex = listState.firstVisibleItemIndex,
+                    scrollOffsetPx = listState.firstVisibleItemScrollOffset,
+                ),
+            )
+        }
+    }
+
+    var selectedVerses by remember(currentChapterIdx, activeIdx) { mutableStateOf<Set<Int>>(emptySet()) }
+    var openFootnoteVerse by remember(activeDay) { mutableStateOf<Int?>(null) }
+
+    // Sync reading time every 30 seconds
     LaunchedEffect(activeDay) {
         var pending = 0
         var fails = 0
@@ -230,218 +358,151 @@ fun ReadScreen(
                 repo.api.addReadingTime(activeDay, pending)
                 pending = 0
                 fails = 0
-                timeSyncError = null
             } catch (e: Exception) {
                 fails++
-                if (fails >= 3) timeSyncError = "Reading time isn't syncing — check your connection."
             }
         }
     }
 
-    val titleText = if (days.size > 1) {
-        "Catch-up · Days " + days.joinToString(" + ")
-    } else {
-        "Day $activeDay"
-    }
+    val isCurrentDone = completedDays.contains(activeDay)
+    val hasMinTime = timerTick >= 300
+    val canComplete = hasMinTime && finalChapterReached
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(titleText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        currentChapter?.let {
-                            Text("${it.first} ${it.second}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
-                },
-                actions = {
-                    // Premium font-size pill controls
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier.padding(end = 4.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 4.dp),
-                        ) {
-                            TextButton(
-                                onClick = {
-                                    fontScale = (fontScale - 0.1f).coerceAtLeast(0.85f)
-                                    repo.session.fontScale = fontScale
-                                },
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            ) { Text("A\u2212", fontWeight = FontWeight.Bold) }
-                            TextButton(
-                                onClick = {
-                                    fontScale = (fontScale + 0.1f).coerceAtMost(1.6f)
-                                    repo.session.fontScale = fontScale
-                                },
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            ) { Text("A+", fontWeight = FontWeight.Bold) }
-                        }
-                    }
-                    IconButton(onClick = onManageTranslations) {
-                        Icon(Icons.Filled.LibraryBooks, "Manage translations")
-                    }
-                    IconButton(onClick = {
-                        val cur = currentChapter
-                        val b = cur?.first.orEmpty()
-                        val c = cur?.second ?: 0
-                        val v = ScriptureReferenceUtils.formatVerseRange(selectedVerses)
-                        selectedVerses = emptySet()
-                        onAddNote(activeDay, b, c, v, null)
-                    }) { Icon(Icons.Filled.Edit, "Add note") }
-                },
-            )
-        },
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp))
-            }
-            timeSyncError?.let {
-                Text(it, color = MaterialTheme.colorScheme.tertiary,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp))
-            }
-
-            // Multi-day session day chips (only when there are multiple catch-up days)
-            if (days.size > 1) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    days.forEachIndexed { i, d ->
-                        val isDone = completedDays.contains(d)
-                        val unlocked = i == 0 || completedDays.contains(days[i - 1])
-                        FilterChip(
-                            selected = activeIdx == i,
-                            onClick = { if (unlocked) activeIdx = i },
-                            enabled = unlocked,
-                            label = { Text("Day $d" + if (isDone) " done" else "", fontWeight = FontWeight.SemiBold) },
-                            leadingIcon = if (isDone) {
-                                { Icon(Icons.Filled.CheckCircle, null, Modifier.size(16.dp)) }
-                            } else null,
-                        )
+    // Root layout: full viewport with root pointer input for active timer accrual & idle reset
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent(PointerEventPass.Initial)
+                        timer.onInteraction()
+                        isIdlePaused = false
                     }
                 }
-                Spacer(Modifier.height(4.dp))
-            }
-
-            // Translation selector — only translations available on-device
-            if (availableTranslations.size > 1) {
-                TranslationChipsRow(
-                    availableTranslations = availableTranslations,
-                    selectedTranslation = translation,
-                    onSelectTranslation = { t ->
-                        translation = t
-                        repo.session.translationId = t
-                    },
-                )
-                Spacer(Modifier.height(4.dp))
-            }
-
-            // Previous/Next chapter navigation: calm chevron buttons with elevated center chip
-            if (chapters.size > 1) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    TextButton(onClick = { if (chapterIdx > 0) chapterIdx-- }, enabled = chapterIdx > 0) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(2.dp))
-                        Text("Previous")
+            },
+    ) {
+        // Continuous scrollable content extending to physical bottom edge
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(top = 110.dp, bottom = 160.dp, start = 20.dp, end = 20.dp),
+        ) {
+            if (!dayLoaded) {
+                item(key = "loading_day") {
+                    Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) {
+                        ExpressiveLoading()
                     }
-                    Spacer(Modifier.weight(1f))
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
-                    ) {
+                }
+            } else if (chapters.isEmpty()) {
+                item(key = "empty_day") {
+                    Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            currentChapter?.let { "${it.first} ${it.second}" } ?: "",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            "No reading assigned for day $activeDay.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyLarge,
                         )
                     }
-                    Spacer(Modifier.weight(1f))
-                    TextButton(
-                        onClick = { if (chapterIdx < chapters.lastIndex) chapterIdx++ },
-                        enabled = chapterIdx < chapters.lastIndex,
-                    ) {
-                        Text("Next")
-                        Spacer(Modifier.width(2.dp))
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, modifier = Modifier.size(20.dp))
-                    }
                 }
-                Spacer(Modifier.height(4.dp))
-            }
+            } else {
+                chapters.forEachIndexed { cIdx, ch ->
+                    val passage = chapterPassages[ch]
+                    val isLoading = chapterLoading[ch] == true
+                    val chError = chapterErrors[ch]
 
-            // Fixed-height clipped chapter pane
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .clipToBounds()
-                    .padding(horizontal = 24.dp),
-            ) {
-                when {
-                    !dayLoaded || (loadingPassage && passage == null) -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            ExpressiveLoading()
+                    // Chapter heading item
+                    item(key = "ch_head_${ch.first}_${ch.second}") {
+                        Column(Modifier.fillMaxWidth().padding(top = if (cIdx == 0) 8.dp else 36.dp, bottom = 12.dp)) {
+                            if (cIdx > 0) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(bottom = 28.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                )
+                            }
+                            Text(
+                                "${ch.first} ${ch.second}",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
                         }
                     }
-                    currentChapter == null -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No reading assigned for day $activeDay yet.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    passage == null -> {
-                        Column(
-                            Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Text(passageError ?: "Could not load this passage.",
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium)
-                            Spacer(Modifier.height(12.dp))
-                            FilledTonalButton(onClick = { reloadToken++ }) { Text("Retry") }
-                        }
-                    }
-                    else -> {
-                    Column(Modifier.fillMaxSize().verticalScroll(scroll)) {
-                        val p = passage
-                        if (p != null) {
-                            Text(p.reference, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                            Spacer(Modifier.height(12.dp))
-                            var lastChapter = -1
-                            p.verses.forEach { v ->
-                                if (v.chapter != lastChapter) {
-                                    lastChapter = v.chapter
-                                    Spacer(Modifier.height(10.dp))
-                                    Text("Chapter ${v.chapter}", style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                                    p.intros.firstOrNull { it.chapter == v.chapter }?.let { intro ->
-                                        Spacer(Modifier.height(4.dp))
-                                        Text(intro.text, style = MaterialTheme.typography.bodySmall,
-                                            fontSize = MaterialTheme.typography.bodySmall.fontSize * fontScale,
-                                            fontStyle = FontStyle.Italic,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    Spacer(Modifier.height(6.dp))
+
+                    // Intros
+                    passage?.intros?.forEachIndexed { iIdx, intro ->
+                        item(key = "ch_intro_${ch.first}_${ch.second}_$iIdx") {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
+                            ) {
+                                Row(Modifier.padding(14.dp)) {
+                                    Box(
+                                        Modifier
+                                            .width(3.dp)
+                                            .height(36.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                                                RoundedCornerShape(2.dp),
+                                            ),
+                                    )
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        intro.text,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
+                                        fontWeight = FontWeight.Normal,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
                                 }
+                            }
+                        }
+                    }
+
+                    // Loading indicator for this chapter
+                    if (isLoading && passage == null) {
+                        item(key = "ch_loading_${ch.first}_${ch.second}") {
+                            Box(Modifier.fillMaxWidth().height(140.dp), contentAlignment = Alignment.Center) {
+                                ExpressiveLoading()
+                            }
+                        }
+                    }
+
+                    // Error row for this chapter
+                    if (chError != null && passage == null) {
+                        item(key = "ch_error_${ch.first}_${ch.second}") {
+                            Column(
+                                Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    chError,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Spacer(Modifier.height(10.dp))
+                                FilledTonalButton(onClick = { reloadToken++ }) { Text("Retry") }
+                            }
+                        }
+                    }
+
+                    // Verses
+                    passage?.verses?.forEach { v ->
+                        item(key = "v_${ch.first}_${ch.second}_${v.verse}") {
+                            Column(Modifier.fillMaxWidth()) {
+                                // Verse-level heading (Item 4)
+                                if (!v.heading_before.isNullOrBlank()) {
+                                    Spacer(Modifier.height(12.dp))
+                                    Text(
+                                        v.heading_before,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                                    )
+                                }
+
                                 val isSelected = selectedVerses.contains(v.verse)
                                 Surface(
                                     onClick = {
@@ -449,305 +510,505 @@ fun ReadScreen(
                                     },
                                     shape = RoundedCornerShape(8.dp),
                                     color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else androidx.compose.ui.graphics.Color.Transparent,
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
                                 ) {
-                                    Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp)) {
-                                        Text("${v.verse}", style = MaterialTheme.typography.labelSmall,
+                                    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 3.dp)) {
+                                        Text(
+                                            "${v.verse}",
+                                            style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.width(28.dp).padding(top = 3.dp))
+                                            modifier = Modifier.width(28.dp).padding(top = 3.dp),
+                                        )
                                         Column(Modifier.weight(1f)) {
-                                        Text(v.text, style = MaterialTheme.typography.bodyLarge,
-                                            fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale)
-                                        // Footnote marker: icon-only interactive accent pill chip (Issue 2)
-                                        if (v.footnotes.isNotEmpty()) {
-                                            val isOpen = openFootnoteVerse == v.verse
-                                            Spacer(Modifier.height(4.dp))
-                                            Surface(
-                                                onClick = { openFootnoteVerse = if (isOpen) null else v.verse },
-                                                shape = RoundedCornerShape(8.dp),
-                                                color = if (isOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
-                                                contentColor = if (isOpen) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
-                                                tonalElevation = 2.dp,
-                                                border = BorderStroke(
-                                                    1.dp,
-                                                    if (isOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                                                ),
-                                                modifier = Modifier.padding(vertical = 2.dp),
-                                            ) {
-                                                Box(
-                                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
-                                                    contentAlignment = Alignment.Center,
-                                                ) {
-                                                    Icon(
-                                                        Icons.Filled.Notes,
-                                                        contentDescription = "Footnotes",
-                                                        modifier = Modifier.size(15.dp),
-                                                    )
-                                                }
-                                            }
-                                            if (isOpen) {
+                                            Text(
+                                                v.text,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                            )
+
+                                            // Footnotes chip & expandable panel
+                                            if (v.footnotes.isNotEmpty()) {
+                                                val isOpen = openFootnoteVerse == v.verse
                                                 Spacer(Modifier.height(4.dp))
                                                 Surface(
-                                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                                    shape = MaterialTheme.shapes.large,
-                                                    tonalElevation = 3.dp,
-                                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
-                                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                                    onClick = { openFootnoteVerse = if (isOpen) null else v.verse },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = if (isOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                                                    contentColor = if (isOpen) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    tonalElevation = 2.dp,
+                                                    border = BorderStroke(
+                                                        1.dp,
+                                                        if (isOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                                                    ),
+                                                    modifier = Modifier.padding(vertical = 2.dp),
                                                 ) {
-                                                    Column(Modifier.padding(14.dp)) {
-                                                        Row(
-                                                            Modifier.fillMaxWidth(),
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                                        ) {
-                                                            Text(
-                                                                if (v.footnotes.size > 1) "Footnotes · Verse ${v.verse}" else "Footnote · Verse ${v.verse}",
-                                                                style = MaterialTheme.typography.labelLarge,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = MaterialTheme.colorScheme.primary,
-                                                            )
-                                                            IconButton(
-                                                                onClick = { openFootnoteVerse = null },
-                                                                modifier = Modifier.size(24.dp),
+                                                    Box(
+                                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                                                        contentAlignment = Alignment.Center,
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Filled.Notes,
+                                                            contentDescription = "Footnotes",
+                                                            modifier = Modifier.size(15.dp),
+                                                        )
+                                                    }
+                                                }
+
+                                                if (isOpen) {
+                                                    Spacer(Modifier.height(4.dp))
+                                                    Surface(
+                                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                        shape = MaterialTheme.shapes.large,
+                                                        tonalElevation = 3.dp,
+                                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                                                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                                    ) {
+                                                        Column(Modifier.padding(14.dp)) {
+                                                            Row(
+                                                                Modifier.fillMaxWidth(),
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                horizontalArrangement = Arrangement.SpaceBetween,
                                                             ) {
-                                                                Icon(
-                                                                    Icons.Filled.Close,
-                                                                    contentDescription = "Close footnote",
-                                                                    modifier = Modifier.size(16.dp),
-                                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                Text(
+                                                                    "Footnotes · Verse ${v.verse}",
+                                                                    style = MaterialTheme.typography.labelLarge,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    color = MaterialTheme.colorScheme.primary,
                                                                 )
+                                                                IconButton(
+                                                                    onClick = { openFootnoteVerse = null },
+                                                                    modifier = Modifier.size(24.dp),
+                                                                ) {
+                                                                    Icon(Icons.Filled.Close, "Close", modifier = Modifier.size(16.dp))
+                                                                }
                                                             }
-                                                        }
-                                                        Spacer(Modifier.height(6.dp))
-                                                        // Footnote list with local verse-level separation only (Issue 3)
-                                                        val cleanedNotes = v.footnotes.map { cleanFootnoteText(it) }
-                                                        cleanedNotes.forEachIndexed { idx, noteText ->
-                                                            if (idx > 0) {
-                                                                androidx.compose.material3.HorizontalDivider(
-                                                                    modifier = Modifier.padding(vertical = 6.dp),
-                                                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                                                                )
-                                                            }
-                                                            if (cleanedNotes.size > 1) {
-                                                                Row(Modifier.fillMaxWidth()) {
-                                                                    Text(
-                                                                        "${idx + 1}.",
-                                                                        style = MaterialTheme.typography.bodyMedium,
-                                                                        fontWeight = FontWeight.Bold,
-                                                                        color = MaterialTheme.colorScheme.primary,
-                                                                        modifier = Modifier.width(22.dp),
+                                                            Spacer(Modifier.height(6.dp))
+                                                            val cleanedNotes = v.footnotes.map { cleanFootnoteText(it) }
+                                                            cleanedNotes.forEachIndexed { idx, noteText ->
+                                                                if (idx > 0) {
+                                                                    HorizontalDivider(
+                                                                        modifier = Modifier.padding(vertical = 6.dp),
+                                                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                                                                     )
+                                                                }
+                                                                if (cleanedNotes.size > 1) {
+                                                                    Row(Modifier.fillMaxWidth()) {
+                                                                        Text(
+                                                                            "${idx + 1}.",
+                                                                            style = MaterialTheme.typography.bodyMedium,
+                                                                            fontWeight = FontWeight.Bold,
+                                                                            color = MaterialTheme.colorScheme.primary,
+                                                                            modifier = Modifier.width(22.dp),
+                                                                        )
+                                                                        Text(
+                                                                            noteText,
+                                                                            style = MaterialTheme.typography.bodyMedium,
+                                                                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
+                                                                            color = MaterialTheme.colorScheme.onSurface,
+                                                                            modifier = Modifier.weight(1f),
+                                                                        )
+                                                                    }
+                                                                } else {
                                                                     Text(
                                                                         noteText,
                                                                         style = MaterialTheme.typography.bodyMedium,
                                                                         fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
                                                                         color = MaterialTheme.colorScheme.onSurface,
-                                                                        modifier = Modifier.weight(1f),
                                                                     )
                                                                 }
-                                                            } else {
-                                                                Text(
-                                                                    noteText,
-                                                                    style = MaterialTheme.typography.bodyMedium,
-                                                                    fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
-                                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                                )
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
                                         }
-                                        }
                                     }
                                 }
                             }
-                            if (p.attribution.isNotBlank()) {
-                                Spacer(Modifier.height(16.dp))
-                                Text(p.attribution, style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Spacer(Modifier.height(24.dp))
                         }
                     }
-                    }
-                }
-            }
 
-            // Highlighted verse action bar
-            if (selectedVerses.isNotEmpty()) {
-                val rangeText = ScriptureReferenceUtils.formatVerseRange(selectedVerses).orEmpty()
-                Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    tonalElevation = 6.dp,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
-                ) {
-                    Row(
-                        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "v. $rangeText",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                        Spacer(Modifier.weight(1f))
-                        FilledTonalButton(
-                            onClick = {
-                                val cur = currentChapter
-                                val b = cur?.first.orEmpty()
-                                val c = cur?.second ?: 0
-                                val v = rangeText
-                                selectedVerses = emptySet()
-                                onAddNote(activeDay, b, c, v, "question")
-                            },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        ) {
-                            Icon(Icons.Filled.HelpOutline, null, Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Question", style = MaterialTheme.typography.labelMedium)
-                        }
-                        Button(
-                            onClick = {
-                                val cur = currentChapter
-                                val b = cur?.first.orEmpty()
-                                val c = cur?.second ?: 0
-                                val v = rangeText
-                                selectedVerses = emptySet()
-                                onAddNote(activeDay, b, c, v, "observation")
-                            },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        ) {
-                            Icon(Icons.Filled.Edit, null, Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Add note", style = MaterialTheme.typography.labelMedium)
-                        }
-                        IconButton(
-                            onClick = { selectedVerses = emptySet() },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(Icons.Filled.Close, "Clear selection", Modifier.size(16.dp))
-                        }
-                    }
-                }
-            }
-
-            // Completion row: 5-minute active timer + final-chapter reached (fixes_oct15_v1 Item 2b)
-            val isCurrentDone = completedDays.contains(activeDay)
-            val hasMinTime = timerTick >= 300
-            val canComplete = hasMinTime && finalChapterReached
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                tonalElevation = 2.dp,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(
-                    Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)
-                ) {
-                    if (isCurrentDone) {
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                            Spacer(Modifier.width(10.dp))
+                    // Chapter attribution (if present)
+                    if (passage != null && passage.attribution.isNotBlank()) {
+                        item(key = "ch_attr_${ch.first}_${ch.second}") {
+                            Spacer(Modifier.height(14.dp))
                             Text(
-                                if (days.size > 1) "Day $activeDay reading complete" else "Reading complete",
-                                Modifier.weight(1f),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
+                                passage.attribution,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            ExpressiveButton(onClick = { onOpenQuiz(activeDay) }) {
-                                Icon(Icons.Filled.Quiz, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("Quiz")
-                            }
                         }
-                        if (days.size > 1 && activeIdx < days.lastIndex && !completedDays.contains(days[activeIdx + 1])) {
-                            Spacer(Modifier.height(10.dp))
-                            ExpressiveButton(
-                                onClick = { activeIdx++ },
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Text("Continue with day ${days[activeIdx + 1]}")
+                    }
+                }
+            }
+        }
+
+        // Compact top bar + actions row + progress bar (Item 3d)
+        Surface(
+            modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            tonalElevation = 3.dp,
+            shadowElevation = 4.dp,
+        ) {
+            Column(Modifier.fillMaxWidth()) {
+                // Title and primary controls row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+
+                    Column(Modifier.weight(1f).padding(horizontal = 4.dp)) {
+                        Text(
+                            "${currentChapter?.first.orEmpty()} ${currentChapter?.second ?: 1}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                        )
+                        Text(
+                            "Chapter ${currentChapterIdx + 1} of ${chapters.size}${if (days.size > 1) " · Day $activeDay" else ""}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                        )
+                    }
+
+                    // Chapter navigation shortcuts
+                    IconButton(
+                        onClick = {
+                            if (currentChapterIdx > 0) {
+                                val targetBounds = chapterBoundsList.getOrNull(currentChapterIdx - 1)
+                                if (targetBounds != null) {
+                                    scope.launch { listState.animateScrollToItem(targetBounds.startIndex) }
+                                }
                             }
+                        },
+                        enabled = currentChapterIdx > 0,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous chapter")
+                    }
+
+                    IconButton(
+                        onClick = {
+                            if (currentChapterIdx < chapters.lastIndex) {
+                                val targetBounds = chapterBoundsList.getOrNull(currentChapterIdx + 1)
+                                if (targetBounds != null) {
+                                    scope.launch { listState.animateScrollToItem(targetBounds.startIndex) }
+                                }
+                            }
+                        },
+                        enabled = currentChapterIdx < chapters.lastIndex,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next chapter")
+                    }
+
+                    // Translation chip
+                    FilterChip(
+                        selected = true,
+                        onClick = onManageTranslations,
+                        label = {
+                            Text(
+                                translation.removePrefix("versewell-").uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Filled.LibraryBooks, null, modifier = Modifier.size(14.dp))
+                        },
+                        modifier = Modifier.padding(horizontal = 2.dp),
+                    )
+
+                    // Font size controls
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        modifier = Modifier.padding(start = 2.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(
+                                onClick = {
+                                    fontScale = (fontScale - 0.1f).coerceAtLeast(0.85f)
+                                    repo.session.fontScale = fontScale
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                            ) { Text("A\u2212", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium) }
+                            TextButton(
+                                onClick = {
+                                    fontScale = (fontScale + 0.1f).coerceAtMost(1.6f)
+                                    repo.session.fontScale = fontScale
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                            ) { Text("A+", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium) }
                         }
-                    } else {
-                        // Unobtrusive timer and live helper line
-                        Row(
-                            Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                    }
+
+                    // Note action
+                    IconButton(onClick = {
+                        val cur = currentChapter
+                        val b = cur?.first.orEmpty()
+                        val c = cur?.second ?: 0
+                        val v = ScriptureReferenceUtils.formatVerseRange(selectedVerses)
+                        selectedVerses = emptySet()
+                        onAddNote(activeDay, b, c, v, null)
+                    }) {
+                        Icon(Icons.Filled.Edit, "Add note")
+                    }
+                }
+
+                // Catch-up multi-day tabs (only when session has > 1 day)
+                if (days.size > 1) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 14.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        days.forEachIndexed { idx, d ->
+                            FilterChip(
+                                selected = activeIdx == idx,
+                                onClick = { activeIdx = idx },
+                                label = {
+                                    Text("Day $d${if (completedDays.contains(d)) " (Done)" else ""}")
+                                },
+                            )
+                        }
+                    }
+                }
+
+                // Slim chapter progress indicator (resets to 0 when moving to next chapter)
+                ExpressiveLinearProgress(
+                    progress = { currentChapterProgress.coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth().height(3.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        // Verse selection action bar (floats above bottom panel when verses are selected)
+        if (selectedVerses.isNotEmpty()) {
+            val rangeText = ScriptureReferenceUtils.formatVerseRange(selectedVerses).orEmpty()
+            Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = 6.dp,
+                shadowElevation = 6.dp,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 100.dp),
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "v. $rangeText",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                    Spacer(Modifier.weight(1f))
+                    FilledTonalButton(
+                        onClick = {
+                            val cur = currentChapter
+                            val b = cur?.first.orEmpty()
+                            val c = cur?.second ?: 0
+                            val v = rangeText
+                            selectedVerses = emptySet()
+                            onAddNote(activeDay, b, c, v, "question")
+                        },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Icon(Icons.Filled.HelpOutline, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Question", style = MaterialTheme.typography.labelMedium)
+                    }
+                    Button(
+                        onClick = {
+                            val cur = currentChapter
+                            val b = cur?.first.orEmpty()
+                            val c = cur?.second ?: 0
+                            val v = rangeText
+                            selectedVerses = emptySet()
+                            onAddNote(activeDay, b, c, v, "observation")
+                        },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Icon(Icons.Filled.Edit, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Add note", style = MaterialTheme.typography.labelMedium)
+                    }
+                    IconButton(
+                        onClick = { selectedVerses = emptySet() },
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(Icons.Filled.Close, "Clear selection", Modifier.size(16.dp))
+                    }
+                }
+            }
+        }
+
+        // Floating bottom panel: timer, encouragement line, completion button
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
+            tonalElevation = 8.dp,
+            shadowElevation = 8.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp)) {
+                if (isCurrentDone) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            if (days.size > 1) "Day $activeDay reading complete" else "Reading complete",
+                            Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        ExpressiveButton(onClick = { onOpenQuiz(activeDay) }) {
+                            Icon(Icons.Filled.Quiz, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Quiz")
+                        }
+                    }
+                    if (days.size > 1 && activeIdx < days.lastIndex && !completedDays.contains(days[activeIdx + 1])) {
+                        Spacer(Modifier.height(8.dp))
+                        ExpressiveButton(
+                            onClick = { activeIdx++ },
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            val helperText = when {
-                                !hasMinTime -> timer.formattedRemaining()
-                                !finalChapterReached -> "Reach the last chapter to complete"
-                                else -> "Ready to mark complete"
+                            Text("Continue with day ${days[activeIdx + 1]}")
+                        }
+                    }
+                } else {
+                    // Status & Encouragement Row
+                    Row(
+                        Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        if (isIdlePaused) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Icon(
+                                    Icons.Filled.Pause,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "Paused. Touch the screen to continue",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                )
+                            }
+                        } else if (hasMinTime) {
+                            val encouragement = ReaderEncouragement.getMessage(timerTick)
+                            Text(
+                                encouragement ?: "Ready to mark complete",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
+                            )
+                        } else {
+                            val helperText = if (!finalChapterReached) {
+                                "Reach the last chapter to complete"
+                            } else {
+                                timer.formattedRemaining()
                             }
                             Text(
                                 helperText,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Medium,
-                                color = if (canComplete) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
-                            )
-                            Text(
-                                timer.formattedTimer(),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.weight(1f),
                             )
                         }
-                        ExpressiveButton(
-                            onClick = {
-                                if (completeBusy || !canComplete) return@ExpressiveButton
-                                scope.launch {
-                                    completeBusy = true
-                                    error = null
-                                    val sec = timer.getReadingSeconds()
-                                    val firstOpened = timer.getFirstOpenedAt()
-                                    val res = runCatching {
-                                        repo.api.completeDay(
-                                            n = activeDay,
-                                            readingSeconds = sec,
-                                            firstOpenedAt = firstOpened,
-                                            finalChapterReached = true
-                                        )
-                                    }
-                                    if (res.isSuccess) {
-                                        timer.clear()
-                                        completedDays = completedDays + activeDay
-                                        dayData?.let { cur ->
-                                            val upd = cur.copy(progress = cur.progress.copy(completed = true))
-                                            dayData = upd
-                                            com.forgebuild.forgehouse50.data.AppCache.saveDay(context, activeDay, upd)
-                                        }
-                                        com.forgebuild.forgehouse50.widget.WidgetRefreshWorker.refreshWidgetState(context, repo)
-                                        com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
-                                    } else {
-                                        val ex = res.exceptionOrNull()
-                                        val msg = ex?.message.orEmpty()
-                                        if (msg.contains("reading_time_too_short")) {
-                                            error = "Minimum 5 minutes of reading required. Please keep reading."
-                                        } else {
-                                            OfflineCompletionQueue(context).enqueue(
-                                                repo.session.userId ?: "local",
-                                                PendingCompletion(activeDay, sec, firstOpened, true)
-                                            )
-                                            error = "Completion saved offline. Will sync when reconnected."
-                                        }
-                                    }
-                                    completeBusy = false
+
+                        Spacer(Modifier.width(8.dp))
+
+                        Text(
+                            timer.formattedTimer(),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    // Complete Day Button
+                    ExpressiveButton(
+                        onClick = {
+                            if (completeBusy || !canComplete) return@ExpressiveButton
+                            scope.launch {
+                                completeBusy = true
+                                error = null
+                                val sec = timer.getReadingSeconds()
+                                val firstOpened = timer.getFirstOpenedAt()
+                                val res = runCatching {
+                                    repo.api.completeDay(
+                                        n = activeDay,
+                                        readingSeconds = sec,
+                                        firstOpenedAt = firstOpened,
+                                        finalChapterReached = true,
+                                    )
                                 }
-                            },
-                            Modifier.fillMaxWidth(),
-                            enabled = canComplete,
-                            busy = completeBusy,
-                        ) { Text("Mark day $activeDay reading complete") }
+                                if (res.isSuccess) {
+                                    timer.clear()
+                                    posStorage.clear(uid, activeDay)
+                                    completedDays = completedDays + activeDay
+                                    dayData?.let { cur ->
+                                        val upd = cur.copy(progress = cur.progress.copy(completed = true))
+                                        dayData = upd
+                                        AppCache.saveDay(context, activeDay, upd)
+                                    }
+                                    com.forgebuild.forgehouse50.widget.WidgetRefreshWorker.refreshWidgetState(context, repo)
+                                    com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
+                                } else {
+                                    val ex = res.exceptionOrNull()
+                                    val msg = ex?.message.orEmpty()
+                                    if (msg.contains("reading_time_too_short")) {
+                                        error = "Minimum 5 minutes of reading required. Please keep reading."
+                                    } else {
+                                        OfflineCompletionQueue(context).enqueue(
+                                            uid,
+                                            PendingCompletion(activeDay, sec, firstOpened, true),
+                                        )
+                                        error = "Completion saved offline. Will sync when reconnected."
+                                    }
+                                }
+                                completeBusy = false
+                            }
+                        },
+                        Modifier.fillMaxWidth(),
+                        enabled = canComplete,
+                        busy = completeBusy,
+                    ) {
+                        Text("Mark day $activeDay reading complete")
                     }
                 }
             }

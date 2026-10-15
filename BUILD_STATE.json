@@ -1712,9 +1712,9 @@
       {
         "id": "g3",
         "title": "Item 3 \u2014 reader rebuild: 3a timer correctness, 3b layout and continuous scroll and progress, 3c persistence, 3d header, intro, encouragement; release",
-        "status": "pending",
+        "status": "done",
         "gate": "g2",
-        "notes": ""
+        "notes": "DONE (g3): Reader rebuild complete. (1) Timer undercounting root cause identified and resolved: timer.onInteraction() was previously called only within LaunchedEffect(chapterIdx); scrolling and reading within a chapter failed to signal interaction, entering idle timeout after 60s and halting time accrual until the next chapter was tapped. Remediated with root-level pointerInput observer intercepting all touch/scroll/drag events, immediate resumption on touch, and isIdlePaused indicator. (2) Visible status: calm 'Paused. Touch the screen to continue' when idle paused; 26 scripture-aware encouragement messages from minute 5 to 30, static after 30; formatted timer shows m:ss / 5:00 and m:ss total after 5:00. (3) Full-height reading layout extending to screen edges behind floating translucent bottom panel with 160dp bottom padding preventing content clipping. (4) Continuous chapter scroll via LazyColumn rendering all assigned chapters with chapter headers, less prominent intro cards, and verse-level headings. (5) Chapter progress bar (0..100%) resetting per chapter; 'Chapter X of Y' shown in compact header and TodayCard. (6) Reading position persistence across menus and app restarts using PrefsReaderPositionStorage, cleared on day completion. (7) Unit tests in ReadingTimerEngineTest and ContinuousReaderLogicTest passing 100%."
       },
       {
         "id": "g4",
