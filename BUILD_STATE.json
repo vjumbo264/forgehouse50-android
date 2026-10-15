@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": true,
-  "last_updated_utc": "2026-10-15T12:50:18.187845+00:00",
+  "last_updated_utc": "2026-10-15T12:58:51.481475+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1705,9 +1705,9 @@
       {
         "id": "g2",
         "title": "Item 2 \u2014 missing chapter 6 bug: diagnose, fix, regression and full-schedule tests, bundle audit; release if the app changed",
-        "status": "pending",
+        "status": "done",
         "gate": "g1",
-        "notes": ""
+        "notes": "DONE (g2): Missing chapter 6 bug diagnosed and resolved. (1) Audited all 12 translation bundles across all 50 days (260 NT chapters) via scripts/audit_bundles.py; verified 260/260 chapters present and non-empty in every bundle (report saved to evidence/fixes_oct15b_v1/bundle_audit.json). (2) Diagnosed root causes: (a) Web ReaderView queried /api/read/day?day=n while day.mjs expected ?n=, returning 400 Bad Request and causing fallback to hardcoded Day 1 schedule; (b) Web reader passage fetch queried ?chapter=6&translation=kjv while passage.mjs expected ?chapter_start=&chapter_end=&translation=versewell-kjv, returning 400 and triggering invalid fallback that crashed on React DOM ut(); (c) Android ReadScreen fixed-height container and clipToBounds cut off verses above bottom panel and lacked continuous scrolling across chapters. (3) Remediated backend day.mjs to accept both n and day; passage.mjs to accept chapter and unprefixed translation codes. (4) Added regression test suite scripts/test_item2_read_api.mjs passing 100%. (5) Root cause audit saved to evidence/fixes_oct15b_v1/chapter6_audit.md. Combining Android app release with Item 3 continuous reader rebuild per contract."
       },
       {
         "id": "g3",
