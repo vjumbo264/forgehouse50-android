@@ -177,8 +177,8 @@ fun ReadScreen(
             finalChapterReached = true
         }
     }
-    val timer = remember(activeDay, activeUser?.id) {
-        ReadingTimer(activeUser?.id ?: "local", activeDay, PrefsTimerStorage(context))
+    val timer = remember(activeDay, repo.session.userId) {
+        ReadingTimer(repo.session.userId ?: "local", activeDay, PrefsTimerStorage(context))
     }
     var timerTick by remember(activeDay) { mutableIntStateOf(timer.getReadingSeconds()) }
     LaunchedEffect(timer) {
@@ -198,8 +198,8 @@ fun ReadScreen(
     LaunchedEffect(chapterIdx) {
         timer.onInteraction()
     }
-    LaunchedEffect(activeUser?.id) {
-        activeUser?.id?.let { uid ->
+    LaunchedEffect(repo.session.userId) {
+        repo.session.userId?.let { uid ->
             runCatching { OfflineCompletionQueue(context).processQueue(uid, repo.api) }
         }
     }
@@ -735,7 +735,7 @@ fun ReadScreen(
                                             error = "Minimum 5 minutes of reading required. Please keep reading."
                                         } else {
                                             OfflineCompletionQueue(context).enqueue(
-                                                activeUser?.id ?: "local",
+                                                repo.session.userId ?: "local",
                                                 PendingCompletion(activeDay, sec, firstOpened, true)
                                             )
                                             error = "Completion saved offline. Will sync when reconnected."
