@@ -1655,9 +1655,9 @@
       {
         "id": "f4",
         "title": "Item 4 \u2014 admin reading-time view and reset latest day (paired), backend then Android then website",
-        "status": "pending",
+        "status": "in_progress",
         "gate": "f3",
-        "notes": ""
+        "notes": "In progress (f4): Implementing paired admin reading-time view and reset latest day across backend, Android app, and website."
       },
       {
         "id": "f5",
