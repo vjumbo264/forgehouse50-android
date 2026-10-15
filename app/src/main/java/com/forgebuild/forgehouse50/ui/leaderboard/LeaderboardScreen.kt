@@ -54,6 +54,7 @@ import com.forgebuild.forgehouse50.data.LeaderboardEntry
 import com.forgebuild.forgehouse50.data.LeaderboardResponse
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.ui.AvatarAssets
+import com.forgebuild.forgehouse50.ui.UserAvatar
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 import com.forgebuild.forgehouse50.ui.PodiumColors
 import com.forgebuild.forgehouse50.ui.formatDurationShort
@@ -209,7 +210,15 @@ private fun InProgressBoard(repo: Repository) {
                                             )
                                         }
                                     }
-                                    Spacer(Modifier.width(12.dp))
+                                    Spacer(Modifier.width(10.dp))
+                                    UserAvatar(
+                                        avatarId = userEntry.avatar_id,
+                                        userId = userEntry.user_id,
+                                        pictureVersion = userEntry.picture_version,
+                                        sessionToken = repo.session.sessionToken,
+                                        size = 36.dp,
+                                    )
+                                    Spacer(Modifier.width(10.dp))
                                     Column(Modifier.weight(1f)) {
                                         Text(
                                             "Your standing",
@@ -239,9 +248,12 @@ private fun InProgressBoard(repo: Repository) {
                             rank = e.rank,
                             name = e.display_name,
                             avatarId = e.avatar_id,
+                            userId = e.user_id,
+                            pictureVersion = e.picture_version,
+                            sessionToken = repo.session.sessionToken,
                             valueText = valueLabel(category, e),
                             raw = e.value,
-                            isYou = e.user_id == myUserId
+                            isYou = e.user_id == myUserId,
                         )
                     }
                     item { Spacer(Modifier.height(16.dp)) }
@@ -272,7 +284,10 @@ private fun PodiumRow(
     avatarId: String?,
     valueText: String,
     raw: Double,
-    isYou: Boolean = false
+    isYou: Boolean = false,
+    userId: String? = null,
+    pictureVersion: Int? = null,
+    sessionToken: String? = null,
 ) {
     val dark = isSystemInDarkTheme()
     val (baseContainer, accentColor, borderStroke) = when (rank) {
@@ -387,17 +402,18 @@ private fun PodiumRow(
 
             // Avatar with ring
             Box(contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(AvatarAssets.resFor(avatarId)),
+                UserAvatar(
+                    avatarId = avatarId,
+                    userId = userId,
+                    pictureVersion = pictureVersion,
+                    sessionToken = sessionToken,
+                    size = if (rank == 1) 48.dp else if (rank <= 3) 44.dp else 38.dp,
                     contentDescription = null,
-                    modifier = Modifier
-                        .size(if (rank == 1) 48.dp else if (rank <= 3) 44.dp else 38.dp)
-                        .clip(CircleShape)
-                        .then(
-                            if (rank <= 3) Modifier.border(2.dp, accentColor, CircleShape)
-                            else if (isYou) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                            else Modifier
-                        )
+                    modifier = Modifier.then(
+                        if (rank <= 3) Modifier.border(2.dp, accentColor, CircleShape)
+                        else if (isYou) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        else Modifier
+                    )
                 )
             }
 
@@ -494,9 +510,12 @@ private fun FinalResultsView(repo: Repository, finals: FinalResultsResponse, onB
                     rank = r.rank,
                     name = r.display_name,
                     avatarId = r.avatar_id,
+                    userId = r.user_id,
+                    pictureVersion = r.picture_version,
+                    sessionToken = repo.session.sessionToken,
                     valueText = "${r.total_points} pts",
                     raw = r.total_points.toDouble(),
-                    isYou = me != null && r.rank == me.rank
+                    isYou = me != null && r.rank == me.rank,
                 )
             }
             item { Spacer(Modifier.height(16.dp)) }

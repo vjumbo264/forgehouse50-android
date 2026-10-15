@@ -1,5 +1,9 @@
 package com.forgebuild.forgehouse50.ui.profile
 
+import android.graphics.Bitmap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,24 +25,34 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.NewReleases
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,16 +60,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.data.AppCache
 import com.forgebuild.forgehouse50.data.MeResponse
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.data.local.DownloadedTranslation
 import com.forgebuild.forgehouse50.ui.AvatarAssets
+import com.forgebuild.forgehouse50.ui.UserAvatar
 import com.forgebuild.forgehouse50.ui.formatBytes
 import com.forgebuild.forgehouse50.ui.formatDurationShort
 import com.forgebuild.forgehouse50.work.KeepAliveService
@@ -65,21 +82,51 @@ import kotlinx.coroutines.launch
 private val AVATAR_IDS = AvatarAssets.IDS
 
 /**
- * Profile: stats, badges, illustration avatar picker, downloaded-translation manager, sign out.
- * Synchronous cache-first: renders instantly using AppCache before first composition.
+ * Profile: stats, badges, profile photo with device cropping, illustration avatar picker,
+ * downloaded-translation manager, sign out.
+ * Cache-first: renders instantly using AppCache before first composition.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslations: () -> Unit, onOpenChangelog: () -> Unit = {}) {
+fun ProfileScreen(
+    repo: Repository,
+    onSignedOut: () -> Unit,
+    onManageTranslations: () -> Unit,
+    onOpenChangelog: () -> Unit = {},
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var me by remember { mutableStateOf(AppCache.getMe(context)) }
     var pickingAvatar by remember { mutableStateOf(false) }
+    var showPhotoOptionsSheet by remember { mutableStateOf(false) }
+    var selectedBitmapForCrop by remember { mutableStateOf<Bitmap?>(null) }
+    var isUploadingPicture by remember { mutableStateOf(false) }
+    var uploadErrorMessage by remember { mutableStateOf<String?>(null) }
+
     var translations by remember { mutableStateOf<List<DownloadedTranslation>>(emptyList()) }
     var totalBytes by remember { mutableStateOf(0L) }
 
+    val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            val bmp = ProfilePictureProcessor.decodeBitmap(context, uri)
+            if (bmp != null) {
+                selectedBitmapForCrop = bmp
+            } else {
+                uploadErrorMessage = "Could not load selected photo."
+            }
+        }
+    }
+
+    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+        if (bitmap != null) {
+            selectedBitmapForCrop = bitmap
+        }
+    }
+
     suspend fun refreshTranslations() {
-        translations = repo.downloadedTranslations()
-        totalBytes = repo.translationsTotalSizeBytes()
+        val list = repo.listDownloadedTranslations()
+        translations = list
+        totalBytes = repo.totalDownloadedBytes()
     }
 
     LaunchedEffect(Unit) {
@@ -93,26 +140,59 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 20.dp)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 20.dp)
+    ) {
         Text("Profile", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(20.dp))
 
-        // Avatar + Name header
+        // Avatar + Name header Card
         Card(
             shape = MaterialTheme.shapes.extraLarge,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Row(
-                Modifier.fillMaxWidth().padding(20.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Image(
-                    painter = painterResource(AvatarAssets.resFor(me?.avatar_id)),
-                    contentDescription = "Avatar",
-                    modifier = Modifier.size(72.dp).clip(CircleShape).clickable { pickingAvatar = true },
-                    contentScale = ContentScale.Crop,
-                )
+                // Tappable avatar with edit badge
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clickable { showPhotoOptionsSheet = true },
+                    contentAlignment = Alignment.BottomEnd,
+                ) {
+                    UserAvatar(
+                        avatarId = me?.avatar_id,
+                        userId = me?.id,
+                        pictureVersion = me?.picture_version,
+                        sessionToken = repo.session.sessionToken,
+                        size = 72.dp,
+                        contentDescription = "Profile picture",
+                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        shadowElevation = 2.dp,
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Filled.Edit,
+                                contentDescription = "Edit photo",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+                    }
+                }
+
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -129,10 +209,10 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Tap avatar to change",
+                        "Tap photo to change",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable { pickingAvatar = true },
+                        modifier = Modifier.clickable { showPhotoOptionsSheet = true },
                     )
                 }
             }
@@ -172,7 +252,9 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
                 Card(
                     shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
                 ) {
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -226,7 +308,9 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
             Spacer(Modifier.height(10.dp))
             translations.forEach { t ->
                 Row(
-                    Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -243,7 +327,7 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
 
         Spacer(Modifier.height(16.dp))
 
-        // Action row: Manage translations (Pill row with leading circular chip & trailing chevron)
+        // Action row: Manage translations
         Surface(
             onClick = onManageTranslations,
             shape = CircleShape,
@@ -338,6 +422,10 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
                     KeepAliveService.stop(context)
                     repo.session.clear()
                     AppCache.clear(context)
+                    try {
+                        coil.Coil.imageLoader(context).diskCache?.clear()
+                        coil.Coil.imageLoader(context).memoryCache?.clear()
+                    } catch (_: Throwable) {}
                     onSignedOut()
                 }
             },
@@ -382,6 +470,228 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
         Spacer(Modifier.height(32.dp))
     }
 
+    // Photo options bottom sheet (Item 7b.1)
+    if (showPhotoOptionsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showPhotoOptionsSheet = false },
+            sheetState = rememberModalBottomSheetState(),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    "Profile Photo",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+
+                // 1. Choose from gallery
+                Surface(
+                    onClick = {
+                        showPhotoOptionsSheet = false
+                        pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.PhotoLibrary, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(16.dp))
+                        Text("Choose from gallery", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    }
+                }
+
+                // 2. Take photo
+                Surface(
+                    onClick = {
+                        showPhotoOptionsSheet = false
+                        takePicture.launch(null)
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.CameraAlt, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(16.dp))
+                        Text("Take photo", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    }
+                }
+
+                // 3. Use an illustration avatar
+                Surface(
+                    onClick = {
+                        showPhotoOptionsSheet = false
+                        pickingAvatar = true
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.Face, null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(16.dp))
+                        Text("Use an illustration avatar", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    }
+                }
+
+                // 4. Remove my picture (only when a picture is set)
+                if (me?.picture_version != null) {
+                    Surface(
+                        onClick = {
+                            showPhotoOptionsSheet = false
+                            scope.launch {
+                                runCatching { repo.api.removeProfilePicture() }.onSuccess {
+                                    val updated = me?.copy(picture_version = null)
+                                    me = updated
+                                    if (updated != null) AppCache.saveMe(context, updated)
+                                }.onFailure { err ->
+                                    uploadErrorMessage = "Could not remove picture: ${err.message}"
+                                }
+                            }
+                        },
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.width(16.dp))
+                            Text("Remove my picture", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+            }
+        }
+    }
+
+    // Square crop dialog (Item 7b.2)
+    selectedBitmapForCrop?.let { bmp ->
+        var zoomFactor by remember { mutableFloatStateOf(1f) }
+        val processed = remember(bmp, zoomFactor) {
+            ProfilePictureProcessor.processAndCompress(bmp, scaleFactor = zoomFactor)
+        }
+
+        AlertDialog(
+            onDismissRequest = {
+                if (!isUploadingPicture) selectedBitmapForCrop = null
+            },
+            title = { Text("Adjust photo") },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(180.dp)
+                            .clip(CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Image(
+                            bitmap = processed.previewBitmap.asImageBitmap(),
+                            contentDescription = "Photo preview",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "Zoom",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Slider(
+                        value = zoomFactor,
+                        onValueChange = { zoomFactor = it },
+                        valueRange = 1f..3f,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Your picture is visible to other participants.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+
+                    if (isUploadingPicture) {
+                        Spacer(Modifier.height(12.dp))
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = !isUploadingPicture,
+                    onClick = {
+                        isUploadingPicture = true
+                        scope.launch {
+                            val res = runCatching {
+                                repo.api.uploadProfilePicture(processed.bytes, processed.contentType)
+                            }
+                            isUploadingPicture = false
+                            res.onSuccess { okRes ->
+                                val updated = me?.copy(picture_version = okRes.points_awarded.takeIf { it > 0 } ?: (me?.picture_version ?: 0) + 1)
+                                me = updated
+                                if (updated != null) AppCache.saveMe(context, updated)
+                                selectedBitmapForCrop = null
+                            }.onFailure { err ->
+                                uploadErrorMessage = err.message ?: "Upload failed. Please check connection and retry."
+                            }
+                        }
+                    },
+                ) {
+                    Text("Save & Upload")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !isUploadingPicture,
+                    onClick = { selectedBitmapForCrop = null },
+                ) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    // Error alert dialog
+    uploadErrorMessage?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { uploadErrorMessage = null },
+            title = { Text("Photo upload") },
+            text = { Text(msg) },
+            confirmButton = {
+                TextButton(onClick = { uploadErrorMessage = null }) {
+                    Text("OK")
+                }
+            },
+        )
+    }
+
+    // Illustration avatar picker (existing)
     if (pickingAvatar) {
         AlertDialog(
             onDismissRequest = { pickingAvatar = false },
@@ -397,16 +707,19 @@ fun ProfileScreen(repo: Repository, onSignedOut: () -> Unit, onManageTranslation
                         Image(
                             painter = painterResource(AvatarAssets.resFor(id)),
                             contentDescription = id,
-                            modifier = Modifier.size(48.dp).clip(CircleShape).clickable {
-                                scope.launch {
-                                    runCatching { repo.api.setAvatar(id) }.onSuccess {
-                                        val updated = me?.copy(avatar_id = id)
-                                        me = updated
-                                        if (updated != null) AppCache.saveMe(context, updated)
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    scope.launch {
+                                        runCatching { repo.api.setAvatar(id) }.onSuccess {
+                                            val updated = me?.copy(avatar_id = id)
+                                            me = updated
+                                            if (updated != null) AppCache.saveMe(context, updated)
+                                        }
+                                        pickingAvatar = false
                                     }
-                                    pickingAvatar = false
-                                }
-                            },
+                                },
                             contentScale = ContentScale.Crop,
                         )
                     }

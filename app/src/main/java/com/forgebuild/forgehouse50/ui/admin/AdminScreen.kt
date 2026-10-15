@@ -85,6 +85,7 @@ import com.forgebuild.forgehouse50.data.AppCache
 import com.forgebuild.forgehouse50.data.Participant
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.ui.AvatarAssets
+import com.forgebuild.forgehouse50.ui.UserAvatar
 import com.forgebuild.forgehouse50.ui.ExpressiveButton
 import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
@@ -243,6 +244,7 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
                     1 -> ParticipantsTab(
                         participants = participants,
                         loading = participantsLoading,
+                        sessionToken = repo.session.sessionToken,
                         selectionMode = selectionMode,
                         selectedIds = selectedIds,
                         onToggleSelect = { id ->
@@ -573,6 +575,7 @@ private fun StatRow(label: String, value: String) {
 private fun ParticipantsTab(
     participants: List<Participant>,
     loading: Boolean,
+    sessionToken: String? = null,
     selectionMode: Boolean,
     selectedIds: Set<String>,
     onToggleSelect: (String) -> Unit,
@@ -696,6 +699,7 @@ private fun ParticipantsTab(
                         p = p,
                         selectionMode = selectionMode,
                         isSelected = selectedIds.contains(p.id),
+                        sessionToken = sessionToken,
                         onToggleSelect = { onToggleSelect(p.id) },
                         onOpenDetail = { onOpenDetail(p) },
                         onAdjust = { onAdjust(p) },
@@ -712,6 +716,7 @@ private fun ParticipantCard(
     p: Participant,
     selectionMode: Boolean,
     isSelected: Boolean,
+    sessionToken: String? = null,
     onToggleSelect: () -> Unit,
     onOpenDetail: () -> Unit,
     onAdjust: () -> Unit,
@@ -756,13 +761,15 @@ private fun ParticipantCard(
                 )
             }
 
-            // Avatar
-            Image(
-                painter = painterResource(AvatarAssets.resFor(p.avatar_id)),
+            // Avatar with photo support
+            UserAvatar(
+                avatarId = p.avatar_id,
+                userId = p.id,
+                pictureVersion = p.picture_version,
+                sessionToken = sessionToken,
+                size = 42.dp,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
+                modifier = Modifier.clip(CircleShape)
             )
 
             Spacer(Modifier.width(12.dp))
@@ -1067,6 +1074,8 @@ private fun ParticipantDetailScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showResetDialog by remember { mutableStateOf(false) }
     var resetting by remember { mutableStateOf(false) }
+    var showRemovePictureDialog by remember { mutableStateOf(false) }
+    var removingPicture by remember { mutableStateOf(false) }
 
     fun loadDetail() {
         loading = true
@@ -1134,10 +1143,14 @@ private fun ParticipantDetailScreen(
                     ) {
                         Column(Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Image(
-                                    painter = painterResource(AvatarAssets.resFor(d.avatar_id)),
+                                UserAvatar(
+                                    avatarId = d.avatar_id,
+                                    userId = d.id,
+                                    pictureVersion = d.picture_version,
+                                    sessionToken = repo.session.sessionToken,
+                                    size = 56.dp,
                                     contentDescription = null,
-                                    modifier = Modifier.size(56.dp).clip(CircleShape)
+                                    modifier = Modifier.clip(CircleShape)
                                 )
                                 Spacer(Modifier.width(16.dp))
                                 Column(Modifier.weight(1f)) {
@@ -1195,6 +1208,27 @@ private fun ParticipantDetailScreen(
                                         Icon(Icons.Filled.Refresh, null, Modifier.size(18.dp))
                                         Spacer(Modifier.width(8.dp))
                                         Text("Reset Latest Day (Day ${d.latest_completed_day})", fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                                if (d.picture_version != null) {
+                                    Spacer(Modifier.height(8.dp))
+                                    OutlinedButton(
+                                        onClick = { showRemovePictureDialog = true },
+                                        enabled = !removingPicture,
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            contentColor = MaterialTheme.colorScheme.error,
+                                        ),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        if (removingPicture) {
+                                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("Removing picture...")
+                                        } else {
+                                            Icon(Icons.Filled.Delete, null, Modifier.size(18.dp))
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("Remove picture", fontWeight = FontWeight.SemiBold)
+                                        }
                                     }
                                 }
                             }
@@ -1264,6 +1298,53 @@ private fun ParticipantDetailScreen(
                     }
                 }
             }
+        }
+
+        // Remove Picture Confirmation Dialog (Item 7d)
+        if (showRemovePictureDialog && detail != null) {
+            val d = detail!!
+            AlertDialog(
+                onDismissRequest = { if (!removingPicture) showRemovePictureDialog = false },
+                title = { Text("Remove picture") },
+                text = {
+                    Text("Remove ${d.displayName}'s picture? They will go back to their illustration avatar.")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            removingPicture = true
+                            scope.launch {
+                                try {
+                                    val res = repo.api.adminRemoveProfilePicture(d.id)
+                                    if (res.ok) {
+                                        snackbarHostState.showSnackbar("Picture removed for ${d.displayName}")
+                                        showRemovePictureDialog = false
+                                        loadDetail()
+                                        onParticipantChanged()
+                                    } else {
+                                        snackbarHostState.showSnackbar(res.error ?: "Failed to remove picture.")
+                                    }
+                                } catch (e: Exception) {
+                                    snackbarHostState.showSnackbar(e.message ?: "Failed to remove picture.")
+                                } finally {
+                                    removingPicture = false
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Remove picture")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showRemovePictureDialog = false },
+                        enabled = !removingPicture
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
 
         // Confirmation Dialog

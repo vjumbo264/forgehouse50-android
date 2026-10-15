@@ -328,6 +328,23 @@ class ApiClient(private val session: SessionStore) {
             put("new_password", newPassword)
         })
 
+    /** Upload user profile photo (JPEG/WebP <= 100KB). */
+    suspend fun uploadProfilePicture(bytes: ByteArray, contentType: String): GenericOk {
+        val res: HttpResponse = client.put("$BASE/profile/picture") {
+            auth()
+            header(HttpHeaders.ContentType, contentType)
+            setBody(bytes)
+        }
+        return decode(res)
+    }
+
+    /** Remove user profile photo and revert to illustration avatar. */
+    suspend fun removeProfilePicture(): GenericOk = del("/profile/picture")
+
+    /** Admin: Remove a participant's profile photo (moderation). */
+    suspend fun adminRemoveProfilePicture(userId: String): GenericOk =
+        post("/admin/users/$userId/remove-picture", buildJsonObject {})
+
     companion object {
         const val BASE = "https://forgehouse50.pages.dev/api"
     }
