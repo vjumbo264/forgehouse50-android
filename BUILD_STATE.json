@@ -1648,9 +1648,9 @@
       {
         "id": "f3",
         "title": "Item 3 \u2014 website nav contrast fix plus automated contrast checks in both themes",
-        "status": "in_progress",
+        "status": "done",
         "gate": "f2",
-        "notes": "In progress (f3): Diagnosing nav contrast tokens and updating floating nav styling in light/dark mode with automated contrast checks."
+        "notes": "DONE (f3): Website floating nav contrast fix completed matching Android app theme tokens. Diagnosed that missing bg class left light selected tab on #E6EFE9 container with white text (1.15:1 unreadable contrast). Fixed selected and unselected tokens in public/assets/index-CQfSSHWX.js and explicit CSS rules in public/assets/index-D8tlLa-P.css: Light mode uses primary #2E6B4F with onPrimary #FFFFFF (6.30:1 AA pass) and onSurfaceVariant #414942 for unselected icons (7.93:1 AAA pass); Dark mode uses primary #8CD8AC with onPrimary #003820 (7.90:1 AAA pass) and onSurfaceVariant #C1C9C0 (9.42:1 AAA pass). Remediated light gold badge to #785D15 (5.29:1 pass). Added automated contrast suite in scripts/test_contrast_item3.mjs passing across all surfaces. Bumped sw.js to fh50-v2-05. Audit recorded in evidence/fixes_oct15_v1/contrast_audit.md."
       },
       {
         "id": "f4",
