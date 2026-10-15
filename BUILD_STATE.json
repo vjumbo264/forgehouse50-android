@@ -1662,9 +1662,9 @@
       {
         "id": "f5",
         "title": "Item 5 \u2014 admin Observation/Question notes view, honest wording and one-time notice, release",
-        "status": "pending",
+        "status": "in_progress",
         "gate": "f4",
-        "notes": ""
+        "notes": "In progress (f5): Implementing admin Observation and Question notes view, user-facing honest visibility copy and one-time notice, and admin Notes tab."
       },
       {
         "id": "f6",
