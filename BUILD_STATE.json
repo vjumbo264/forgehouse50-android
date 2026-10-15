@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": true,
-  "last_updated_utc": "2026-10-15T12:14:51.734884+00:00",
+  "last_updated_utc": "2026-10-15T12:50:18.187845+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1698,9 +1698,9 @@
       {
         "id": "g1",
         "title": "Item 1 \u2014 blank website: live diagnosis, root cause fix, deployment verified, self-healing service worker, boot guard, smoke test, production verification of earlier fixes",
-        "status": "pending",
+        "status": "done",
         "gate": "g0",
-        "notes": ""
+        "notes": "DONE (g1): Blank website root cause diagnosed and resolved. Diagnosed live with Playwright Chromium: public/assets/index-CQfSSHWX.js failed to parse with SyntaxError: Unexpected template string due to invalid uncomputed template literal object keys in profile picture upload code introduced in commit 82288af. Remediated: (1) Fixed syntax in index-CQfSSHWX.js with valid string keys {\"Content-Type\": blob.type}, validated via node --check and esbuild; (2) Upgraded sw.js to fh50-v2-09 with strict Content-Type validation on /assets/*, network-first navigations, and cache purging; (3) Added inline Boot Guard in index.html and app/index.html with 8-second watchdog, error event listener, automatic SW/cache reset, one-time reload loop guard, and fallback retry UI; (4) Added /sw-reset.html emergency reset page; (5) Removed orphaned old bundles from public/assets/; (6) Added verify_assets.mjs and Playwright smoke_test.mjs in deploy.yml workflow; (7) Verified smoke test passes with 0 errors and captured screenshots in evidence/fixes_oct15b_v1/."
       },
       {
         "id": "g2",
