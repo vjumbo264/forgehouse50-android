@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-10-15T05:02:52.257693+00:00",
+  "last_updated_utc": "2026-10-15T05:04:01.198205+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1634,9 +1634,9 @@
       {
         "id": "f1",
         "title": "Item 1 \u2014 website data audit, root cause, fix, equality proof against the app's data",
-        "status": "pending",
+        "status": "done",
         "gate": "f0",
-        "notes": ""
+        "notes": "DONE (f1): Website synthetic users root cause diagnosed and resolved. Diagnosed that public/assets/index-CQfSSHWX.js checked n?.rankings, while /api/leaderboard returned entries, causing the ternary check to fail and always fall back to client-side xt() mock users (Sarah Adeyemi, David Okonkwo, etc.). Production D1 audited: contains 16 verified members and 0 synthetic rows. Remediated: (1) functions/api/leaderboard.mjs updated to return both entries and rankings alias with display_name, name, surname, and metric fields; (2) index-CQfSSHWX.js updated to parse entries || rankings and xt() mock array completely eradicated with fallback to empty state; (3) sw.js cache version bumped to fh50-v2-04; (4) ARCHITECTURE.md and README.md updated; audit saved to evidence/fixes_oct15_v1/data_audit.md."
       },
       {
         "id": "f2",
