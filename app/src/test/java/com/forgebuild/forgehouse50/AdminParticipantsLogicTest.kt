@@ -219,7 +219,8 @@ class AdminParticipantsLogicTest {
         )
         // Day 2 was completed most recently by timestamp
         assertEquals(2, findLatestCompletedDay(catchupCompletions))
-    
+    }
+
     @Test
     fun testNoteHelperTextAndVisibilityLogic() {
         fun getNoteLabel(type: String): String {

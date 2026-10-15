@@ -74,8 +74,11 @@ class ReadingTimerEngineTest {
         // Session 1
         val timer1 = ReadingTimer("user1", 2, storage, clock, wallClock)
         timer1.start()
-        clock.advance(120_000L) // 120s
-        timer1.tick()
+        repeat(4) {
+            clock.advance(30_000L)
+            timer1.onInteraction()
+            timer1.tick()
+        }
         timer1.pause() // persists 120s
         assertEquals("2026-10-15T09:15:00Z", timer1.getFirstOpenedAt())
 
@@ -86,8 +89,12 @@ class ReadingTimerEngineTest {
         assertEquals("2026-10-15T09:15:00Z", timer2.getFirstOpenedAt()) // original firstOpenedAt preserved!
 
         timer2.start()
-        clock.advance(180_000L) // 180s more -> total 300s
-        assertEquals(300, timer2.tick())
+        repeat(6) {
+            clock.advance(30_000L)
+            timer2.onInteraction()
+            timer2.tick()
+        }
+        assertEquals(300, timer2.getReadingSeconds())
         assertTrue(timer2.hasReachedMinimum())
     }
 
@@ -101,8 +108,11 @@ class ReadingTimerEngineTest {
 
         // Read Day 1 for 300s
         timerDay1.start()
-        clock.advance(300_000L)
-        timerDay1.tick()
+        repeat(10) {
+            clock.advance(30_000L)
+            timerDay1.onInteraction()
+            timerDay1.tick()
+        }
         timerDay1.pause()
 
         // Switch to Day 2: Day 2 has 0 seconds
@@ -113,7 +123,13 @@ class ReadingTimerEngineTest {
 
         // Read Day 2 for 310s
         timerDay2.start()
-        clock.advance(310_000L)
+        repeat(10) {
+            clock.advance(30_000L)
+            timerDay2.onInteraction()
+            timerDay2.tick()
+        }
+        clock.advance(10_000L)
+        timerDay2.onInteraction()
         timerDay2.tick()
         timerDay2.pause()
 
