@@ -1641,9 +1641,9 @@
       {
         "id": "f2",
         "title": "Item 2 \u2014 reading completion, offline timer, 5-minute minimum: 2a backend, 2b Android (then release), 2c website",
-        "status": "in_progress",
+        "status": "done",
         "gate": "f1",
-        "notes": "In progress (f2): 2a completed and pushed (reading completion backend contract, MIN_READING_SECONDS=300, readingSeconds & firstOpenedAt handling, final chapter reached gate, legacy fallback, migration reading_time_v1 applied to D1). 2b Android app implemented: ReadingTimerEngine with monotonic clock (SystemClock.elapsedRealtime()), 60s idle detection, PrefsTimerStorage (persists every 5s & on pause), OfflineCompletionQueue for offline retry, ReadScreen unobtrusive timer and live helper line, removed ChapterViewTracker gate. ReadingTimerEngineTest unit tests added."
+        "notes": "DONE (f2): Item 2 complete across backend, Android, and web. 2a Backend: removed all chapters viewed requirement, added reading_seconds/first_opened_at/completed_at/time_source storage via migration reading_time_v1, enforced MIN_READING_SECONDS=300 per day with 422 reading_time_too_short, added server sanity checks, backward-compatibility for legacy clients without readingSeconds (estimated from chapter views or fallback), admin override, reading_seconds leaderboard integration, tested with injectable clock. 2b Android: removed ChapterViewTracker gate, built ReadingTimerEngine using SystemClock.elapsedRealtime() with 60s idle detection, PrefsTimerStorage persisting every 5s & on pause/stop, OfflineCompletionQueue for offline retry, unobtrusive bottom timer and dynamic helper line in ReadScreen, passing JVM tests in ReadingTimerEngineTest, signed release forgehouse50-v24 published and verified on GitHub Releases API. 2c Web: active reading timer via performance.now() and Page Visibility API + 60s idle detection, IndexedDB 5s persistence, offline queue with sync, dynamic button states and helper text, passing unit tests in test_item2c_web_completion.mjs."
       },
       {
         "id": "f3",
