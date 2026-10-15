@@ -1,4 +1,8 @@
 package com.forgebuild.forgehouse50.ui
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import android.animation.ValueAnimator
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.WindowInsets
@@ -176,6 +180,14 @@ fun AppNavHost(
 
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+    val rootPagerState = rememberPagerState(initialPage = 0) { 4 }
+    val areAnimatorsEnabled = remember {
+        try {
+            ValueAnimator.areAnimatorsEnabled()
+        } catch (_: Throwable) {
+            true
+        }
+    }
 
     // combined_fixes_v1 Issue 9: FLAG_SECURE is owned by QuizScreen's own
     // DisposableEffect (apply on entry, clear on dispose).
@@ -183,17 +195,28 @@ fun AppNavHost(
         onDispose { (context as? android.app.Activity)?.let { ScreenSecurity.clear(it) } }
     }
 
+    val isRootTab = currentRoute == null || currentRoute == Routes.HOME || currentRoute in Tabs.map { it.route }
+
+    // Intercept back button when on non-home root tab to smoothly return to home tab
+    BackHandler(enabled = isRootTab && rootPagerState.currentPage != 0) {
+        scope.launch {
+            if (areAnimatorsEnabled) rootPagerState.animateScrollToPage(0) else rootPagerState.scrollToPage(0)
+        }
+    }
+
     Scaffold(
         bottomBar = {
-            if (currentRoute in Tabs.map { it.route }) {
+            if (isRootTab) {
                 DynamicFloatingNavBar(
                     items = Tabs,
-                    currentRoute = currentRoute,
-                    onItemSelected = { route ->
-                        nav.navigate(route) {
-                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+                    pagerState = rootPagerState,
+                    onItemSelected = { index, _ ->
+                        scope.launch {
+                            if (areAnimatorsEnabled) {
+                                rootPagerState.animateScrollToPage(index)
+                            } else {
+                                rootPagerState.scrollToPage(index)
+                            }
                         }
                     },
                 )
@@ -206,27 +229,49 @@ fun AppNavHost(
             modifier = Modifier.padding(padding),
         ) {
             composable(Routes.HOME) {
-                HomeScreen(
-                    repo = repo,
-                    reloadTick = authenticatedTick,
-                    onOpenRead = { nav.navigate(Routes.read(it)) },
-                    onOpenSession = { ds -> nav.navigate(Routes.readSession(ds)) },
-                    onOpenQuiz = { nav.navigate(Routes.quiz(it)) },
-                    onOpenNotes = { nav.navigate(Routes.NOTES) },
-                    onOpenAdmin = { nav.navigate(Routes.ADMIN) },
-                )
+                HorizontalPager(
+                    state = rootPagerState,
+                    beyondViewportPageCount = 0,
+                    modifier = Modifier.fillMaxSize(),
+                ) { page ->
+                    when (page) {
+                        0 -> HomeScreen(
+                            repo = repo,
+                            reloadTick = authenticatedTick,
+                            onOpenRead = { nav.navigate(Routes.read(it)) },
+                            onOpenSession = { ds -> nav.navigate(Routes.readSession(ds)) },
+                            onOpenQuiz = { nav.navigate(Routes.quiz(it)) },
+                            onOpenNotes = { nav.navigate(Routes.NOTES) },
+                            onOpenAdmin = { nav.navigate(Routes.ADMIN) },
+                        )
+                        1 -> LeaderboardScreen(repo)
+                        2 -> ProgressScreen(repo, onOpenDay = { nav.navigate(Routes.read(it)) })
+                        3 -> ProfileScreen(
+                            repo,
+                            onSignedOut = { onAuthChanged(false) },
+                            onManageTranslations = { nav.navigate(Routes.TRANSLATIONS) },
+                            onOpenChangelog = { nav.navigate(Routes.CHANGELOG) },
+                        )
+                    }
+                }
             }
-            composable(Routes.LEADERBOARD) { LeaderboardScreen(repo) }
+            composable(Routes.LEADERBOARD) {
+                LaunchedEffect(Unit) {
+                    if (areAnimatorsEnabled) rootPagerState.animateScrollToPage(1) else rootPagerState.scrollToPage(1)
+                    nav.popBackStack()
+                }
+            }
             composable(Routes.PROGRESS) {
-                ProgressScreen(repo, onOpenDay = { nav.navigate(Routes.read(it)) })
+                LaunchedEffect(Unit) {
+                    if (areAnimatorsEnabled) rootPagerState.animateScrollToPage(2) else rootPagerState.scrollToPage(2)
+                    nav.popBackStack()
+                }
             }
             composable(Routes.PROFILE) {
-                ProfileScreen(
-                    repo,
-                    onSignedOut = { onAuthChanged(false) },
-                    onManageTranslations = { nav.navigate(Routes.TRANSLATIONS) },
-                    onOpenChangelog = { nav.navigate(Routes.CHANGELOG) },
-                )
+                LaunchedEffect(Unit) {
+                    if (areAnimatorsEnabled) rootPagerState.animateScrollToPage(3) else rootPagerState.scrollToPage(3)
+                    nav.popBackStack()
+                }
             }
             composable(Routes.CHANGELOG) {
                 ChangelogScreen(onBack = { nav.popBackStack() })

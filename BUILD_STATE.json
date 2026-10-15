@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-10-15T06:22:08.680282+00:00",
+  "last_updated_utc": "2026-10-15T06:53:53.455745+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1669,9 +1669,9 @@
       {
         "id": "f6",
         "title": "Item 6 \u2014 Android nav slide animation and swipe between tabs, final release; verify every item once more against production; set fixes_oct15_v1.work_complete to true in each repo and push",
-        "status": "pending",
+        "status": "done",
         "gate": "f5",
-        "notes": ""
+        "notes": "DONE (f6): Android floating nav slide animation & horizontal swipe between tabs implemented. (1) DynamicFloatingNavBar rewritten with a single shared pill indicator moving between tabs via Spring with light damping (Spring.DampingRatioLowBouncy, StiffnessMediumLow); (2) PagerState integration continuously interpolates indicator offset and width during drag gestures; (3) Expanding/collapsing label animations on selected/unselected tabs; (4) Icon cross-fade between outlined and filled states; (5) HorizontalPager container hosting Today, Leaderboard, Progress, Profile root destinations with lazy loading (beyondViewportPageCount = 0); (6) BackHandler support to smoothly return to home tab; (7) Reduced motion support via ValueAnimator.areAnimatorsEnabled() with snap fallback; (8) Unit tests added to DynamicFloatingNavBarTest and AdminParticipantsLogicTest brace fixed."
       },
       {
         "id": "f7",

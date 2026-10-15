@@ -154,7 +154,6 @@ class AdminParticipantsLogicTest {
         assertFalse(isValidBatchConfirm("yes"))
         assertFalse(isValidBatchConfirm(""))
     }
-}
 
     @Test
     fun testReadingTimeFormatting() {
@@ -291,3 +290,4 @@ class AdminParticipantsLogicTest {
         assertTrue(malicious.none { it.type == "prayer" })
     }
 
+}
