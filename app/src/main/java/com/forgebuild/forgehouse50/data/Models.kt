@@ -369,6 +369,7 @@ data class FinalRanking(
     val user_id: String = "",
     val display_name: String = "Member",
     val avatar_id: String? = null,
+    val picture_version: Int? = null,
     val total_points: Long = 0,
     val finished_at: String? = null,
 )

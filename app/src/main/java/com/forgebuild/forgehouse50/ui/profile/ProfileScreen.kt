@@ -124,9 +124,9 @@ fun ProfileScreen(
     }
 
     suspend fun refreshTranslations() {
-        val list = repo.listDownloadedTranslations()
+        val list = repo.downloadedTranslations()
         translations = list
-        totalBytes = repo.totalDownloadedBytes()
+        totalBytes = repo.translationsTotalSizeBytes()
     }
 
     LaunchedEffect(Unit) {
