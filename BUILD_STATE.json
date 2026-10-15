@@ -1719,9 +1719,9 @@
       {
         "id": "g4",
         "title": "Item 4 \u2014 verse headings: VerseWell fix or fallback, regenerated bundles, both clients",
-        "status": "pending",
+        "status": "done",
         "gate": "g3",
-        "notes": ""
+        "notes": "DONE (g4): Verse-level headings fixed at source (VerseWell), bundle generator, passage API, and both clients. (1) Audited VerseWell source databases; diagnosed that headings in chapters.content carried cross-reference <sup> blocks that caused exact matching to fail and previously discarded section titles. Recorded findings in evidence/fixes_oct15b_v1/headings_audit.md (17,944 headings identified across 11 translations). (2) Remediated VerseWell schema.sql, scripts/import.py, and scripts/generate_static.py additively to extract and expose heading_before on verses without altering scripture words; deployed live to versewell.pages.dev and pushed commit 57f71e9 to vjumbo264/versewell. (3) Updated ForgeHouse 50 functions/lib/versewell.mjs to pass heading_before and scripts/build_bundles.mjs to map into bundle field 'h'; rebuilt all 12 gzipped bundles in public/bundles/ and updated Android app asset kjv.json.gz. (4) Both clients render heading_before as a clean section title above the verse (distinct style, unselectable, excluded from notes, quiz, and copy). (5) Regression tests in scripts/test_item4_verse_headings.mjs passing 100%."
       },
       {
         "id": "g5",
