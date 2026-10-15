@@ -162,9 +162,18 @@ class ApiClient(private val session: SessionStore) {
         }
 
 
-    suspend fun completeDay(n: Int, viewedChapters: List<String> = emptyList()): GenericOk =
+    suspend fun completeDay(
+        n: Int,
+        readingSeconds: Int? = null,
+        firstOpenedAt: String? = null,
+        finalChapterReached: Boolean = true,
+        viewedChapters: List<String> = emptyList()
+    ): GenericOk =
         post("/read/complete", buildJsonObject {
             put("day_number", n)
+            if (readingSeconds != null) put("readingSeconds", readingSeconds)
+            if (firstOpenedAt != null) put("firstOpenedAt", firstOpenedAt)
+            put("finalChapterReached", finalChapterReached)
             if (viewedChapters.isNotEmpty()) {
                 put("viewed_chapters", buildJsonArray {
                     viewedChapters.forEach { add(it) }

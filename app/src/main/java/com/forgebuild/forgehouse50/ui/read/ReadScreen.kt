@@ -62,7 +62,11 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.data.Assignment
-import com.forgebuild.forgehouse50.data.ChapterViewTracker
+import com.forgebuild.forgehouse50.data.ReadingTimer
+import com.forgebuild.forgehouse50.data.PrefsTimerStorage
+import com.forgebuild.forgehouse50.data.OfflineCompletionQueue
+import com.forgebuild.forgehouse50.data.PendingCompletion
+import androidx.compose.runtime.DisposableEffect
 import com.forgebuild.forgehouse50.data.DayResponse
 import com.forgebuild.forgehouse50.data.PassageResponse
 import com.forgebuild.forgehouse50.data.Repository
@@ -163,21 +167,42 @@ fun ReadScreen(
     val currentChapter: Pair<String, Int>? = chapters.getOrNull(chapterIdx)
     val scroll = rememberScrollState()
 
-    var tracker by remember(activeDay, chapters.size) { mutableStateOf(ChapterViewTracker(chapters)) }
-    LaunchedEffect(activeDay, chapters.size) {
-        if (tracker.total != chapters.size) tracker = ChapterViewTracker(chapters)
+    var finalChapterReached by remember(activeDay) { mutableStateOf(false) }
+    LaunchedEffect(activeDay) {
         chapterIdx = 0
+        finalChapterReached = false
     }
-
-    var viewedTick by remember { mutableIntStateOf(0) }
-    LaunchedEffect(activeDay, chapterIdx, chapters.size) {
-        val ch = chapters.getOrNull(chapterIdx) ?: return@LaunchedEffect
-        delay(1500)
-        tracker.markViewed(ch)
-        viewedTick++
+    LaunchedEffect(chapterIdx, chapters.size) {
+        if (chapters.isNotEmpty() && chapterIdx >= chapters.lastIndex) {
+            finalChapterReached = true
+        }
     }
-    @Suppress("UNUSED_EXPRESSION")
-    viewedTick
+    val timer = remember(activeDay, activeUser?.id) {
+        ReadingTimer(activeUser?.id ?: "local", activeDay, PrefsTimerStorage(context))
+    }
+    var timerTick by remember(activeDay) { mutableIntStateOf(timer.getReadingSeconds()) }
+    LaunchedEffect(timer) {
+        timer.start()
+        while (true) {
+            delay(1000L)
+            val s = timer.tick()
+            timerTick = s
+            if (s % 5 == 0) timer.persist()
+        }
+    }
+    DisposableEffect(timer) {
+        onDispose {
+            timer.pause()
+        }
+    }
+    LaunchedEffect(chapterIdx) {
+        timer.onInteraction()
+    }
+    LaunchedEffect(activeUser?.id) {
+        activeUser?.id?.let { uid ->
+            runCatching { OfflineCompletionQueue(context).processQueue(uid, repo.api) }
+        }
+    }
 
     val chapterKey = currentChapter?.let { "${it.first}:${it.second}" } ?: ""
     LaunchedEffect(chapterKey, translation, reloadToken) {
@@ -612,9 +637,10 @@ fun ReadScreen(
                 }
             }
 
-            // Completion row: enforced all-chapters-viewed gate for active day
+            // Completion row: 5-minute active timer + final-chapter reached (fixes_oct15_v1 Item 2b)
             val isCurrentDone = completedDays.contains(activeDay)
-            val gateOpen = (viewedTick >= 0) && tracker.allViewed
+            val hasMinTime = timerTick >= 300
+            val canComplete = hasMinTime && finalChapterReached
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                 tonalElevation = 2.dp,
@@ -652,38 +678,74 @@ fun ReadScreen(
                             }
                         }
                     } else {
-                        if (!gateOpen && tracker.total > 0) {
+                        // Unobtrusive timer and live helper line
+                        Row(
+                            Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            val helperText = when {
+                                !hasMinTime -> timer.formattedRemaining()
+                                !finalChapterReached -> "Reach the last chapter to complete"
+                                else -> "Ready to mark complete"
+                            }
                             Text(
-                                tracker.gateHint(),
+                                helperText,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.padding(bottom = 8.dp),
+                                color = if (canComplete) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
+                            )
+                            Text(
+                                timer.formattedTimer(),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         ExpressiveButton(
                             onClick = {
-                                if (completeBusy || !gateOpen) return@ExpressiveButton
+                                if (completeBusy || !canComplete) return@ExpressiveButton
                                 scope.launch {
                                     completeBusy = true
                                     error = null
-                                    runCatching { repo.api.completeDay(activeDay, tracker.viewedKeys()) }
-                                        .onSuccess {
-                                            completedDays = completedDays + activeDay
-                                            dayData?.let { cur ->
-                                                val upd = cur.copy(progress = cur.progress.copy(completed = true))
-                                                dayData = upd
-                                                com.forgebuild.forgehouse50.data.AppCache.saveDay(context, activeDay, upd)
-                                            }
-                                            com.forgebuild.forgehouse50.widget.WidgetRefreshWorker.refreshWidgetState(context, repo)
-                                            com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
+                                    val sec = timer.getReadingSeconds()
+                                    val firstOpened = timer.getFirstOpenedAt()
+                                    val res = runCatching {
+                                        repo.api.completeDay(
+                                            n = activeDay,
+                                            readingSeconds = sec,
+                                            firstOpenedAt = firstOpened,
+                                            finalChapterReached = true
+                                        )
+                                    }
+                                    if (res.isSuccess) {
+                                        timer.clear()
+                                        completedDays = completedDays + activeDay
+                                        dayData?.let { cur ->
+                                            val upd = cur.copy(progress = cur.progress.copy(completed = true))
+                                            dayData = upd
+                                            com.forgebuild.forgehouse50.data.AppCache.saveDay(context, activeDay, upd)
                                         }
-                                        .onFailure { error = it.message ?: "Could not mark this day complete." }
+                                        com.forgebuild.forgehouse50.widget.WidgetRefreshWorker.refreshWidgetState(context, repo)
+                                        com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
+                                    } else {
+                                        val ex = res.exceptionOrNull()
+                                        val msg = ex?.message.orEmpty()
+                                        if (msg.contains("reading_time_too_short")) {
+                                            error = "Minimum 5 minutes of reading required. Please keep reading."
+                                        } else {
+                                            OfflineCompletionQueue(context).enqueue(
+                                                activeUser?.id ?: "local",
+                                                PendingCompletion(activeDay, sec, firstOpened, true)
+                                            )
+                                            error = "Completion saved offline. Will sync when reconnected."
+                                        }
+                                    }
                                     completeBusy = false
                                 }
                             },
                             Modifier.fillMaxWidth(),
-                            enabled = gateOpen,
+                            enabled = canComplete,
                             busy = completeBusy,
                         ) { Text("Mark day $activeDay reading complete") }
                     }

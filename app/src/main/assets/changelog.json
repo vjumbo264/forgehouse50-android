@@ -1,5 +1,13 @@
 [
   {
+    "version": "v24",
+    "date": "2026-10-15",
+    "items": [
+      "Offline reading timer with 5-minute active reading tracking",
+      "Streamlined reading completion upon reaching the final assigned chapter"
+    ]
+  },
+  {
     "version": "v23",
     "date": "2026-10-14",
     "items": [

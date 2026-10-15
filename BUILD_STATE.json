@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": false,
-  "last_updated_utc": "2026-10-15T05:04:01.198205+00:00",
+  "last_updated_utc": "2026-10-15T05:09:53.324816+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1641,9 +1641,9 @@
       {
         "id": "f2",
         "title": "Item 2 \u2014 reading completion, offline timer, 5-minute minimum: 2a backend, 2b Android (then release), 2c website",
-        "status": "pending",
+        "status": "in_progress",
         "gate": "f1",
-        "notes": ""
+        "notes": "In progress (f2): 2a completed and pushed (reading completion backend contract, MIN_READING_SECONDS=300, readingSeconds & firstOpenedAt handling, final chapter reached gate, legacy fallback, migration reading_time_v1 applied to D1). 2b Android app implemented: ReadingTimerEngine with monotonic clock (SystemClock.elapsedRealtime()), 60s idle detection, PrefsTimerStorage (persists every 5s & on pause), OfflineCompletionQueue for offline retry, ReadScreen unobtrusive timer and live helper line, removed ChapterViewTracker gate. ReadingTimerEngineTest unit tests added."
       },
       {
         "id": "f3",
