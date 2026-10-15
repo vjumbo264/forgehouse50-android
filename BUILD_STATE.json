@@ -3,8 +3,8 @@
   "app_name": "ForgeHouse 50",
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
-  "build_complete": true,
-  "last_updated_utc": "2026-10-14T09:55:04.487624+00:00",
+  "build_complete": false,
+  "last_updated_utc": "2026-10-15T04:58:11.427686+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -611,7 +611,7 @@
     ],
     "completed_utc": "2026-09-15T10:14:30Z"
   },
-  "current_release": "forgehouse50-v19",
+  "current_release": "forgehouse50-v23",
   "testing_phase_and_reader_fixes_v1": {
     "name": "testing_phase_and_reader_fixes_v1",
     "status": "complete",
@@ -824,7 +824,7 @@
     "notes": "2026-09-16 session 3: final audit sweep complete. Auth screens' three primary Buttons + the resend-code OutlinedButton converted to ExpressiveButton (bouncy press-scale physics + integrated wavy busy loader); the manual `if (busy) ExpressiveButtonLoader()` content collapse removes double-loader risk. Audit justification for remaining standard M3 controls: AlertDialog TextButtons (Cancel/confirm), top-app-bar back-arrow IconButtons and small action IconButtons are canonical M3 idioms kept per Expressive guidance (Expressive press treatment applies to primary actionable buttons, which are now all ExpressiveButton); determinate LinearProgressIndicators (Progress screen, translation downloads) are progress bars not loading spinners \u2014 all indeterminate loading states app-wide use ExpressiveLoading/ExpressiveButtonLoader. Part A coverage: dynamic Material You color + static fallback (AppTheme), Nunito rounded type scale (Google Sans Flex is proprietary/non-redistributable \u2014 documented substi",
     "complete": true
   },
-  "latest_release": "forgehouse50-v19",
+  "latest_release": "forgehouse50-v23",
   "material3_expressive_correction_v1": {
     "name": "material3_expressive_correction_v1",
     "status": "complete",
@@ -1618,5 +1618,61 @@
       }
     ],
     "completed_utc": "2026-10-14T09:55:04.487588+00:00"
+  },
+  "fixes_oct15_v1": {
+    "status": "in_progress",
+    "work_complete": false,
+    "started_utc": "2026-10-15T04:58:11.427686+00:00",
+    "tasks": [
+      {
+        "id": "f0",
+        "title": "Clone both repos, read BUILD_STATE.json (including ops_batch_oct14_v1), seed fixes_oct15_v1 in each repo with gate, commit and push",
+        "status": "done",
+        "gate": null,
+        "notes": "Cloned forgebuild and forgehouse50. Inspected BUILD_STATE.json in both repos; verified ops_batch_oct14_v1 is complete. Appended prompt instruction to PROMPT_HISTORY/forgehouse50.md. Seeded fixes_oct15_v1 with gates f0-f6."
+      },
+      {
+        "id": "f1",
+        "title": "Item 1 \u2014 website data audit, root cause, fix, equality proof against the app's data",
+        "status": "pending",
+        "gate": "f0",
+        "notes": ""
+      },
+      {
+        "id": "f2",
+        "title": "Item 2 \u2014 reading completion, offline timer, 5-minute minimum: 2a backend, 2b Android (then release), 2c website",
+        "status": "pending",
+        "gate": "f1",
+        "notes": ""
+      },
+      {
+        "id": "f3",
+        "title": "Item 3 \u2014 website nav contrast fix plus automated contrast checks in both themes",
+        "status": "pending",
+        "gate": "f2",
+        "notes": ""
+      },
+      {
+        "id": "f4",
+        "title": "Item 4 \u2014 admin reading-time view and reset latest day (paired), backend then Android then website",
+        "status": "pending",
+        "gate": "f3",
+        "notes": ""
+      },
+      {
+        "id": "f5",
+        "title": "Item 5 \u2014 admin Observation/Question notes view, honest wording and one-time notice, release",
+        "status": "pending",
+        "gate": "f4",
+        "notes": ""
+      },
+      {
+        "id": "f6",
+        "title": "Item 6 \u2014 Android nav slide animation and swipe between tabs, final release; verify every item once more against production; set fixes_oct15_v1.work_complete to true in each repo and push",
+        "status": "pending",
+        "gate": "f5",
+        "notes": ""
+      }
+    ]
   }
 }
