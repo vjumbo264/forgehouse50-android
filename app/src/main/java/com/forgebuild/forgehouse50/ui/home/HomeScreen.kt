@@ -83,7 +83,7 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     var showNotesPrivacyNotice by remember {
-        mutableStateOf(repo.sessionStore.userId != null && !repo.sessionStore.hasNotesPrivacyNoticeBeenAcknowledged())
+        mutableStateOf(repo.session.userId != null && !repo.session.hasNotesPrivacyNoticeBeenAcknowledged())
     }
     if (showNotesPrivacyNotice) {
         androidx.compose.material3.AlertDialog(
@@ -104,7 +104,7 @@ fun HomeScreen(
             confirmButton = {
                 androidx.compose.material3.TextButton(
                     onClick = {
-                        repo.sessionStore.acknowledgeNotesPrivacyNotice()
+                        repo.session.acknowledgeNotesPrivacyNotice()
                         showNotesPrivacyNotice = false
                     }
                 ) {

@@ -498,6 +498,7 @@ data class ResetLatestDayResponse(
     val error: String? = null,
 )
 
+@Serializable
 data class BatchDeleteResultItem(
     val id: String = "",
     val status: String = "",

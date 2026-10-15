@@ -235,7 +235,7 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
                     scope = scope,
                     snackbarHostState = snackbarHostState,
                     onBack = { inspectingParticipantId = null },
-                    onParticipantChanged = { loadParticipants() }
+                    onParticipantChanged = { scope.launch { refreshParticipants() } }
                 )
             } else {
                 when (tab) {
@@ -807,8 +807,7 @@ private fun ParticipantCard(
 
                 Spacer(Modifier.height(4.dp))
 
-                Text(
-                    val readingTimeFormatted = remember(p.reading_seconds) {
+                val readingTimeFormatted = remember(p.reading_seconds) {
                     val hrs = p.reading_seconds / 3600
                     val mins = (p.reading_seconds % 3600) / 60
                     "${hrs} h ${mins} m read"

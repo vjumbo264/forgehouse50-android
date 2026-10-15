@@ -68,7 +68,7 @@ import com.forgebuild.forgehouse50.ui.ExpressiveButton
 fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) -> Unit) {
     val context = LocalContext.current
     var showNoticeDialog by remember {
-        mutableStateOf(repo.sessionStore.userId != null && !repo.sessionStore.hasNotesPrivacyNoticeBeenAcknowledged())
+        mutableStateOf(repo.session.userId != null && !repo.session.hasNotesPrivacyNoticeBeenAcknowledged())
     }
     if (showNoticeDialog) {
         androidx.compose.material3.AlertDialog(
@@ -89,7 +89,7 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
             confirmButton = {
                 androidx.compose.material3.TextButton(
                     onClick = {
-                        repo.sessionStore.acknowledgeNotesPrivacyNotice()
+                        repo.session.acknowledgeNotesPrivacyNotice()
                         showNoticeDialog = false
                     }
                 ) {
