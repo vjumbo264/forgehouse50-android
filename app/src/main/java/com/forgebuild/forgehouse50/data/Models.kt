@@ -418,6 +418,87 @@ data class Participant(
 }
 
 @Serializable
+@Serializable
+data class ParticipantDayRow(
+    val day_number: Int,
+    val date: String? = null,
+    val status: String = "pending",
+    val completed: Boolean = false,
+    val completed_at: String? = null,
+    val reading_seconds: Long = 0,
+    val quiz_score: String? = null,
+    val points_earned: Int = 0,
+    val is_latest_completed: Boolean = false,
+) {
+    val readingTimeFormatted: String
+        get() {
+            val hrs = reading_seconds / 3600
+            val mins = (reading_seconds % 3600) / 60
+            val secs = reading_seconds % 60
+            return if (hrs > 0) "${hrs}h ${mins}m" else "${mins}m ${secs}s"
+        }
+}
+
+@Serializable
+data class ParticipantDetail(
+    val id: String,
+    val name: String = "",
+    val surname: String = "",
+    val full_name: String = "",
+    val email: String = "",
+    val role: String = "member",
+    val avatar_id: String? = null,
+    val picture_version: Int? = null,
+    val created_at: String? = null,
+    val programme_start_date: String? = null,
+    val total_points: Long = 0,
+    val days_completed: Int = 0,
+    val total_reading_seconds: Long = 0,
+    val average_reading_seconds_per_completed_day: Long = 0,
+    val notes_count: Int = 0,
+    val observations_count: Int = 0,
+    val questions_count: Int = 0,
+    val latest_completed_day: Int? = null,
+    val days: List<ParticipantDayRow> = emptyList(),
+) {
+    val displayName: String
+        get() = full_name.ifBlank {
+            listOf(name, surname).filter { it.isNotBlank() }.joinToString(" ").ifBlank { name.ifBlank { "Member" } }
+        }
+
+    val totalReadingTimeFormatted: String
+        get() {
+            val hrs = total_reading_seconds / 3600
+            val mins = (total_reading_seconds % 3600) / 60
+            return "${hrs} h ${mins} m read"
+        }
+
+    val avgReadingTimeFormatted: String
+        get() {
+            val mins = average_reading_seconds_per_completed_day / 60
+            val secs = average_reading_seconds_per_completed_day % 60
+            return "${mins}m ${secs}s / day"
+        }
+}
+
+@Serializable
+data class ParticipantDetailResponse(
+    val participant: ParticipantDetail? = null,
+)
+
+@Serializable
+data class ResetLatestDayResponse(
+    val ok: Boolean = false,
+    val action: String = "",
+    val target_user_id: String = "",
+    val target_display_name: String = "",
+    val day_number: Int = 0,
+    val points_reversed: Int = 0,
+    val previous_reading_seconds: Long = 0,
+    val previous_quiz_score: String? = null,
+    val error: String? = null,
+)
+
 data class BatchDeleteResultItem(
     val id: String = "",
     val status: String = "",

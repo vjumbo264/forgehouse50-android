@@ -229,6 +229,9 @@ class ApiClient(private val session: SessionStore) {
 
     // ── Admin ─────────────────────────────────────────────────────────────
     suspend fun adminParticipants(): ParticipantsResponse = get("/admin/participants")
+    suspend fun adminParticipantDetail(userId: String): ParticipantDetailResponse = get("/admin/users/")
+    suspend fun adminResetLatestDay(userId: String, requestId: String = java.util.UUID.randomUUID().toString()): ResetLatestDayResponse =
+        post("/admin/users//reset-latest-day", buildJsonObject { put("request_id", requestId) })
     suspend fun adminStats(): AdminStats = get("/admin/stats")
     suspend fun adminProgramme(): AdminProgramme = get("/admin/programme")
 

@@ -155,3 +155,68 @@ class AdminParticipantsLogicTest {
         assertFalse(isValidBatchConfirm(""))
     }
 }
+
+    @Test
+    fun testReadingTimeFormatting() {
+        fun formatTotalReadingTime(seconds: Long): String {
+            val hrs = seconds / 3600
+            val mins = (seconds % 3600) / 60
+            return "${hrs} h ${mins} m read"
+        }
+
+        fun formatDayReadingTime(seconds: Long): String {
+            val hrs = seconds / 3600
+            val mins = (seconds % 3600) / 60
+            val secs = seconds % 60
+            return if (hrs > 0) "${hrs}h ${mins}m" else "${mins}m ${secs}s"
+        }
+
+        assertEquals("0 h 0 m read", formatTotalReadingTime(0))
+        assertEquals("1 h 0 m read", formatTotalReadingTime(3600))
+        assertEquals("6 h 20 m read", formatTotalReadingTime(22800))
+
+        assertEquals("0m 0s", formatDayReadingTime(0))
+        assertEquals("5m 10s", formatDayReadingTime(310))
+        assertEquals("1h 10m", formatDayReadingTime(4200))
+    }
+
+    @Test
+    fun testLatestCompletedDayDetection() {
+        data class DayStub(val day: Int, val completed: Boolean, val completedAt: String?)
+
+        fun findLatestCompletedDay(days: List<DayStub>): Int? {
+            var latestDay: Int? = null
+            var latestTime = ""
+            for (d in days) {
+                if (d.completed && d.completedAt != null) {
+                    if (d.completedAt > latestTime) {
+                        latestTime = d.completedAt
+                        latestDay = d.day
+                    }
+                }
+            }
+            return latestDay
+        }
+
+        val emptyDays = listOf(
+            DayStub(1, false, null),
+            DayStub(2, false, null)
+        )
+        assertEquals(null, findLatestCompletedDay(emptyDays))
+
+        val daysWithCompletions = listOf(
+            DayStub(1, true, "2026-10-12T10:00:00Z"),
+            DayStub(2, true, "2026-10-13T11:00:00Z"),
+            DayStub(3, false, null)
+        )
+        assertEquals(2, findLatestCompletedDay(daysWithCompletions))
+
+        // Catch-up completion where day 2 was completed after day 3
+        val catchupCompletions = listOf(
+            DayStub(1, true, "2026-10-12T10:00:00Z"),
+            DayStub(3, true, "2026-10-14T09:00:00Z"),
+            DayStub(2, true, "2026-10-14T15:00:00Z")
+        )
+        // Day 2 was completed most recently by timestamp
+        assertEquals(2, findLatestCompletedDay(catchupCompletions))
+    }

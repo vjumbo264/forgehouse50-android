@@ -47,6 +47,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import com.forgebuild.forgehouse50.data.ParticipantDetail
+import com.forgebuild.forgehouse50.data.ParticipantDayRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SnackbarHost
@@ -115,6 +120,7 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
 
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var inspectingParticipantId by remember { mutableStateOf<String?>(null) }
 
     var confirmStart by remember { mutableStateOf(false) }
     var confirmEndTesting by remember { mutableStateOf(false) }
@@ -221,39 +227,51 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
                 Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Password") })
             }
 
-            when (tab) {
-                0 -> StatsTab(stats)
-                1 -> ParticipantsTab(
-                    participants = participants,
-                    loading = participantsLoading,
-                    selectionMode = selectionMode,
-                    selectedIds = selectedIds,
-                    onToggleSelect = { id ->
-                        selectedIds = if (selectedIds.contains(id)) selectedIds - id else selectedIds + id
-                    },
-                    onSelectAll = { selectAll ->
-                        val nonAdmins = participants.filter { it.role != "admin" }.map { it.id }.toSet()
-                        selectedIds = if (selectAll) nonAdmins else emptySet()
-                    },
-                    onSelectInactive = {
-                        val inactive = participants.filter { it.role != "admin" && it.isInactive }.map { it.id }.toSet()
-                        selectedIds = inactive
-                        scope.launch {
-                            snackbarHostState.showSnackbar("${inactive.size} inactive account(s) selected.")
-                        }
-                    },
-                    onAdjust = { adjustTarget = it },
-                    onDelete = { singleDeleteTarget = it }
-                )
-                2 -> ProgrammeTab(
-                    programme = programme,
-                    onStart = { confirmStart = true },
-                    onEndTesting = { confirmEndTesting = true }
-                )
-                else -> PasswordTab(
+            if (inspectingParticipantId != null) {
+                ParticipantDetailScreen(
+                    userId = inspectingParticipantId!!,
                     repo = repo,
-                    onMessage = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } }
+                    scope = scope,
+                    snackbarHostState = snackbarHostState,
+                    onBack = { inspectingParticipantId = null },
+                    onParticipantChanged = { loadParticipants() }
                 )
+            } else {
+                when (tab) {
+                    0 -> StatsTab(stats)
+                    1 -> ParticipantsTab(
+                        participants = participants,
+                        loading = participantsLoading,
+                        selectionMode = selectionMode,
+                        selectedIds = selectedIds,
+                        onToggleSelect = { id ->
+                            selectedIds = if (selectedIds.contains(id)) selectedIds - id else selectedIds + id
+                        },
+                        onSelectAll = { selectAll ->
+                            val nonAdmins = participants.filter { it.role != "admin" }.map { it.id }.toSet()
+                            selectedIds = if (selectAll) nonAdmins else emptySet()
+                        },
+                        onSelectInactive = {
+                            val inactive = participants.filter { it.role != "admin" && it.isInactive }.map { it.id }.toSet()
+                            selectedIds = inactive
+                            scope.launch {
+                                snackbarHostState.showSnackbar("${inactive.size} inactive account(s) selected.")
+                            }
+                        },
+                        onOpenDetail = { p -> inspectingParticipantId = p.id },
+                        onAdjust = { adjustTarget = it },
+                        onDelete = { singleDeleteTarget = it }
+                    )
+                    2 -> ProgrammeTab(
+                        programme = programme,
+                        onStart = { confirmStart = true },
+                        onEndTesting = { confirmEndTesting = true }
+                    )
+                    else -> PasswordTab(
+                        repo = repo,
+                        onMessage = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } }
+                    )
+                }
             }
         }
     }
@@ -555,6 +573,7 @@ private fun ParticipantsTab(
     onToggleSelect: (String) -> Unit,
     onSelectAll: (Boolean) -> Unit,
     onSelectInactive: () -> Unit,
+    onOpenDetail: (Participant) -> Unit,
     onAdjust: (Participant) -> Unit,
     onDelete: (Participant) -> Unit
 ) {
@@ -673,6 +692,7 @@ private fun ParticipantsTab(
                         selectionMode = selectionMode,
                         isSelected = selectedIds.contains(p.id),
                         onToggleSelect = { onToggleSelect(p.id) },
+                        onOpenDetail = { onOpenDetail(p) },
                         onAdjust = { onAdjust(p) },
                         onDelete = { onDelete(p) }
                     )
@@ -688,6 +708,7 @@ private fun ParticipantCard(
     selectionMode: Boolean,
     isSelected: Boolean,
     onToggleSelect: () -> Unit,
+    onOpenDetail: () -> Unit,
     onAdjust: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -707,7 +728,13 @@ private fun ParticipantCard(
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = selectionMode && !isProtectedAdmin) { onToggleSelect() }
+            .clickable {
+            if (selectionMode) {
+                if (!isProtectedAdmin) onToggleSelect()
+            } else {
+                onOpenDetail()
+            }
+        }
     ) {
         Row(
             Modifier
@@ -776,7 +803,13 @@ private fun ParticipantCard(
                 Spacer(Modifier.height(4.dp))
 
                 Text(
-                    text = "${p.points} pts · ${p.days_completed} days · ${p.notes_count} notes",
+                    val readingTimeFormatted = remember(p.reading_seconds) {
+                    val hrs = p.reading_seconds / 3600
+                    val mins = (p.reading_seconds % 3600) / 60
+                    "${hrs} h ${mins} m read"
+                }
+                Text(
+                    text = "${p.points} pts · ${p.days_completed} days · $readingTimeFormatted",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1011,6 +1044,273 @@ private fun PasswordTab(repo: Repository, onMessage: (String) -> Unit) {
             modifier = Modifier.fillMaxWidth()
         ) {
             if (busy) ExpressiveButtonLoader() else Text("Update password")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ParticipantDetailScreen(
+    userId: String,
+    repo: Repository,
+    scope: kotlinx.coroutines.CoroutineScope,
+    snackbarHostState: SnackbarHostState,
+    onBack: () -> Unit,
+    onParticipantChanged: () -> Unit,
+) {
+    var loading by remember { mutableStateOf(true) }
+    var detail by remember { mutableStateOf<ParticipantDetail?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showResetDialog by remember { mutableStateOf(false) }
+    var resetting by remember { mutableStateOf(false) }
+
+    fun loadDetail() {
+        loading = true
+        errorMessage = null
+        scope.launch {
+            try {
+                val res = repo.api.adminParticipantDetail(userId)
+                if (res.participant != null) {
+                    detail = res.participant
+                } else {
+                    errorMessage = "Failed to load participant details."
+                }
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Failed to load details."
+            } finally {
+                loading = false
+            }
+        }
+    }
+
+    LaunchedEffect(userId) {
+        loadDetail()
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text(detail?.displayName ?: "Participant Detail") },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+            },
+            actions = {
+                IconButton(onClick = { loadDetail() }) {
+                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
+                }
+            }
+        )
+
+        if (loading && detail == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                ExpressiveLoading()
+            }
+        } else if (errorMessage != null && detail == null) {
+            Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = { loadDetail() }) { Text("Retry") }
+                }
+            }
+        } else if (detail != null) {
+            val d = detail!!
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 48.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Header Card
+                item {
+                    Card(
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(AvatarAssets.resFor(d.avatar_id)),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(56.dp).clip(CircleShape)
+                                )
+                                Spacer(Modifier.width(16.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(d.displayName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                    Text(d.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Spacer(Modifier.height(14.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            Spacer(Modifier.height(12.dp))
+                            // Metrics Grid
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column {
+                                    Text("Total Points", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${d.total_points} pts", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                }
+                                Column {
+                                    Text("Days Completed", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${d.days_completed} / 50", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                }
+                                Column {
+                                    Text("Total Reading", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(d.totalReadingTimeFormatted, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            Spacer(Modifier.height(10.dp))
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column {
+                                    Text("Average Reading", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(d.avgReadingTimeFormatted, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                }
+                                Column {
+                                    Text("Notes (Counts Only)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${d.notes_count} (${d.observations_count} obs, ${d.questions_count} q)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+
+                            // Reset Latest Day Action
+                            if (d.latest_completed_day != null) {
+                                Spacer(Modifier.height(16.dp))
+                                Button(
+                                    onClick = { showResetDialog = true },
+                                    enabled = !resetting,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    if (resetting) {
+                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Resetting Day ${d.latest_completed_day}...")
+                                    } else {
+                                        Icon(Icons.Filled.Refresh, null, Modifier.size(18.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Reset Latest Day (Day ${d.latest_completed_day})", fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Days Section Title
+                item {
+                    Text("Reading Days History", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+
+                // Days List
+                items(d.days, key = { it.day_number }) { day ->
+                    Card(
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (day.is_latest_completed) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+                            else MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Day ${day.day_number}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                    if (day.is_latest_completed) {
+                                        Spacer(Modifier.width(6.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer
+                                        ) {
+                                            Text(
+                                                "Latest",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                if (day.date != null) {
+                                    Text(day.date, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = if (day.completed) "Completed · ${day.readingTimeFormatted}" else if (day.reading_seconds > 0) "In Progress · ${day.readingTimeFormatted}" else "Pending",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (day.completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "Quiz: ${day.quiz_score ?: "—"}  |  Points: ${day.points_earned}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Confirmation Dialog
+        if (showResetDialog && detail?.latest_completed_day != null) {
+            val targetDay = detail!!.latest_completed_day!!
+            AlertDialog(
+                onDismissRequest = { if (!resetting) showResetDialog = false },
+                title = { Text("Reset Day $targetDay for ${detail!!.displayName}?") },
+                text = {
+                    Text(
+                        "This will reverse all points awarded for Day $targetDay (reading, quiz, and streak bonus). The user will have to re-read for at least 5 minutes and retake the quiz. This action is audited."
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            resetting = true
+                            scope.launch {
+                                try {
+                                    val res = repo.api.adminResetLatestDay(userId)
+                                    if (res.ok) {
+                                        snackbarHostState.showSnackbar(
+                                            "Day ${res.day_number} reset successfully: ${res.points_reversed} points reversed."
+                                        )
+                                        showResetDialog = false
+                                        loadDetail()
+                                        onParticipantChanged()
+                                    } else {
+                                        snackbarHostState.showSnackbar(res.error ?: "Failed to reset day.")
+                                    }
+                                } catch (e: Exception) {
+                                    snackbarHostState.showSnackbar(e.message ?: "Failed to reset day.")
+                                } finally {
+                                    resetting = false
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Reset Day")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showResetDialog = false },
+                        enabled = !resetting
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

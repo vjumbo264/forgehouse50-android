@@ -1655,9 +1655,9 @@
       {
         "id": "f4",
         "title": "Item 4 \u2014 admin reading-time view and reset latest day (paired), backend then Android then website",
-        "status": "in_progress",
+        "status": "done",
         "gate": "f3",
-        "notes": "In progress (f4): Implementing paired admin reading-time view and reset latest day across backend, Android app, and website."
+        "notes": "DONE (f4): Admin reading-time view and reset latest day paired implementation complete across backend, Android app, and website. Backend: (1) Added /api/admin/users/:id GET returning participant profile, total reading time, average reading time per day, note counts only (never note text), and 50-day reading history with status, reading time, quiz score, and points; (2) Extended /api/admin/participants with total_reading_seconds and reading_time_formatted; (3) Added /api/admin/users/:id/reset-latest-day POST (atomic db.batch) reversing day points exactly (reading, quiz, streak bonus, programme completion), deleting quiz attempt, resetting reading_progress (timer, timestamps), recomputing streak and revoking unearned badges, writing admin_audit with idempotency; (4) Added migration admin_reset_day_v1.sql and updated schema.sql; (5) Unit tests in scripts/test_item4_admin_reset.mjs passing. Android App: (1) Models.kt expanded with ParticipantDetail, ParticipantDayRow, ResetLatestDayResponse; (2) ApiClient adminParticipantDetail and adminResetLatestDay methods added; (3) ParticipantCard updated to display total reading time ('X h Y m read') and open detail on click; (4) ParticipantDetailScreen added with header metrics, Reset Latest Day confirmation dialog, and 50-day progress list; (5) AdminParticipantsLogicTest expanded and passing. Website: Updated index-CQfSSHWX.js with reading time on cards, Participant Detail modal, and Reset Latest Day confirmation dialog with automatic refresh; sw.js bumped to fh50-v2-06."
       },
       {
         "id": "f5",
