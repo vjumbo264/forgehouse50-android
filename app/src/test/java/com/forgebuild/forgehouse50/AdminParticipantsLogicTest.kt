@@ -290,4 +290,4 @@ class AdminParticipantsLogicTest {
         val malicious = filterVisibleNotes(notes, "prayer")
         assertTrue(malicious.none { it.type == "prayer" })
     }
-}
+
