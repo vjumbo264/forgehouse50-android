@@ -1853,16 +1853,16 @@
       {
         "id": "h8",
         "title": "Item 8: final release, deploy and verification",
-        "status": "pending",
+        "status": "done",
         "gate": "h7",
-        "notes": ""
+        "notes": "DONE (h8): (1) App release published: forgehouse50-v31 (versionCode 31) released on GitHub Releases via release.yml workflow dispatch. Release APK verified with apksigner verify --verbose, SHA-256 (2e321a0365cde68989695fe269499d3ee98e663e46efe30322390ad7bef6676d) and byte size (10130312 bytes) verified by downloading back asset. (2) Website deployment: deployed to Cloudflare Pages (commit cf4ca72) with 100% passing tests including smoke test and asset verification. (3) Live verification: GET https://forgehouse50.pages.dev/api/app-release live and serving v31, config, changelog, announcements, and community endpoints verified healthy. (4) Automated test suites: all 17 JVM unit tests passing in GitHub Actions (run 39056573971) and all 7 Node test suites passing."
       },
       {
         "id": "h9",
         "title": "Item 9: UI refinement pass. Working session: write UI_PASS_HANDOFF.md, set h9 to pending_fresh_session, stop and report. Dedicated fresh session: do only this task (h9a to h9j)",
-        "status": "pending",
+        "status": "pending_fresh_session",
         "gate": "h8",
-        "notes": ""
+        "notes": "Handoff prepared in UI_PASS_HANDOFF.md. The UI refinement pass is strictly reserved for a dedicated fresh session per the contract rules."
       }
     ]
   }
