@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": true,
-  "last_updated_utc": "2026-10-17T10:43:36.495628+00:00",
+  "last_updated_utc": "2026-10-17T12:37:18.636919+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1781,5 +1781,82 @@
       }
     ],
     "completed_utc": "2026-10-17T10:43:36.495628+00:00"
+  },
+  "fixes_oct17_v1": {
+    "status": "in_progress",
+    "work_complete": false,
+    "started_utc": "2026-10-17T12:37:18.636919+00:00",
+    "tasks": [
+      {
+        "id": "h0",
+        "title": "Clone both repos, read BUILD_STATE.json files, seed fixes_oct17_v1 with gate, commit and push",
+        "status": "done",
+        "gate": null,
+        "notes": "Cloned vjumbo264/forgebuild, vjumbo264/forgehouse50. Verified all prior tasks complete. Appended prompt to PROMPT_HISTORY/forgehouse50.md. Seeded fixes_oct17_v1 with gates h0-h9."
+      },
+      {
+        "id": "h1",
+        "title": "Item 1: translations repair: 1a format break and tolerant parser and old-build compatibility, 1b switching works, 1c single translations screen with live progress; release the app",
+        "status": "pending",
+        "gate": "h0",
+        "notes": ""
+      },
+      {
+        "id": "h2",
+        "title": "Item 2: reader redesign: 2a header, 2b bottom dock, 2c counters, 2d tests and website parity",
+        "status": "pending",
+        "gate": "h1",
+        "notes": ""
+      },
+      {
+        "id": "h3",
+        "title": "Item 3: updater with two modes, resilient install state machine, home card",
+        "status": "pending",
+        "gate": "h2",
+        "notes": ""
+      },
+      {
+        "id": "h4",
+        "title": "Item 4: Prayer and Application to leaders, send feedback states, timestamps (4a, 4b, 4c)",
+        "status": "pending",
+        "gate": "h3",
+        "notes": ""
+      },
+      {
+        "id": "h5",
+        "title": "Item 5: dynamic home screen",
+        "status": "pending",
+        "gate": "h4",
+        "notes": ""
+      },
+      {
+        "id": "h6",
+        "title": "Item 6: branded quote images",
+        "status": "pending",
+        "gate": "h5",
+        "notes": ""
+      },
+      {
+        "id": "h7",
+        "title": "Item 7: complete changelog and What's new",
+        "status": "pending",
+        "gate": "h6",
+        "notes": ""
+      },
+      {
+        "id": "h8",
+        "title": "Item 8: final release, deploy and verification",
+        "status": "pending",
+        "gate": "h7",
+        "notes": ""
+      },
+      {
+        "id": "h9",
+        "title": "Item 9: UI refinement pass. Working session: write UI_PASS_HANDOFF.md, set h9 to pending_fresh_session, stop and report. Dedicated fresh session: do only this task (h9a to h9j)",
+        "status": "pending",
+        "gate": "h8",
+        "notes": ""
+      }
+    ]
   }
 }
