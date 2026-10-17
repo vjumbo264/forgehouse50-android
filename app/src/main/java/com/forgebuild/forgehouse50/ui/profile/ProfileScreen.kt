@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -286,7 +287,9 @@ fun ProfileScreen(
         Spacer(Modifier.height(16.dp))
 
         // Action row: In-app update status
-        val updateState by UpdateManager.uiState.collectAsState()
+        var showUpdateChoiceDialog by remember { mutableStateOf(false) }
+    var availableUpdateForChoice by remember { mutableStateOf<com.forgebuild.forgehouse50.update.UpdateInfo?>(null) }
+    val updateState by UpdateManager.uiState.collectAsState()
         val updateContext = LocalContext.current
 
         Surface(
@@ -296,7 +299,8 @@ fun ProfileScreen(
                         UpdateManager.check(updateContext, repo.session, force = true)
                     }
                     is UpdateUiState.Available -> {
-                        UpdateManager.startDownload(updateContext, repo.session, s.update, isHidden = false)
+                        availableUpdateForChoice = s.update
+                        showUpdateChoiceDialog = true
                     }
                     is UpdateUiState.Downloading -> {
                         if (s.isHidden) {
@@ -798,6 +802,50 @@ fun ProfileScreen(
                 }
             },
             confirmButton = { TextButton(onClick = { pickingAvatar = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (showUpdateChoiceDialog && availableUpdateForChoice != null) {
+        val upd = availableUpdateForChoice!!
+        AlertDialog(
+            onDismissRequest = { showUpdateChoiceDialog = false },
+            title = { Text("Update available") },
+            text = {
+                Column(Modifier.fillMaxWidth()) {
+                    Text(
+                        "Version ${upd.versionName} is available. Choose how you would like to get this update:",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(
+                        onClick = {
+                            showUpdateChoiceDialog = false
+                            repo.session.preferredUpdateMode = "in_app"
+                            UpdateManager.startDownload(updateContext, repo.session, upd, isHidden = false)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Download in the app")
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            showUpdateChoiceDialog = false
+                            repo.session.preferredUpdateMode = "browser"
+                            com.forgebuild.forgehouse50.update.UpdateChecker.openInBrowser(updateContext, upd.apkUrl)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Open download link in browser")
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showUpdateChoiceDialog = false }) {
+                    Text("Later")
+                }
+            },
         )
     }
 }

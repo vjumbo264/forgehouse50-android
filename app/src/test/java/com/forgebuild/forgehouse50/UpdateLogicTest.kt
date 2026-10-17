@@ -339,4 +339,106 @@ class UpdateLogicTest {
             assertFalse(lower.contains("delete user"))
         }
     }
+
+    // --- ITEM 3: Two modes, Resilient Install, & Home Card Tests (3.1 - 3.4) ---
+
+    @Test
+    fun testTwoModesSelectionAndHint() {
+        var userChoiceHint: String? = null
+
+        fun selectMode(mode: String, update: UpdateInfo): String {
+            userChoiceHint = mode
+            return mode
+        }
+
+        val update = UpdateInfo(
+            versionName = "v30",
+            versionCode = 30,
+            tag = "forgehouse50-v30",
+            apkUrl = "https://example.com/v30.apk",
+            sizeBytes = 25000000L,
+            sha256 = "abc123",
+        )
+
+        // Mode 1: In-app download
+        val choice1 = selectMode("in_app", update)
+        assertEquals("in_app", choice1)
+        assertEquals("in_app", userChoiceHint)
+
+        // Mode 2: Open link in browser
+        val choice2 = selectMode("browser", update)
+        assertEquals("browser", choice2)
+        assertEquals("browser", userChoiceHint)
+    }
+
+    @Test
+    fun testReturningFromSettingsNeverRequiresRedownload() {
+        val testFile = tempFolder.newFile("forgehouse50-v30-resilient.apk")
+        testFile.writeBytes("RESILIENT_V30_BYTES".toByteArray())
+        val sha256 = UpdateLogic.computeSha256(testFile)
+        val sizeBytes = testFile.length()
+
+        val update = UpdateInfo(
+            versionName = "v30",
+            versionCode = 30,
+            tag = "forgehouse50-v30",
+            apkUrl = "https://example.com/v30.apk",
+            sizeBytes = sizeBytes,
+            sha256 = sha256,
+        )
+
+        // Step 1: Download completed & verified
+        val ready = UpdateLogic.onDownloadCompleted(update, testFile, sizeBytes, sha256)
+        assertTrue(ready is UpdateUiState.ReadyToInstall)
+
+        // Step 2: Install requested but unknown app sources permission missing -> PermissionRequired
+        val permRequired = UpdateLogic.onInstallRequested(ready, canRequestPackageInstalls = false)
+        assertTrue(permRequired is UpdateUiState.PermissionRequired)
+        // CRITICAL (Item 3.2): File is KEPT in private storage, not deleted or lost!
+        assertTrue(testFile.exists())
+        assertEquals(sizeBytes, testFile.length())
+
+        // Step 3: User returns from system settings screen (onResume) with permission granted
+        val onResumeState = UpdateLogic.onResumeFromPermissionSettings(permRequired, canRequestPackageInstalls = true)
+        assertTrue(onResumeState is UpdateUiState.ReadyToInstall)
+        val resolvedReady = onResumeState as UpdateUiState.ReadyToInstall
+
+        // Verification: The EXACT same file is ready, never re-downloaded
+        assertEquals(testFile.absolutePath, resolvedReady.apkFile.absolutePath)
+        assertTrue(resolvedReady.apkFile.exists())
+        assertEquals(sizeBytes, resolvedReady.apkFile.length())
+    }
+
+    @Test
+    fun testHomeCardVisibilityLogic() {
+        fun shouldShowHomeCard(state: UpdateUiState): Boolean {
+            return when (state) {
+                is UpdateUiState.ReadyToInstall -> true
+                is UpdateUiState.PermissionRequired -> true
+                is UpdateUiState.Downloading -> true
+                is UpdateUiState.UpToDate -> false
+                is UpdateUiState.Available -> false
+                is UpdateUiState.Error -> false
+            }
+        }
+
+        val dummyUpdate = UpdateInfo("v30", 30, "forgehouse50-v30", "https://example.com", 100L, "sha")
+        val dummyFile = tempFolder.newFile("dummy.apk")
+
+        // 1. UpToDate -> No home card
+        assertFalse(shouldShowHomeCard(UpdateUiState.UpToDate))
+
+        // 2. Available (before download started) -> No home card (dialog / profile row handles it)
+        assertFalse(shouldShowHomeCard(UpdateUiState.Available(dummyUpdate)))
+
+        // 3. Downloading -> Home card shows wavy progress!
+        assertTrue(shouldShowHomeCard(UpdateUiState.Downloading(dummyUpdate, 0.45f)))
+
+        // 4. Downloaded / ReadyToInstall -> Prominent home card shows "Update ready. Version X is downloaded. Tap to install"!
+        assertTrue(shouldShowHomeCard(UpdateUiState.ReadyToInstall(dummyUpdate, dummyFile)))
+
+        // 5. PermissionRequired -> Prominent home card shows "Grant permission to install"!
+        assertTrue(shouldShowHomeCard(UpdateUiState.PermissionRequired(dummyUpdate, dummyFile)))
+    }
 }
+

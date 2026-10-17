@@ -1,6 +1,14 @@
 package com.forgebuild.forgehouse50.ui.home
 
 import com.forgebuild.forgehouse50.data.CommunityPost
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.runtime.collectAsState
+import com.forgebuild.forgehouse50.update.UpdateManager
+import com.forgebuild.forgehouse50.update.UpdateUiState
+import com.forgebuild.forgehouse50.update.UpdateChecker
+import com.forgebuild.forgehouse50.ui.ExpressiveLinearProgress
+import com.forgebuild.forgehouse50.ui.ExpressiveButton
+import androidx.compose.foundation.BorderStroke
 import com.forgebuild.forgehouse50.data.Announcement
 import com.forgebuild.forgehouse50.ui.announcements.formatAnnouncementDate
 import androidx.compose.material.icons.filled.Campaign
@@ -234,7 +242,158 @@ fun HomeScreen(
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
+
+        // ITEM 3: Prominent Home Screen Update Card
+        val updateState by UpdateManager.uiState.collectAsState()
+        when (val s = updateState) {
+            is UpdateUiState.ReadyToInstall -> {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Filled.SystemUpdate,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Update ready",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                "Version ${s.update.versionName} is downloaded. Tap to install.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                            )
+                        }
+                        ExpressiveButton(
+                            onClick = { UpdateManager.triggerInstall(context) },
+                        ) {
+                            Text("Install")
+                        }
+                    }
+                }
+            }
+            is UpdateUiState.PermissionRequired -> {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Filled.SystemUpdate,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondary,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Permission required",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                "Version ${s.update.versionName} is downloaded. Grant permission to install.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.85f),
+                            )
+                        }
+                        ExpressiveButton(
+                            onClick = { UpdateChecker.openUnknownAppSourcesSettings(context) },
+                        ) {
+                            Text("Settings")
+                        }
+                    }
+                }
+            }
+            is UpdateUiState.Downloading -> {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                "Downloading update…",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                "${(s.progress * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        ExpressiveLinearProgress(
+                            progress = { s.progress },
+                            modifier = Modifier.fillMaxWidth().height(4.dp),
+                        )
+                    }
+                }
+            }
+            else -> {}
+        }
+
+        Spacer(Modifier.height(8.dp))
 
         // Three Stat Cards (Pills with soft icon chips and bold large numerals)
         val stats = today?.stats

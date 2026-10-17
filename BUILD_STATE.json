@@ -1818,9 +1818,9 @@
       {
         "id": "h3",
         "title": "Item 3: updater with two modes, resilient install state machine, home card",
-        "status": "pending",
+        "status": "done",
         "gate": "h2",
-        "notes": ""
+        "notes": "DONE (h3): (1) Two update modes (3.1): added choice prompt in AppNavHost and ProfileScreen with Download in the app and Open download link in browser; user choice remembered as hint in SessionStore.preferredUpdateMode. (2) Resilient in-app flow (3.2): state machine persisted in SessionStore and private updates directory. On unknown app sources permission request, MainActivity.onResume observes return and checks canRequestPackageInstalls() to trigger immediate installation of the already downloaded, SHA-256 verified file without requiring a restart or second download. (3) Prominent home-screen card (3.3): renders at the top of HomeScreen when ReadyToInstall with Install action, or PermissionRequired with Settings action, and wavy linear progress while Downloading; card disappears when up-to-date. (4) Unit tests (3.4) passing in UpdateLogicTest.kt."
       },
       {
         "id": "h4",

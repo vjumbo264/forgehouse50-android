@@ -102,6 +102,10 @@ class SessionStore(context: Context) {
         get() = prefs.getString(KEY_DOWNLOADED_UPDATE_SHA256, null)
         set(value) = prefs.edit().putString(KEY_DOWNLOADED_UPDATE_SHA256, value).apply()
 
+    var preferredUpdateMode: String?
+        get() = prefs.getString(KEY_PREFERRED_UPDATE_MODE, null)
+        set(value) = prefs.edit().putString(KEY_PREFERRED_UPDATE_MODE, value).apply()
+
     var downloadedUpdateVersionName: String?
         get() = prefs.getString(KEY_DOWNLOADED_UPDATE_VN, null)
         set(value) = prefs.edit().putString(KEY_DOWNLOADED_UPDATE_VN, value).apply()
@@ -147,6 +151,7 @@ class SessionStore(context: Context) {
         const val KEY_DOWNLOADED_UPDATE_VC = "downloaded_update_vc"
         const val KEY_DOWNLOADED_UPDATE_PATH = "downloaded_update_path"
         const val KEY_DOWNLOADED_UPDATE_SHA256 = "downloaded_update_sha256"
+        const val KEY_PREFERRED_UPDATE_MODE = "preferred_update_mode"
         const val KEY_DOWNLOADED_UPDATE_VN = "downloaded_update_vn"
     }
 }

@@ -53,6 +53,9 @@ class MainActivity : ComponentActivity() {
         // Opportunistic widget refresh whenever the app is foregrounded, so the
         // home-screen widget never shows stale day/progress data.
         WidgetRefreshWorker.refreshNow(applicationContext)
+        // Item 3: resilient install flow — if user returns from unknown app sources settings
+        // with permission granted, trigger install of the already downloaded file immediately
+        com.forgebuild.forgehouse50.update.UpdateManager.onResume(applicationContext)
     }
 }
 

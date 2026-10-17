@@ -23,6 +23,11 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -410,16 +415,34 @@ fun AppNavHost(
                         },
                         title = { Text("Update available") },
                         text = {
-                            Text(
-                                "Version ${update.versionName} is ready to install$formattedSize.",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
+                            Column(Modifier.fillMaxWidth()) {
+                                Text(
+                                    "Version ${update.versionName} is ready to install$formattedSize. Choose how you would like to get this update:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                Button(
+                                    onClick = {
+                                        repo.session.preferredUpdateMode = "in_app"
+                                        UpdateManager.startDownload(context, repo.session, update, isHidden = false)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text("Download in the app")
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        repo.session.preferredUpdateMode = "browser"
+                                        UpdateChecker.openInBrowser(context, update.apkUrl)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text("Open download link in browser")
+                                }
+                            }
                         },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                UpdateManager.startDownload(context, repo.session, update, isHidden = false)
-                            }) { Text("Update now") }
-                        },
+                        confirmButton = {},
                         dismissButton = {
                             TextButton(onClick = {
                                 repo.session.updateLaterDismissedAt = System.currentTimeMillis()
