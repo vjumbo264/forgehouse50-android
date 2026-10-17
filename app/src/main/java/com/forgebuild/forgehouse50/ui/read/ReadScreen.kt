@@ -1,6 +1,14 @@
 package com.forgebuild.forgehouse50.ui.read
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Slider
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.sp
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
@@ -350,6 +358,33 @@ fun ReadScreen(
         }
     }
 
+    // Measured heights for header and bottom dock to guarantee zero overlap and full scroll clearance
+    var headerHeightDp by remember { mutableStateOf(116.dp) }
+    var bottomDockHeightDp by remember { mutableStateOf(140.dp) }
+    val density = LocalDensity.current
+    var showFontSizeDialog by remember { mutableStateOf(false) }
+
+    // Calm reader counters (2c): verses remaining in current chapter and chapters remaining in day
+    val counterState by remember(currentChapterInfo, chapterPassages.toMap(), listState) {
+        derivedStateOf {
+            val bounds = currentChapterInfo ?: return@derivedStateOf (0 to 0)
+            val p = chapterPassages[Pair(bounds.book, bounds.chapter)]
+            val totalVerses = p?.verses?.size ?: 0
+            val introCount = p?.intros?.size ?: 0
+            val verseStartIndex = bounds.startIndex + 1 + introCount
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val vLeft = when {
+                lastVisible < verseStartIndex -> totalVerses
+                lastVisible >= verseStartIndex + totalVerses -> 0
+                else -> (verseStartIndex + totalVerses - 1 - lastVisible).coerceIn(0, totalVerses)
+            }
+            val cLeft = (chapters.size - 1 - bounds.chapterIdx).coerceAtLeast(0)
+            vLeft to cLeft
+        }
+    }
+    val versesLeft = counterState.first
+    val chaptersLeft = counterState.second
+
     var selectedVerses by remember(currentChapterIdx, activeIdx) { mutableStateOf<Set<Int>>(emptySet()) }
     var openFootnoteVerse by remember(activeDay) { mutableStateOf<Int?>(null) }
 
@@ -392,7 +427,7 @@ fun ReadScreen(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 110.dp, bottom = 160.dp, start = 20.dp, end = 20.dp),
+            contentPadding = PaddingValues(top = headerHeightDp + 8.dp, bottom = bottomDockHeightDp + 16.dp, start = 20.dp, end = 20.dp),
         ) {
             if (!dayLoaded) {
                 item(key = "loading_day") {
@@ -650,72 +685,51 @@ fun ReadScreen(
             }
         }
 
-        // Compact top bar + actions row + progress bar (Item 3d)
+                // Redesigned compact header (2a) & counters (2c)
         Surface(
-            modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-            tonalElevation = 3.dp,
-            shadowElevation = 4.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .onGloballyPositioned { coordinates ->
+                    headerHeightDp = with(density) { coordinates.size.height.toDp() }
+                },
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+            tonalElevation = 4.dp,
+            shadowElevation = 6.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
         ) {
-            Column(Modifier.fillMaxWidth()) {
-                // Title and primary controls row
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+            ) {
+                // Row 1: Back arrow, Title (never truncates mid-word), translation chip, Aa text size, Add note
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.size(48.dp),
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
 
-                    Column(Modifier.weight(1f).padding(horizontal = 4.dp)) {
-                        Text(
-                            "${currentChapter?.first.orEmpty()} ${currentChapter?.second ?: 1}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                        )
-                        Text(
-                            "Chapter ${currentChapterIdx + 1} of ${chapters.size}${if (days.size > 1) " · Day $activeDay" else ""}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
-                        )
-                    }
+                    // Title with Book & Chapter - never truncates mid-word
+                    Text(
+                        text = "${currentChapter?.first.orEmpty()} ${currentChapter?.second ?: 1}",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 8.dp),
+                    )
 
-                    // Chapter navigation shortcuts
-                    IconButton(
-                        onClick = {
-                            if (currentChapterIdx > 0) {
-                                val targetBounds = chapterBoundsList.getOrNull(currentChapterIdx - 1)
-                                if (targetBounds != null) {
-                                    scope.launch { listState.animateScrollToItem(targetBounds.startIndex) }
-                                }
-                            }
-                        },
-                        enabled = currentChapterIdx > 0,
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous chapter")
-                    }
-
-                    IconButton(
-                        onClick = {
-                            if (currentChapterIdx < chapters.lastIndex) {
-                                val targetBounds = chapterBoundsList.getOrNull(currentChapterIdx + 1)
-                                if (targetBounds != null) {
-                                    scope.launch { listState.animateScrollToItem(targetBounds.startIndex) }
-                                }
-                            }
-                        },
-                        enabled = currentChapterIdx < chapters.lastIndex,
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next chapter")
-                    }
-
-                    // Translation chip
+                    // Compact translation chip (tap opens bottom sheet)
                     FilterChip(
                         selected = true,
                         onClick = { showTranslationPicker = true },
@@ -729,53 +743,47 @@ fun ReadScreen(
                         leadingIcon = {
                             Icon(Icons.Filled.LibraryBooks, null, modifier = Modifier.size(14.dp))
                         },
-                        modifier = Modifier.padding(horizontal = 2.dp),
+                        modifier = Modifier.padding(end = 4.dp),
                     )
 
-                    // Font size controls
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier.padding(start = 2.dp),
+                    // Text size button (replaces oversized A-/A+ pill: opens compact dialog with slider and preview)
+                    IconButton(
+                        onClick = { showFontSizeDialog = true },
+                        modifier = Modifier.size(44.dp),
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(
-                                onClick = {
-                                    fontScale = (fontScale - 0.1f).coerceAtLeast(0.85f)
-                                    repo.session.fontScale = fontScale
-                                },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                            ) { Text("A\u2212", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium) }
-                            TextButton(
-                                onClick = {
-                                    fontScale = (fontScale + 0.1f).coerceAtMost(1.6f)
-                                    repo.session.fontScale = fontScale
-                                },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                            ) { Text("A+", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium) }
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ) {
+                            Text(
+                                "Aa",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
                         }
                     }
 
-                    // Note action
-                    IconButton(onClick = {
-                        val cur = currentChapter
-                        val b = cur?.first.orEmpty()
-                        val c = cur?.second ?: 0
-                        val v = ScriptureReferenceUtils.formatVerseRange(selectedVerses)
-                        selectedVerses = emptySet()
-                        onAddNote(activeDay, b, c, v, null)
-                    }) {
-                        Icon(Icons.Filled.Edit, "Add note")
+                    // Note shortcut
+                    IconButton(
+                        onClick = {
+                            val cur = currentChapter
+                            onAddNote(activeDay, cur?.first.orEmpty(), cur?.second ?: 1, "1", "observation")
+                        },
+                        modifier = Modifier.size(44.dp),
+                    ) {
+                        Icon(Icons.Filled.Edit, "Add note", modifier = Modifier.size(20.dp))
                     }
                 }
 
-                // Catch-up multi-day tabs (only when session has > 1 day)
+                // Row 2 (slim, optional): Day tabs only when catch-up or read-ahead exist
                 if (days.size > 1) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 14.dp, vertical = 2.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         days.forEachIndexed { idx, d ->
@@ -790,7 +798,91 @@ fun ReadScreen(
                     }
                 }
 
-                // Slim chapter progress indicator (resets to 0 when moving to next chapter)
+                // Row 3: Chapter indicator + chapter nav shortcuts + calm verses/chapters remaining counter chip
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Chapter number with real total (never truncated)
+                    Text(
+                        text = "Chapter ${currentChapterIdx + 1} of ${chapters.size}${if (days.size > 1) " · Day $activeDay" else ""}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+
+                    // Small chapter navigation shortcuts
+                    IconButton(
+                        onClick = {
+                            if (currentChapterIdx > 0) {
+                                val targetBounds = chapterBoundsList.getOrNull(currentChapterIdx - 1)
+                                if (targetBounds != null) {
+                                    scope.launch { listState.animateScrollToItem(targetBounds.startIndex) }
+                                }
+                            }
+                        },
+                        enabled = currentChapterIdx > 0,
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous chapter", Modifier.size(18.dp))
+                    }
+
+                    IconButton(
+                        onClick = {
+                            if (currentChapterIdx < chapters.lastIndex) {
+                                val targetBounds = chapterBoundsList.getOrNull(currentChapterIdx + 1)
+                                if (targetBounds != null) {
+                                    scope.launch { listState.animateScrollToItem(targetBounds.startIndex) }
+                                }
+                            }
+                        },
+                        enabled = currentChapterIdx < chapters.lastIndex,
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next chapter", Modifier.size(18.dp))
+                    }
+
+                    Spacer(Modifier.weight(1f))
+
+                    // Calm Counters Chip (2c)
+                    if (isCurrentDone) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                        ) {
+                            Text(
+                                "Completed",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            )
+                        }
+                    } else if (versesLeft > 0 || chaptersLeft > 0) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                        ) {
+                            val counterText = if (chaptersLeft > 0) {
+                                "$versesLeft verses · $chaptersLeft ch left"
+                            } else {
+                                "$versesLeft verses left"
+                            }
+                            Text(
+                                counterText,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+                }
+
+                // Thin progress bar for current chapter (height 3dp, resets per chapter)
                 ExpressiveLinearProgress(
                     progress = { currentChapterProgress.coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth().height(3.dp),
@@ -799,226 +891,340 @@ fun ReadScreen(
             }
         }
 
-        // Verse selection action bar (floats above bottom panel when verses are selected)
-        if (selectedVerses.isNotEmpty()) {
-            val rangeText = ScriptureReferenceUtils.formatVerseRange(selectedVerses).orEmpty()
-            Surface(
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 6.dp,
-                shadowElevation = 6.dp,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = 16.dp, vertical = 100.dp),
-            ) {
-                Row(
-                    Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = "v. $rangeText",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(start = 4.dp),
-                    )
-                    Spacer(Modifier.weight(1f))
-                    FilledTonalButton(
-                        onClick = {
-                            val cur = currentChapter
-                            val b = cur?.first.orEmpty()
-                            val c = cur?.second ?: 0
-                            val v = rangeText
-                            selectedVerses = emptySet()
-                            onAddNote(activeDay, b, c, v, "question")
-                        },
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    ) {
-                        Icon(Icons.Filled.HelpOutline, null, Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Question", style = MaterialTheme.typography.labelMedium)
-                    }
-                    Button(
-                        onClick = {
-                            val cur = currentChapter
-                            val b = cur?.first.orEmpty()
-                            val c = cur?.second ?: 0
-                            val v = rangeText
-                            selectedVerses = emptySet()
-                            onAddNote(activeDay, b, c, v, "observation")
-                        },
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    ) {
-                        Icon(Icons.Filled.Edit, null, Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Add note", style = MaterialTheme.typography.labelMedium)
-                    }
-                    IconButton(
-                        onClick = { selectedVerses = emptySet() },
-                        modifier = Modifier.size(28.dp),
-                    ) {
-                        Icon(Icons.Filled.Close, "Clear selection", Modifier.size(16.dp))
-                    }
-                }
-            }
-        }
-
-        // Floating bottom panel: timer, encouragement line, completion button
+        // ONE bottom dock composable (2b): owns all bottom UI and reserves real height in contentPadding
         Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
             tonalElevation = 8.dp,
-            shadowElevation = 8.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+            shadowElevation = 10.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .onGloballyPositioned { coordinates ->
+                    bottomDockHeightDp = with(density) { coordinates.size.height.toDp() }
+                }
+                .animateContentSize(),
         ) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp)) {
-                if (isCurrentDone) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                if (selectedVerses.isNotEmpty()) {
+                    // Verse Selected State (never overlaps timer: replaces timer inside dock, with timer chip visible)
+                    val rangeText = ScriptureReferenceUtils.formatVerseRange(selectedVerses).orEmpty()
                     Row(
-                        Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                        Spacer(Modifier.width(10.dp))
-                        Text(
-                            if (days.size > 1) "Day $activeDay reading complete" else "Reading complete",
-                            Modifier.weight(1f),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        ExpressiveButton(onClick = { onOpenQuiz(activeDay) }) {
-                            Icon(Icons.Filled.Quiz, null, Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Quiz")
-                        }
-                    }
-                    if (days.size > 1 && activeIdx < days.lastIndex && !completedDays.contains(days[activeIdx + 1])) {
-                        Spacer(Modifier.height(8.dp))
-                        ExpressiveButton(
-                            onClick = { activeIdx++ },
-                            modifier = Modifier.fillMaxWidth(),
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
                         ) {
-                            Text("Continue with day ${days[activeIdx + 1]}")
+                            Text(
+                                text = "v. $rangeText",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
+
+                        // Running timer chip remains visible in selection state
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                        ) {
+                            val m = timerTick / 60
+                            val s = timerTick % 60
+                            Text(
+                                text = String.format("%d:%02d", m, s),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                            )
+                        }
+
+                        Spacer(Modifier.weight(1f))
+
+                        FilledTonalButton(
+                            onClick = {
+                                val cur = currentChapter
+                                val b = cur?.first.orEmpty()
+                                val c = cur?.second ?: 0
+                                val v = rangeText
+                                selectedVerses = emptySet()
+                                onAddNote(activeDay, b, c, v, "question")
+                            },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        ) {
+                            Icon(Icons.Filled.HelpOutline, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Question", style = MaterialTheme.typography.labelMedium)
+                        }
+
+                        Button(
+                            onClick = {
+                                val cur = currentChapter
+                                val b = cur?.first.orEmpty()
+                                val c = cur?.second ?: 0
+                                val v = rangeText
+                                selectedVerses = emptySet()
+                                onAddNote(activeDay, b, c, v, "observation")
+                            },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        ) {
+                            Icon(Icons.Filled.Edit, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Add note", style = MaterialTheme.typography.labelMedium)
+                        }
+
+                        IconButton(
+                            onClick = { selectedVerses = emptySet() },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(Icons.Filled.Close, "Clear selection", Modifier.size(18.dp))
                         }
                     }
                 } else {
-                    // Status & Encouragement Row
-                    Row(
-                        Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        if (isIdlePaused) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Icon(
-                                    Icons.Filled.Pause,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    "Paused. Touch the screen to continue",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                )
-                            }
-                        } else if (hasMinTime) {
-                            val encouragement = ReaderEncouragement.getMessage(timerTick)
+                    // Reading State
+                    if (isCurrentDone) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                            Spacer(Modifier.width(10.dp))
                             Text(
-                                encouragement ?: "Ready to mark complete",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.weight(1f),
+                                if (days.size > 1) "Day $activeDay reading complete" else "Reading complete",
+                                Modifier.weight(1f),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
                             )
-                        } else {
-                            val helperText = if (!finalChapterReached) {
-                                "Reach the last chapter to complete"
-                            } else {
-                                timer.formattedRemaining()
+                            ExpressiveButton(onClick = { onOpenQuiz(activeDay) }) {
+                                Icon(Icons.Filled.Quiz, null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Quiz")
                             }
+                        }
+                        if (days.size > 1 && activeIdx < days.lastIndex && !completedDays.contains(days[activeIdx + 1])) {
+                            Spacer(Modifier.height(8.dp))
+                            ExpressiveButton(
+                                onClick = { activeIdx++ },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text("Continue with day ${days[activeIdx + 1]}")
+                            }
+                        }
+                    } else {
+                        // Timer & encouragement row
+                        Row(
+                            Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            if (isIdlePaused) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Pause,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        "Paused. Touch screen to resume",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                    )
+                                }
+                            } else {
+                                val encouragement = remember(timerTick) {
+                                    ReaderEncouragement.forReadingTime(timerTick)
+                                }
+                                Text(
+                                    encouragement,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                )
+                            }
+
+                            val m = timerTick / 60
+                            val s = timerTick % 60
                             Text(
-                                helperText,
+                                String.format("%d:%02d / 5:00", m, s),
                                 style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.weight(1f),
+                                fontWeight = FontWeight.Bold,
+                                color = if (hasMinTime) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
 
-                        Spacer(Modifier.width(8.dp))
-
-                        Text(
-                            timer.formattedTimer(),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    // Complete Day Button
-                    ExpressiveButton(
-                        onClick = {
-                            if (completeBusy || !canComplete) return@ExpressiveButton
-                            scope.launch {
-                                completeBusy = true
-                                error = null
-                                val sec = timer.getReadingSeconds()
-                                val firstOpened = timer.getFirstOpenedAt()
-                                val res = runCatching {
-                                    repo.api.completeDay(
-                                        n = activeDay,
-                                        readingSeconds = sec,
-                                        firstOpenedAt = firstOpened,
-                                        finalChapterReached = true,
-                                    )
+                        // Helper text when day completion is disabled
+                        if (!canComplete) {
+                            val helper = when {
+                                !hasMinTime -> {
+                                    val rem = (300 - timerTick).coerceAtLeast(0)
+                                    "Read for ${rem / 60}:${String.format("%02d", rem % 60)} more to complete"
                                 }
-                                if (res.isSuccess) {
-                                    timer.clear()
-                                    posStorage.clear(uid, activeDay)
-                                    completedDays = completedDays + activeDay
-                                    dayData?.let { cur ->
-                                        val upd = cur.copy(progress = cur.progress.copy(completed = true))
-                                        dayData = upd
-                                        AppCache.saveDay(context, activeDay, upd)
-                                    }
-                                    com.forgebuild.forgehouse50.widget.WidgetRefreshWorker.refreshWidgetState(context, repo)
-                                    com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
-                                } else {
-                                    val ex = res.exceptionOrNull()
-                                    val msg = ex?.message.orEmpty()
-                                    if (msg.contains("reading_time_too_short")) {
-                                        error = "Minimum 5 minutes of reading required. Please keep reading."
-                                    } else {
-                                        OfflineCompletionQueue(context).enqueue(
-                                            uid,
-                                            PendingCompletion(activeDay, sec, firstOpened, true),
-                                        )
-                                        error = "Completion saved offline. Will sync when reconnected."
-                                    }
-                                }
-                                completeBusy = false
+                                !finalChapterReached -> "Reach the final chapter (${chapters.lastOrNull()?.let { "${it.first} ${it.second}" } ?: "end"}) to complete"
+                                else -> ""
                             }
-                        },
-                        Modifier.fillMaxWidth(),
-                        enabled = canComplete,
-                        busy = completeBusy,
-                    ) {
-                        Text("Mark day $activeDay reading complete")
+                            if (helper.isNotBlank()) {
+                                Text(
+                                    helper,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.padding(bottom = 6.dp),
+                                )
+                            }
+                        }
+
+                        if (error != null) {
+                            Text(
+                                error.orEmpty(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(bottom = 6.dp),
+                            )
+                        }
+
+                        // Complete Day Button
+                        ExpressiveButton(
+                            onClick = {
+                                if (completeBusy || !canComplete) return@ExpressiveButton
+                                scope.launch {
+                                    completeBusy = true
+                                    error = null
+                                    val sec = timer.getReadingSeconds()
+                                    val firstOpened = timer.getFirstOpenedAt()
+                                    val res = runCatching {
+                                        repo.api.completeDay(
+                                            n = activeDay,
+                                            readingSeconds = sec,
+                                            firstOpenedAt = firstOpened,
+                                            finalChapterReached = true,
+                                        )
+                                    }
+                                    if (res.isSuccess) {
+                                        timer.clear()
+                                        posStorage.clear(uid, activeDay)
+                                        completedDays = completedDays + activeDay
+                                        dayData?.let { cur ->
+                                            val upd = cur.copy(progress = cur.progress.copy(completed = true))
+                                            dayData = upd
+                                            AppCache.saveDay(context, activeDay, upd)
+                                        }
+                                        com.forgebuild.forgehouse50.widget.WidgetRefreshWorker.refreshWidgetState(context, repo)
+                                        com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
+                                    } else {
+                                        val ex = res.exceptionOrNull()
+                                        val msg = ex?.message.orEmpty()
+                                        if (msg.contains("reading_time_too_short")) {
+                                            error = "Minimum 5 minutes of reading required. Please keep reading."
+                                        } else {
+                                            OfflineCompletionQueue(context).enqueue(
+                                                uid,
+                                                PendingCompletion(activeDay, sec, firstOpened, true),
+                                            )
+                                            error = "Completion saved offline. Will sync when reconnected."
+                                        }
+                                    }
+                                    completeBusy = false
+                                }
+                            },
+                            Modifier.fillMaxWidth(),
+                            enabled = canComplete,
+                            busy = completeBusy,
+                        ) {
+                            Text("Mark day $activeDay reading complete")
+                        }
                     }
                 }
             }
         }
+
+        // Compact font size dialog (Aa)
+        if (showFontSizeDialog) {
+            AlertDialog(
+                onDismissRequest = { showFontSizeDialog = false },
+                title = {
+                    Text(
+                        "Text size",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    fontScale = (fontScale - 0.1f).coerceAtLeast(0.85f)
+                                    repo.session.fontScale = fontScale
+                                },
+                            ) {
+                                Text("A-", fontWeight = FontWeight.Bold)
+                            }
+                            Slider(
+                                value = fontScale,
+                                onValueChange = {
+                                    fontScale = it
+                                    repo.session.fontScale = it
+                                },
+                                valueRange = 0.85f..1.6f,
+                                steps = 6,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(
+                                onClick = {
+                                    fontScale = (fontScale + 0.1f).coerceAtMost(1.6f)
+                                    repo.session.fontScale = fontScale
+                                },
+                            ) {
+                                Text("A+", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        ) {
+                            Text(
+                                "The word of God is living and active.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(14.dp),
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showFontSizeDialog = false }) {
+                        Text("Done")
+                    }
+                },
+            )
+        }
+
         if (showTranslationPicker) {
             ModalBottomSheet(
                 onDismissRequest = { showTranslationPicker = false },
