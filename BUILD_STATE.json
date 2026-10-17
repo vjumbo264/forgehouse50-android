@@ -1839,9 +1839,9 @@
       {
         "id": "h6",
         "title": "Item 6: branded quote images",
-        "status": "pending",
+        "status": "done",
         "gate": "h5",
-        "notes": ""
+        "notes": "DONE (h6): (1) Branded Quote Image Generator implemented (QuoteImageGenerator.kt): renders 1080 x 1350 px portrait quote cards with 3 rotating tasteful tonal background palettes (Sage Ivory, Warm Linen, Mist Mint), large decorative quotation mark, scaled quote text, reference & author in small caps, response container with leader reply, and ForgeHouse 50 branded logo footer. (2) Privacy & safety: strictly respects anonymous author flag (Anonymous), supports prayer/application only if allow_group_share is true, never shares private insight notes, and never embeds user ids or emails in image or file names. (3) Multi-card splitting: automatic text split into continuation cards (1/2, 2/2) when text exceeds single card bounds. (4) System share integration: exports PNGs via FileProvider to private cache with ACTION_SEND and ACTION_SEND_MULTIPLE with clean neutral captions. (5) UI integration: added Share as image to each eligible note and Share Images to the multi-select bar in LeadersInboxTab.kt. (6) Web parity: implemented offscreen canvas rendering and Web Share API / PNG download in web admin. (7) Automated tests passing in QuoteImageGeneratorLogicTest.kt and test_item6_quote_images.mjs."
       },
       {
         "id": "h7",

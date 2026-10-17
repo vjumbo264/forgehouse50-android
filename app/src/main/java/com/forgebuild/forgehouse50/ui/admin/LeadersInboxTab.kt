@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -289,6 +290,25 @@ fun LeadersInboxTab(
                         Spacer(Modifier.width(6.dp))
                         Text("Copy", fontWeight = FontWeight.Bold)
                     }
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            val selectedList = items.filter { it.id in selectedIds && QuoteImageGenerator.canShareAsImage(it) }
+                            if (selectedList.isEmpty()) {
+                                scope.launch { snackbarHostState.showSnackbar("Select at least one eligible answered note to share.") }
+                                return@Button
+                            }
+                            QuoteImageGenerator.shareQuoteImages(context, selectedList)
+                        },
+                        enabled = selectedIds.any { id -> items.any { it.id == id && QuoteImageGenerator.canShareAsImage(it) } },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary
+                        )
+                    ) {
+                        Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Share Images", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -457,6 +477,18 @@ fun LeadersInboxTab(
                                     Text(if (item.reply != null) "Edit Reply" else "Reply", style = MaterialTheme.typography.labelSmall)
                                 }
 
+                                if (isAnswered && QuoteImageGenerator.canShareAsImage(item)) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            QuoteImageGenerator.shareQuoteImages(context, listOf(item))
+                                        },
+                                        modifier = Modifier.height(34.dp)
+                                    ) {
+                                        Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Share as image", style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
                                 if (isAnswered) {
                                     OutlinedButton(
                                         onClick = {
