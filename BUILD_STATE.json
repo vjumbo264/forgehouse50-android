@@ -1761,9 +1761,9 @@
       {
         "id": "g8",
         "title": "Item 8 \u2014 notes UI with pickers (8a), then always-sent-to-leaders inbox, replies, community card, WhatsApp copy (8b)",
-        "status": "pending",
+        "status": "done",
         "gate": "g7",
-        "notes": ""
+        "notes": "DONE (g8): Item 8 Observation and Question notes complete across backend, Android app, and website. (1) Backend: created leader_inbox table, leader_inbox_versions for snapshot history, and community_replies. Backfilled existing observation and question notes. Rate limited at 30 submissions/user/day. Observation and question notes transactionally copy to leader_inbox. Note deletion preserves leader copy; account deletion cascades. Implemented /api/community/posts (published items only, strict anonymity when show_name=0, author_user_id never leaked), /api/community/latest, /api/me/notes/:id/status, and admin inbox management endpoints (reply, publish/unpublish requiring reply, hide, filter by status/type/user/q). (2) Android App: NotesEditScreen redesigned with tappable pickers for Book (searchable 27 NT books), Chapter (1..maxChapters grid), and Verse (range picker). Type selector as segmented chips with icons. Removed typing for references. Text area with character counter (x/5000), draft autosave. Clear policy line and show_name toggle for group sharing. One-time remembered notice dialog. NotesScreen displays 'Sent to leaders' badge and 'Answered' badge with leader reply quote block. HomeScreen 'From the community' card with CommunityScreen infinite scroll feed. Admin LeadersInboxTab with status filtering, reply composer, publish/unpublish, and multi-select 'Copy for WhatsApp' formatted batch messages with Toast confirmation. (3) Unit tests: WhatsAppFormatterTest, ScripturePickersTest, test_item8_community_and_inbox passing 100%."
       },
       {
         "id": "g9",

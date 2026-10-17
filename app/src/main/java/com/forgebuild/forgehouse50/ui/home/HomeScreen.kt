@@ -1,3 +1,9 @@
+import com.forgebuild.forgehouse50.data.CommunityPost
+import com.forgebuild.forgehouse50.data.Announcement
+import com.forgebuild.forgehouse50.ui.announcements.formatAnnouncementDate
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.foundation.clickable
 package com.forgebuild.forgehouse50.ui.home
 
 import android.content.Context
@@ -81,6 +87,8 @@ fun HomeScreen(
     onOpenQuiz: (Int) -> Unit,
     onOpenNotes: () -> Unit,
     onOpenAdmin: () -> Unit,
+    onOpenCommunity: () -> Unit = {},
+    onOpenAnnouncements: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var showNotesPrivacyNotice by remember {
@@ -128,6 +136,9 @@ fun HomeScreen(
         )
     }
 
+    var latestCommunityPost by remember { mutableStateOf<CommunityPost?>(null) }
+    var latestAnnouncement by remember { mutableStateOf<Announcement?>(null) }
+
     val block = today?.today
     var quizDone by remember(block?.day_number) {
         val d = block?.day_number
@@ -169,6 +180,13 @@ fun HomeScreen(
         }
 
         refreshing = false
+
+        runCatching { repo.api.communityLatest() }.onSuccess {
+            latestCommunityPost = it.post
+        }
+        runCatching { repo.api.announcementLatest() }.onSuccess {
+            latestAnnouncement = it.announcement
+        }
 
         // Update home widget with latest snapshot
         WidgetRefreshWorker.refreshWidgetState(context, repo)
@@ -245,7 +263,50 @@ fun HomeScreen(
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
+
+        // Latest Announcement Card (Item 9)
+        if (latestAnnouncement != null) {
+            val ann = latestAnnouncement!!
+            val seenKey = "seen_announcement_" + ann.id
+            var isUnread by remember(ann.id) {
+                mutableStateOf(!context.getSharedPreferences("fh50_announcements", Context.MODE_PRIVATE).getBoolean(seenKey, false))
+            }
+            Card(
+                onClick = {
+                    context.getSharedPreferences("fh50_announcements", Context.MODE_PRIVATE).edit().putBoolean(seenKey, true).apply()
+                    isUnread = false
+                    onOpenAnnouncements()
+                },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Filled.Campaign, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Announcement · " + formatAnnouncementDate(ann.created_at),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        if (isUnread) {
+                            Spacer(Modifier.width(6.dp))
+                            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.error, modifier = Modifier.size(8.dp)) {}
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(ann.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Text(ann.body, style = MaterialTheme.typography.bodySmall, maxLines = 2, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
 
         // Today's Reading Card (Elevated container with bold typography)
         Card(
@@ -382,7 +443,65 @@ fun HomeScreen(
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
+
+        // From the Community Card (Item 8)
+        if (latestCommunityPost != null) {
+            val post = latestCommunityPost!!
+            Card(
+                onClick = onOpenCommunity,
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Filled.Chat, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "From the community",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)) {
+                            Text(
+                                post.type.replaceFirstChar { it.uppercase() },
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(6.dp))
+                        Text(post.reference, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(6.dp))
+                        Text("·  " + post.author_name, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(post.text, style = MaterialTheme.typography.bodyMedium, maxLines = 2, color = MaterialTheme.colorScheme.onSurface)
+                    if (post.reply.text.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(Modifier.padding(8.dp)) {
+                                Text("Leader Reply:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+                                Text(post.reply.text, style = MaterialTheme.typography.bodySmall, maxLines = 2, color = MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // Action Row 1: My notes
         ActionPillRow(

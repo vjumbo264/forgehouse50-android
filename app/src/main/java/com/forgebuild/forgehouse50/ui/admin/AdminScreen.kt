@@ -224,9 +224,10 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
             ) {
                 Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Stats") })
                 Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Participants") })
-                Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Notes") })
-                Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Programme") })
-                Tab(selected = tab == 4, onClick = { tab = 4 }, text = { Text("Password") })
+                Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Leaders' Inbox") })
+                Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Announcements") })
+                Tab(selected = tab == 4, onClick = { tab = 4 }, text = { Text("Programme") })
+                Tab(selected = tab == 5, onClick = { tab = 5 }, text = { Text("Password") })
             }
 
             if (inspectingParticipantId != null) {
@@ -265,11 +266,16 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
                         onAdjust = { adjustTarget = it },
                         onDelete = { singleDeleteTarget = it }
                     )
-                    2 -> AdminNotesTab(
+                    2 -> LeadersInboxTab(
                         repo = repo,
                         participants = participants,
+                        snackbarHostState = snackbarHostState,
                     )
-                    3 -> ProgrammeTab(
+                    3 -> AdminAnnouncementsTab(
+                        repo = repo,
+                        snackbarHostState = snackbarHostState,
+                    )
+                    4 -> ProgrammeTab(
                         programme = programme,
                         onStart = { confirmStart = true },
                         onEndTesting = { confirmEndTesting = true }

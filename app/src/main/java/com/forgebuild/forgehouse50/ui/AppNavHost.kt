@@ -1,3 +1,5 @@
+import com.forgebuild.forgehouse50.ui.community.CommunityScreen
+import com.forgebuild.forgehouse50.ui.announcements.AnnouncementsScreen
 package com.forgebuild.forgehouse50.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.pager.HorizontalPager
@@ -96,6 +98,8 @@ object Routes {
     const val ADMIN = "admin"
     const val TRANSLATIONS = "translations"
     const val CHANGELOG = "changelog"
+    const val COMMUNITY = "community"
+    const val ANNOUNCEMENTS = "announcements"
     fun read(day: Int) = "read/$day"
     fun readSession(days: List<Int>) = "readsession/${days.joinToString(",")}"
     fun quiz(day: Int) = "quiz/$day"
@@ -254,6 +258,8 @@ fun AppNavHost(
                             onOpenQuiz = { nav.navigate(Routes.quiz(it)) },
                             onOpenNotes = { nav.navigate(Routes.NOTES) },
                             onOpenAdmin = { nav.navigate(Routes.ADMIN) },
+                            onOpenCommunity = { nav.navigate(Routes.COMMUNITY) },
+                            onOpenAnnouncements = { nav.navigate(Routes.ANNOUNCEMENTS) },
                         )
                         1 -> LeaderboardScreen(repo)
                         2 -> ProgressScreen(repo, onOpenDay = { nav.navigate(Routes.read(it)) })
@@ -360,6 +366,8 @@ fun AppNavHost(
                 )
             }
             composable(Routes.ADMIN) { AdminScreen(repo, onBack = { nav.popBackStack() }) }
+            composable(Routes.COMMUNITY) { CommunityScreen(repo = repo, onBack = { nav.popBackStack() }) }
+            composable(Routes.ANNOUNCEMENTS) { AnnouncementsScreen(repo = repo, onBack = { nav.popBackStack() }) }
         }
 
         // catchup_widget_links_v1 / ISSUE 3: consume a widget deep link once,

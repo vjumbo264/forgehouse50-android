@@ -205,14 +205,70 @@ class ApiClient(private val session: SessionStore) {
             if (day in 1..50) parameter("day", day)
         }
 
-    suspend fun createNote(noteType: String, body: String, book: String, chapter: Int, verse: Int?, dayNumber: Int?): GenericOk =
+    suspend fun createNote(noteType: String, body: String, book: String, chapter: Int, verse: Int?, dayNumber: Int?, showName: Boolean = false): GenericOk =
         post("/notes", buildJsonObject {
             put("note_type", noteType); put("body", body); put("book", book); put("chapter", chapter)
+            put("show_name", showName)
             verse?.let { put("verse", it) }; dayNumber?.let { put("day_number", it) }
         })
 
-    suspend fun updateNote(id: String, noteType: String, body: String): GenericOk =
-        put("/notes/$id", buildJsonObject { put("note_type", noteType); put("body", body) })
+    suspend fun updateNote(id: String, noteType: String, body: String, showName: Boolean? = null): GenericOk =
+        put("/notes/", buildJsonObject {
+            put("note_type", noteType); put("body", body)
+            showName?.let { put("show_name", it) }
+        })
+
+    // ── Community ──────────────────────────────────────────────────────────
+    suspend fun communityLatest(): CommunityLatestResponse = get("/community/latest")
+    suspend fun communityPosts(cursor: String? = null): CommunityPostsResponse =
+        get("/community/posts") {
+            if (!cursor.isNullOrBlank()) parameter("cursor", cursor)
+        }
+
+    // ── Announcements ──────────────────────────────────────────────────────
+    suspend fun announcementLatest(): AnnouncementLatestResponse = get("/announcements/latest")
+    suspend fun announcements(cursor: String? = null): AnnouncementsResponse =
+        get("/announcements") {
+            if (!cursor.isNullOrBlank()) parameter("cursor", cursor)
+        }
+    suspend fun adminAnnouncements(): AnnouncementsResponse = get("/admin/announcements")
+    suspend fun adminCreateAnnouncement(title: String, body: String): GenericOk =
+        post("/admin/announcements", buildJsonObject { put("title", title); put("body", body) })
+    suspend fun adminUpdateAnnouncement(id: String, title: String, body: String, status: String = "active"): GenericOk =
+        put("/admin/announcements/", buildJsonObject { put("title", title); put("body", body); put("status", status) })
+    suspend fun adminDeleteAnnouncement(id: String): GenericOk = del("/admin/announcements/")
+
+    // ── Admin Inbox ────────────────────────────────────────────────────────
+    suspend fun adminInbox(
+        status: String = "all",
+        type: String? = null,
+        userId: String? = null,
+        q: String? = null,
+        page: Int = 1,
+        limit: Int = 30
+    ): LeaderInboxResponse {
+        val params = mutableListOf<String>()
+        if (status.isNotBlank()) params.add("status=" + java.net.URLEncoder.encode(status, "UTF-8"))
+        if (!type.isNullOrBlank()) params.add("type=" + java.net.URLEncoder.encode(type, "UTF-8"))
+        if (!userId.isNullOrBlank()) params.add("userId=" + java.net.URLEncoder.encode(userId, "UTF-8"))
+        if (!q.isNullOrBlank()) params.add("q=" + java.net.URLEncoder.encode(q, "UTF-8"))
+        params.add("page=")
+        params.add("limit=")
+        val queryStr = "?" + params.joinToString("&")
+        return get("/admin/inbox")
+    }
+
+    suspend fun adminInboxReply(inboxId: String, text: String): GenericOk =
+        post("/admin/inbox//reply", buildJsonObject { put("text", text) })
+
+    suspend fun adminInboxDeleteReply(inboxId: String): GenericOk =
+        del("/admin/inbox//reply")
+
+    suspend fun adminInboxPublish(inboxId: String, publish: Boolean = true): GenericOk =
+        post("/admin/inbox//publish", buildJsonObject { put("publish", publish) })
+
+    suspend fun adminInboxHide(inboxId: String, hide: Boolean = true): GenericOk =
+        post("/admin/inbox//hide", buildJsonObject { put("hide", hide) })
 
     suspend fun deleteNote(id: String): GenericOk = del("/notes/$id")
 

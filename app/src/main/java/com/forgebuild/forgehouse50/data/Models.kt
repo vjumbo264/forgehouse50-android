@@ -293,6 +293,12 @@ data class QuizSubmitResponse(
 )
 
 @Serializable
+data class NoteReply(
+    val text: String = "",
+    val created_at: String? = null,
+)
+
+@Serializable
 data class Note(
     val id: String = "",
     val note_type: String = "observation",
@@ -303,6 +309,80 @@ data class Note(
     val day_number: Int? = null,
     val created_at: String? = null,
     val updated_at: String? = null,
+    val sent_to_leaders: Boolean = false,
+    val inbox_status: String? = null,
+    val show_name: Boolean = false,
+    val reply: NoteReply? = null,
+)
+
+@Serializable
+data class CommunityPost(
+    val id: String = "",
+    val type: String = "observation",
+    val reference: String = "",
+    val text: String = "",
+    val author_name: String = "Anonymous",
+    val avatar_id: String? = null,
+    val is_anonymous: Boolean = true,
+    val created_at: String = "",
+    val reply: CommunityReply = CommunityReply(),
+)
+
+@Serializable
+data class CommunityReply(
+    val text: String = "",
+    val created_at: String? = null,
+)
+
+@Serializable
+data class CommunityPostsResponse(
+    val ok: Boolean = true,
+    val posts: List<CommunityPost> = emptyList(),
+    val next_cursor: String? = null,
+    val has_more: Boolean = false,
+)
+
+@Serializable
+data class CommunityLatestResponse(
+    val ok: Boolean = true,
+    val post: CommunityPost? = null,
+)
+
+@Serializable
+data class LeaderInboxItem(
+    val id: String = "",
+    val note_id: String = "",
+    val author_user_id: String = "",
+    val author_full_name: String = "",
+    val author_email: String? = null,
+    val type: String = "observation",
+    val reference: String = "",
+    val text: String = "",
+    val show_name: Boolean = false,
+    val status: String = "new",
+    val created_at: String = "",
+    val updated_at: String = "",
+    val version_count: Int = 0,
+    val reply: LeaderInboxReply? = null,
+)
+
+@Serializable
+data class LeaderInboxReply(
+    val id: String = "",
+    val text: String = "",
+    val admin_id: String = "",
+    val created_at: String = "",
+    val updated_at: String = "",
+)
+
+@Serializable
+data class LeaderInboxResponse(
+    val ok: Boolean = true,
+    val items: List<LeaderInboxItem> = emptyList(),
+    val page: Int = 1,
+    val limit: Int = 30,
+    val total: Int = 0,
+    val has_more: Boolean = false,
 )
 
 @Serializable
@@ -625,5 +705,30 @@ data class AdminNotesResponse(
     val page: Int = 1,
     val limit: Int = 25,
     val total: Int = 0,
+    val has_more: Boolean = false,
+)
+
+@Serializable
+data class Announcement(
+    val id: String = "",
+    val title: String = "",
+    val body: String = "",
+    val status: String = "active",
+    val created_by: String = "",
+    val created_at: String = "",
+    val updated_at: String = "",
+)
+
+@Serializable
+data class AnnouncementLatestResponse(
+    val ok: Boolean = true,
+    val announcement: Announcement? = null,
+)
+
+@Serializable
+data class AnnouncementsResponse(
+    val ok: Boolean = true,
+    val announcements: List<Announcement> = emptyList(),
+    val next_cursor: String? = null,
     val has_more: Boolean = false,
 )
