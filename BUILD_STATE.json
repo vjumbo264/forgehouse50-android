@@ -1846,9 +1846,9 @@
       {
         "id": "h7",
         "title": "Item 7: complete changelog and What's new",
-        "status": "pending",
+        "status": "done",
         "gate": "h6",
-        "notes": ""
+        "notes": "DONE (h7): (1) Rebuilt changelog.json across assets, app, and web with complete, descriptive feature entries for every release since observations/questions began (reader redesign, bottom dock, calm counters, two-mode updater, home update card, prayer/application sharing, WAT timestamps, send animation, dynamic home, branded quote images, and earlier foundational features). (2) Strict CI check passed: zero mentions of admin in any user-facing changelog entry. (3) Enhanced ChangelogScreen.kt: highlighted Since you last updated summary card at the top, newest release expanded by default, older releases collapsible/expandable, and adaptive typography. (4) Automated unit tests passing: ChangelogLogicTest.kt and test_item7_changelog.mjs."
       },
       {
         "id": "h8",

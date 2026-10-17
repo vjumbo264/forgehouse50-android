@@ -242,4 +242,24 @@ object UpdateLogic {
         }
         return false
     }
+
+    fun parseVersionCode(version: String): Int {
+        val digits = version.filter { it.isDigit() }
+        return digits.toIntOrNull() ?: 0
+    }
+
+    /**
+     * Computes the list of changelog items added in releases newer than the user's last seen version.
+     */
+    fun computeSinceLastSeen(
+        entries: List<com.forgebuild.forgehouse50.ui.changelog.ChangelogEntry>,
+        lastSeenVersion: String?
+    ): List<String> {
+        if (lastSeenVersion.isNullOrBlank()) return emptyList()
+        val lastSeenCode = parseVersionCode(lastSeenVersion)
+        return entries
+            .filter { parseVersionCode(it.version) > lastSeenCode }
+            .flatMap { it.items }
+    }
+
 }
