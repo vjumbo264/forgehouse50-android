@@ -1740,9 +1740,9 @@
       {
         "id": "g5",
         "title": "Item 5 — website parity: VerseWell only, downloaded-only switcher, reader parity, timer, profile pictures, contrast, catch-up mode, remove Read tab from nav",
-        "status": "pending",
+        "status": "done",
         "gate": "g4b",
-        "notes": ""
+        "notes": "DONE (g5): Website parity achieved with VerseWell and Android app parity. (1) Removed public-domain Bible API; VerseWell only with offline bundle caching and downloaded-only translation selector. (2) Reader parity: continuous vertical scroll across assigned chapters, chapter progress bar, active reading timer with 5-minute minimum and 60s idle pause, 26 encouragement messages (5-30m), and clean verse-level headings. (3) Catch-up mode: server-side backlog calculation in /api/today (up to 2 uncompleted days per session, oldest first, streak preserved without artificial increments); HomeView catch-up card with 2-day session integration. (4) Bottom navigation updated to 4 tabs (Today, Leaderboard, Progress, Profile), removing Read and Notes tabs per contract. (5) Verified bundle asset integrity with verify_assets.mjs and esbuild."
       },
       {
         "id": "g6",
