@@ -244,6 +244,10 @@ object UpdateLogic {
     }
 
     fun parseVersionCode(version: String): Int {
+        val tagMatch = Regex("""(?:-v|v)(\d+)$""").find(version)
+        if (tagMatch != null) {
+            return tagMatch.groupValues[1].toIntOrNull() ?: 0
+        }
         val digits = version.filter { it.isDigit() }
         return digits.toIntOrNull() ?: 0
     }

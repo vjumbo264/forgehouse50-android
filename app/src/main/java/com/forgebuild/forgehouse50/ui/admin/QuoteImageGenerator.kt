@@ -28,6 +28,9 @@ import java.io.FileOutputStream
  */
 object QuoteImageGenerator {
 
+    private fun rgb(r: Int, g: Int, b: Int): Int = (0xFF shl 24) or ((r and 0xFF) shl 16) or ((g and 0xFF) shl 8) or (b and 0xFF)
+    private fun argb(a: Int, r: Int, g: Int, b: Int): Int = ((a and 0xFF) shl 24) or ((r and 0xFF) shl 16) or ((g and 0xFF) shl 8) or (b and 0xFF)
+
     const val CARD_WIDTH = 1080
     const val CARD_HEIGHT = 1350
 
@@ -55,39 +58,39 @@ object QuoteImageGenerator {
     val PALETTES = listOf(
         // Variant 0: Soft Warm Sage / Ivory (Brand Primary)
         Palette(
-            bgColor = Color.rgb(246, 248, 246),
-            quoteMarkColor = Color.argb(45, 46, 107, 79),
-            quoteTextColor = Color.rgb(25, 28, 26),
-            metaColor = Color.rgb(46, 107, 79),
-            dividerColor = Color.argb(50, 46, 107, 79),
-            replyBgColor = Color.rgb(234, 242, 236),
-            replyLabelColor = Color.rgb(46, 107, 79),
-            replyTextColor = Color.rgb(35, 45, 38),
-            footerColor = Color.rgb(90, 105, 95),
+            bgColor = rgb(246, 248, 246),
+            quoteMarkColor = argb(45, 46, 107, 79),
+            quoteTextColor = rgb(25, 28, 26),
+            metaColor = rgb(46, 107, 79),
+            dividerColor = argb(50, 46, 107, 79),
+            replyBgColor = rgb(234, 242, 236),
+            replyLabelColor = rgb(46, 107, 79),
+            replyTextColor = rgb(35, 45, 38),
+            footerColor = rgb(90, 105, 95),
         ),
         // Variant 1: Soft Linen / Warm Sand (Brand Secondary)
         Palette(
-            bgColor = Color.rgb(251, 249, 244),
-            quoteMarkColor = Color.argb(45, 90, 80, 65),
-            quoteTextColor = Color.rgb(28, 28, 25),
-            metaColor = Color.rgb(95, 75, 50),
-            dividerColor = Color.argb(50, 95, 75, 50),
-            replyBgColor = Color.rgb(243, 238, 230),
-            replyLabelColor = Color.rgb(110, 85, 55),
-            replyTextColor = Color.rgb(45, 40, 35),
-            footerColor = Color.rgb(115, 110, 100),
+            bgColor = rgb(251, 249, 244),
+            quoteMarkColor = argb(45, 90, 80, 65),
+            quoteTextColor = rgb(28, 28, 25),
+            metaColor = rgb(95, 75, 50),
+            dividerColor = argb(50, 95, 75, 50),
+            replyBgColor = rgb(243, 238, 230),
+            replyLabelColor = rgb(110, 85, 55),
+            replyTextColor = rgb(45, 40, 35),
+            footerColor = rgb(115, 110, 100),
         ),
         // Variant 2: Soft Mint / Mist (Brand Tertiary)
         Palette(
-            bgColor = Color.rgb(242, 246, 245),
-            quoteMarkColor = Color.argb(45, 32, 90, 75),
-            quoteTextColor = Color.rgb(20, 28, 25),
-            metaColor = Color.rgb(32, 90, 75),
-            dividerColor = Color.argb(50, 32, 90, 75),
-            replyBgColor = Color.rgb(230, 240, 237),
-            replyLabelColor = Color.rgb(32, 90, 75),
-            replyTextColor = Color.rgb(28, 42, 38),
-            footerColor = Color.rgb(85, 105, 100),
+            bgColor = rgb(242, 246, 245),
+            quoteMarkColor = argb(45, 32, 90, 75),
+            quoteTextColor = rgb(20, 28, 25),
+            metaColor = rgb(32, 90, 75),
+            dividerColor = argb(50, 32, 90, 75),
+            replyBgColor = rgb(230, 240, 237),
+            replyLabelColor = rgb(32, 90, 75),
+            replyTextColor = rgb(28, 42, 38),
+            footerColor = rgb(85, 105, 100),
         )
     )
 
