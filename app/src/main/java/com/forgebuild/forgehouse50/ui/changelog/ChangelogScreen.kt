@@ -7,6 +7,10 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -219,6 +223,11 @@ fun ChangelogScreen(
             // 2. Releases list (newest first, expandable)
             itemsIndexed(entries, key = { _, e -> e.version }) { index, entry ->
                 val isExpanded = expandedStates[entry.version] ?: (index == 0)
+                val chevronRotation by animateFloatAsState(
+                    targetValue = if (isExpanded) 180f else 0f,
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    label = "chevronRotation",
+                )
 
                 Surface(
                     shape = RoundedCornerShape(20.dp),
@@ -279,10 +288,10 @@ fun ChangelogScreen(
                                     Spacer(Modifier.width(8.dp))
                                 }
                                 Icon(
-                                    if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                                    Icons.Filled.KeyboardArrowDown,
                                     contentDescription = if (isExpanded) "Collapse" else "Expand",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(20.dp).rotate(chevronRotation),
                                 )
                             }
                         }

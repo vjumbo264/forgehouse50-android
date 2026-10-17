@@ -6,6 +6,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -186,6 +187,7 @@ fun ProfileScreen(
                         sessionToken = repo.session.sessionToken,
                         size = 72.dp,
                         contentDescription = "Profile picture",
+                        modifier = Modifier.border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), CircleShape),
                     )
                     Surface(
                         shape = CircleShape,

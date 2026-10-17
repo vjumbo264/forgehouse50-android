@@ -38,6 +38,7 @@ import com.forgebuild.forgehouse50.data.ProgressResponse
 import com.forgebuild.forgehouse50.data.ReadingSession
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
+import com.forgebuild.forgehouse50.ui.ExpressiveLinearProgress
 import com.forgebuild.forgehouse50.ui.formatDurationShort
 
 /**
@@ -106,7 +107,7 @@ fun ProgressScreen(repo: Repository, onOpenDay: (Int) -> Unit) {
                     fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(Modifier.height(10.dp))
-                LinearProgressIndicator(
+                ExpressiveLinearProgress(
                     progress = { (p.totals.percent_completed / 100f).toFloat().coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth(),
                 )

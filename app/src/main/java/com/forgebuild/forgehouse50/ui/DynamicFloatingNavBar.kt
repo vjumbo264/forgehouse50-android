@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -172,7 +173,8 @@ private fun DynamicFloatingNavBarContent(
     ) {
         Surface(
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainer,
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
             tonalElevation = 3.dp,
             shadowElevation = 8.dp,
             modifier = Modifier.wrapContentWidth(),

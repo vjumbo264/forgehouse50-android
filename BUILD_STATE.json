@@ -1916,16 +1916,16 @@
           {
             "id": "h9h",
             "title": "Profile, What's new, Leaderboard, Progress, auth screens, nav",
-            "status": "in_progress",
+            "status": "done",
             "gate": "h9g",
-            "notes": "Refining Profile, What's new changelog, Leaderboard podium cards, Progress, and auth screens."
+            "notes": "DONE (h9h): Refined Profile avatar with 2dp subtle primary border ring; animated spring chevron rotation in ChangelogScreen; ExpressiveLinearProgress in ProgressScreen; M3 12dp rounded corners on all auth text inputs; 96% opacity surfaceContainer with outlineVariant border in DynamicFloatingNavBar."
           },
           {
             "id": "h9i",
             "title": "Admin screens and quote-image share UI (visual only)",
-            "status": "pending",
+            "status": "in_progress",
             "gate": "h9h",
-            "notes": "Pending completion of h9h."
+            "notes": "IN_PROGRESS (h9i): Refining Admin screens & quote-image share UI."
           },
           {
             "id": "h9j",

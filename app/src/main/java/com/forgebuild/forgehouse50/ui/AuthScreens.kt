@@ -55,6 +55,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -177,6 +178,7 @@ private fun LoginForm(
 
     AuthScaffold("Read the New Testament in 50 reading days.") {
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = email, onValueChange = { email = it; error = null }, label = { Text("Email") },
             singleLine = true, modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -209,6 +211,7 @@ private fun LoginForm(
         }
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = password, onValueChange = { password = it }, label = { Text("Password") },
             singleLine = true, modifier = Modifier.fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
@@ -330,22 +333,26 @@ private fun SignupForm(
             return@AuthScaffold
         }
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = name, onValueChange = { name = it }, label = { Text("Given name") },
             singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = surname, onValueChange = { surname = it }, label = { Text("Surname (last name)") },
             singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = email, onValueChange = { email = it }, label = { Text("Email") },
             singleLine = true, modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = password, onValueChange = { password = it },
             label = { Text("Password (8+ characters)") },
             singleLine = true, modifier = Modifier.fillMaxWidth(),
@@ -422,6 +429,7 @@ private fun OtpForm(
 
     AuthScaffold("Enter the 6-digit code emailed to $email.") {
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = code, onValueChange = { if (it.length <= 6 && it.all(Char::isDigit)) code = it },
             label = { Text("Verification code") }, singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -483,6 +491,7 @@ private fun AdminLoginForm(
 
     AuthScaffold("Administrator access only") {
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = username,
             onValueChange = { username = it; error = null },
             label = { Text("Admin username") },
@@ -491,6 +500,7 @@ private fun AdminLoginForm(
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = password,
             onValueChange = { password = it; error = null },
             label = { Text("Password") },
@@ -571,6 +581,7 @@ private fun ForgotPasswordForm(
             modifier = Modifier.padding(bottom = 16.dp)
         )
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = email,
             onValueChange = { email = it; error = null },
             label = { Text("Email") },
@@ -650,6 +661,7 @@ private fun ResetPasswordForm(
             )
         }
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = code,
             onValueChange = { if (it.length <= 6 && it.all(Char::isDigit)) { code = it; error = null } },
             label = { Text("6-digit code") },
@@ -659,6 +671,7 @@ private fun ResetPasswordForm(
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = newPassword,
             onValueChange = { newPassword = it; error = null },
             label = { Text("New password (8+ characters)") },
@@ -677,6 +690,7 @@ private fun ResetPasswordForm(
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
+            shape = RoundedCornerShape(12.dp),
             value = confirmPassword,
             onValueChange = { confirmPassword = it; error = null },
             label = { Text("Confirm new password") },
