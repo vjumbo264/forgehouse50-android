@@ -132,7 +132,8 @@ fun AnnouncementCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        shape = MaterialTheme.shapes.large,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {

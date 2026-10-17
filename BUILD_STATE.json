@@ -1909,16 +1909,16 @@
           {
             "id": "h9g",
             "title": "Notes, send states, Community and Announcement histories",
-            "status": "in_progress",
+            "status": "done",
             "gate": "h9f",
-            "notes": "Refining Notes composer, scripture pickers, send feedback animation, and Community & Announcement histories."
+            "notes": "DONE (h9g): Refined NotesScreens with 28dp pill search bar in surfaceContainerHigh, 16dp note cards with subtle borders, 6dp badges, surfaceContainer leader response boxes with 12dp radii, and matched 16dp card hierarchy in CommunityScreen and AnnouncementsScreen."
           },
           {
             "id": "h9h",
             "title": "Profile, What's new, Leaderboard, Progress, auth screens, nav",
-            "status": "pending",
+            "status": "in_progress",
             "gate": "h9g",
-            "notes": "Pending completion of h9g."
+            "notes": "Refining Profile, What's new changelog, Leaderboard podium cards, Progress, and auth screens."
           },
           {
             "id": "h9i",

@@ -176,7 +176,8 @@ fun CommunityPostCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        shape = MaterialTheme.shapes.large,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
@@ -250,9 +251,9 @@ fun CommunityPostCard(
             if (post.reply.text.isNotBlank()) {
                 Spacer(Modifier.height(12.dp))
                 Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.25f)),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(Modifier.padding(12.dp)) {

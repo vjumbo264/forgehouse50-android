@@ -232,16 +232,23 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                label = { Text("Search notes or passage") },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                placeholder = { Text("Search notes or passage…", style = MaterialTheme.typography.bodyMedium) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 trailingIcon = {
                     if (query.isNotBlank()) {
-                        IconButton(onClick = { query = "" }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Clear")
+                        IconButton(onClick = { query = "" }, modifier = Modifier.size(40.dp)) {
+                            Icon(Icons.Filled.Close, contentDescription = "Clear", modifier = Modifier.size(18.dp))
                         }
                     }
                 },
                 singleLine = true,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -307,7 +314,8 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                             ),
-                            shape = MaterialTheme.shapes.medium,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(Modifier.fillMaxWidth().padding(14.dp)) {
@@ -419,9 +427,9 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
                                 if (n.reply != null && n.reply.text.isNotBlank()) {
                                     Spacer(Modifier.height(8.dp))
                                     Surface(
-                                        shape = MaterialTheme.shapes.small,
-                                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
-                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)),
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(Modifier.padding(10.dp)) {
