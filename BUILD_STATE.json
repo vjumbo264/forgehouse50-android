@@ -1733,9 +1733,9 @@
       {
         "id": "g4b",
         "title": "Item B — Second admin account for operator (victor-admin, PBKDF2 salt/hash, idempotent creation, full capabilities, one-time delivery)",
-        "status": "pending",
+        "status": "done",
         "gate": "g4a",
-        "notes": ""
+        "notes": "DONE (g4b): Second admin account created in production D1 with username victor-admin, PBKDF2-SHA256 (100k iterations, 16-byte random salt). Verified idempotent creation and verified row exists via read-only query. Tested live authentication and 12h admin session flow using an ephemeral throwaway admin that was cleaned up. Credentials will be delivered once to the operator in the final message. Marked needs_operator_check for operator first login."
       },
       {
         "id": "g5",
