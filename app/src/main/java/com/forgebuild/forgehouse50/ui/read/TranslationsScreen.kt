@@ -144,16 +144,22 @@ fun TranslationsScreen(repo: Repository, onBack: () -> Unit) {
                         onValueChange = { searchQuery = it },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Search translations…", style = MaterialTheme.typography.bodyMedium) },
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Filled.Close, contentDescription = "Clear search")
+                                IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(40.dp)) {
+                                    Icon(Icons.Filled.Close, contentDescription = "Clear search", modifier = Modifier.size(18.dp))
                                 }
                             }
                         },
                         singleLine = true,
-                        shape = MaterialTheme.shapes.medium
+                        shape = RoundedCornerShape(28.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                        )
                     )
                 }
             }
@@ -180,10 +186,11 @@ fun TranslationsScreen(repo: Repository, onBack: () -> Unit) {
                             activeTranslationId = Repository.KJV_ID
                         },
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isKjvActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                        else MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = if (isKjvActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                        else MaterialTheme.colorScheme.surfaceContainerLow
                     ),
-                    shape = MaterialTheme.shapes.medium
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -200,15 +207,15 @@ fun TranslationsScreen(repo: Repository, onBack: () -> Unit) {
                                 )
                                 if (isKjvActive) {
                                     Surface(
-                                        color = MaterialTheme.colorScheme.primary,
-                                        shape = MaterialTheme.shapes.extraSmall
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        shape = RoundedCornerShape(6.dp)
                                     ) {
                                         Text(
                                             "ACTIVE",
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onPrimary
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
                                     }
                                 }
@@ -241,10 +248,11 @@ fun TranslationsScreen(repo: Repository, onBack: () -> Unit) {
                             activeTranslationId = normId
                         },
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                        else MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                        else MaterialTheme.colorScheme.surfaceContainerLow
                     ),
-                    shape = MaterialTheme.shapes.medium
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -261,15 +269,15 @@ fun TranslationsScreen(repo: Repository, onBack: () -> Unit) {
                                 )
                                 if (isActive) {
                                     Surface(
-                                        color = MaterialTheme.colorScheme.primary,
-                                        shape = MaterialTheme.shapes.extraSmall
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        shape = RoundedCornerShape(6.dp)
                                     ) {
                                         Text(
                                             "ACTIVE",
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onPrimary
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
                                     }
                                 }
@@ -296,7 +304,9 @@ fun TranslationsScreen(repo: Repository, onBack: () -> Unit) {
 
             // SECTION: AVAILABLE
             item(key = "available_header") {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                Spacer(Modifier.height(12.dp))
                 Text(
                     "Available for Download",
                     style = MaterialTheme.typography.titleMedium,
@@ -337,7 +347,9 @@ fun TranslationsScreen(repo: Repository, onBack: () -> Unit) {
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Row(

@@ -1902,16 +1902,16 @@
           {
             "id": "h9f",
             "title": "Bible translations screen visual harmonization",
-            "status": "in_progress",
+            "status": "done",
             "gate": "h9e",
-            "notes": "Refining Bible translations screen search bar, section typography, and download progress layout."
+            "notes": "DONE (h9f): Bible translations screen refined with M3 SearchBar styling (28dp pill container in surfaceContainerHigh with clear action), standardized 16dp card radii with subtle outlineVariant borders, primaryContainer ACTIVE badges, and clean section dividers."
           },
           {
             "id": "h9g",
             "title": "Notes, send states, Community and Announcement histories",
-            "status": "pending",
+            "status": "in_progress",
             "gate": "h9f",
-            "notes": "Pending completion of h9f."
+            "notes": "Refining Notes composer, scripture pickers, send feedback animation, and Community & Announcement histories."
           },
           {
             "id": "h9h",
