@@ -1895,16 +1895,16 @@
           {
             "id": "h9e",
             "title": "Today (home) and its cards refinement",
-            "status": "in_progress",
+            "status": "done",
             "gate": "h9d",
-            "notes": "Refining Today / Home screen cards hierarchy, spacing tokens, and shimmering skeletons."
+            "notes": "DONE (h9e): Today / Home screen refined with standardized M3 shape scale (20dp content cards, 24dp Today reading card, 18dp stat cards), 1dp subtle outlineVariant borders, level 1 tonal elevation, surfaceContainer leader response boxes with 12dp radii, and refined shimmering TodayReadingSkeleton."
           },
           {
             "id": "h9f",
             "title": "Bible translations screen visual harmonization",
-            "status": "pending",
+            "status": "in_progress",
             "gate": "h9e",
-            "notes": "Pending completion of h9e."
+            "notes": "Refining Bible translations screen search bar, section typography, and download progress layout."
           },
           {
             "id": "h9g",
