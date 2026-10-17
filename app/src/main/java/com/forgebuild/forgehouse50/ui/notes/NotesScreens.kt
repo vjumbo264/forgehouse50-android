@@ -83,6 +83,7 @@ import com.forgebuild.forgehouse50.ui.NOTE_TYPES
 import com.forgebuild.forgehouse50.ui.noteTypeLabel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 enum class SendFeedbackState {
     Idle,

@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.update.UpdateLogic
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import androidx.compose.foundation.BorderStroke
 
 @Serializable
 data class ChangelogEntry(

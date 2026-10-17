@@ -40,6 +40,8 @@ import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 import java.text.SimpleDateFormat
 import java.util.Locale
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 fun formatAnnouncementDate(isoStr: String): String {
     return runCatching {

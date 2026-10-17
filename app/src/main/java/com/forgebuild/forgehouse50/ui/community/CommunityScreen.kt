@@ -49,6 +49,7 @@ import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 import com.forgebuild.forgehouse50.ui.notes.noteTypeIcon
 import com.forgebuild.forgehouse50.ui.noteTypeLabel
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

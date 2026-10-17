@@ -28,6 +28,8 @@ import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 import com.forgebuild.forgehouse50.ui.ExpressiveLinearProgress
 import com.forgebuild.forgehouse50.ui.formatBytes
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 /**
  * Item 1c — Single, unified Bible translations screen.

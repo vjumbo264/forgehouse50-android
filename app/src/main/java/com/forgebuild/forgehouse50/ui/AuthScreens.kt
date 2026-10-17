@@ -63,6 +63,7 @@ import com.forgebuild.forgehouse50.data.Repository
 import java.net.UnknownHostException
 import kotlinx.coroutines.launch
 import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
+import androidx.compose.foundation.BorderStroke
 
 /**
  * Auth screens — the same email/password + OTP-via-Brevo flow as the web

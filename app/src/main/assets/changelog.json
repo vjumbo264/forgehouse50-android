@@ -1,5 +1,12 @@
 [
   {
+    "version": "v32",
+    "date": "2026-10-17",
+    "items": [
+      "A cleaner, more polished look throughout the app: refined Material 3 Expressive styling, standardized card shapes, calm reading counters, and harmonized typography across all screens."
+    ]
+  },
+  {
     "version": "v31",
     "date": "2026-10-17",
     "items": [
