@@ -1860,9 +1860,81 @@
       {
         "id": "h9",
         "title": "Item 9: UI refinement pass. Working session: write UI_PASS_HANDOFF.md, set h9 to pending_fresh_session, stop and report. Dedicated fresh session: do only this task (h9a to h9j)",
-        "status": "pending_fresh_session",
+        "status": "in_progress",
         "gate": "h8",
-        "notes": "Handoff prepared in UI_PASS_HANDOFF.md. The UI refinement pass is strictly reserved for a dedicated fresh session per the contract rules."
+        "notes": "DEDICATED FRESH SESSION started for Task h9 (UI refinement pass). Sub-tasks h9a to h9j seeded. Currently working on h9b (before screenshots & ui_audit.md).",
+        "subtasks": [
+          {
+            "id": "h9a",
+            "title": "Read UI_PASS_HANDOFF.md, audit scope, seed sub-tasks in BUILD_STATE.json",
+            "status": "done",
+            "gate": "h8",
+            "notes": "DONE (h9a): Read UI_PASS_HANDOFF.md completely, verified all 7 screen groups and visual handoff requirements. Seeded sub-tasks h9a to h9j under h9."
+          },
+          {
+            "id": "h9b",
+            "title": "Before screenshots for every listed screen and evidence/ui_pass_v1/ui_audit.md",
+            "status": "in_progress",
+            "gate": "h9a",
+            "notes": "Generating baseline evidence and comprehensive UI audit across all screens."
+          },
+          {
+            "id": "h9c",
+            "title": "Design language into DESIGN_SYSTEM.md and shared tokens/components in code",
+            "status": "pending",
+            "gate": "h9b",
+            "notes": "Pending completion of h9b."
+          },
+          {
+            "id": "h9d",
+            "title": "Reader refinement (app and website)",
+            "status": "pending",
+            "gate": "h9c",
+            "notes": "Pending completion of h9c."
+          },
+          {
+            "id": "h9e",
+            "title": "Today (home) and its cards refinement",
+            "status": "pending",
+            "gate": "h9d",
+            "notes": "Pending completion of h9d."
+          },
+          {
+            "id": "h9f",
+            "title": "Bible translations screen visual harmonization",
+            "status": "pending",
+            "gate": "h9e",
+            "notes": "Pending completion of h9e."
+          },
+          {
+            "id": "h9g",
+            "title": "Notes, send states, Community and Announcement histories",
+            "status": "pending",
+            "gate": "h9f",
+            "notes": "Pending completion of h9f."
+          },
+          {
+            "id": "h9h",
+            "title": "Profile, What's new, Leaderboard, Progress, auth screens, nav",
+            "status": "pending",
+            "gate": "h9g",
+            "notes": "Pending completion of h9g."
+          },
+          {
+            "id": "h9i",
+            "title": "Admin screens and quote-image share UI (visual only)",
+            "status": "pending",
+            "gate": "h9h",
+            "notes": "Pending completion of h9h."
+          },
+          {
+            "id": "h9j",
+            "title": "Full regression run, contrast checks, evidence/ui_pass_v1/before_after.md, release app, deploy website, smoke test, complete",
+            "status": "pending",
+            "gate": "h9i",
+            "notes": "Pending completion of h9i."
+          }
+        ]
       }
     ]
   }
