@@ -1881,16 +1881,16 @@
           {
             "id": "h9c",
             "title": "Design language into DESIGN_SYSTEM.md and shared tokens/components in code",
-            "status": "in_progress",
+            "status": "done",
             "gate": "h9b",
-            "notes": "Consolidating design tokens in DESIGN_SYSTEM.md and shared UI components."
+            "notes": "DONE (h9c): Unified design language codified in DESIGN_SYSTEM.md across typography, 4dp spacing grid (SpacingTokens), M3 shape scale (ShapeTokens), tonal elevation ladder (ElevationTokens), and motion specs. Theme tokens copied into apps/forgehouse50."
           },
           {
             "id": "h9d",
             "title": "Reader refinement (app and website)",
-            "status": "pending",
+            "status": "in_progress",
             "gate": "h9c",
-            "notes": "Pending completion of h9c."
+            "notes": "Refining reader screen layout, bottom dock, headers, and calm counters."
           },
           {
             "id": "h9e",
