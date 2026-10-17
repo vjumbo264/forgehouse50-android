@@ -170,6 +170,10 @@ fun HomeScreen(
             AppCache.saveProgress(context, fresh)
         }
 
+        runCatching { repo.api.notes() }.onSuccess { freshNotes ->
+            AppCache.saveNotes(context, freshNotes)
+        }
+
         val curDay = today?.today?.day_number
         if (curDay != null) {
             runCatching { repo.api.quiz(curDay) }.onSuccess {
@@ -505,11 +509,13 @@ fun HomeScreen(
         }
 
         // Action Row 1: My notes
+        val cachedNotesCount = AppCache.getNotes(context)?.notes?.size ?: 0
+        val notesTotal = maxOf(today?.stats?.notes_total ?: 0, me?.stats?.notes_total ?: 0, cachedNotesCount)
         ActionPillRow(
             icon = Icons.Filled.Edit,
             iconTint = MaterialTheme.colorScheme.primary,
             iconContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-            label = "My notes (${me?.stats?.notes_total ?: 0})",
+            label = "My notes ($notesTotal)",
             onClick = onOpenNotes,
         )
 

@@ -1,5 +1,15 @@
 [
   {
+    "version": "v30",
+    "date": "2026-10-17",
+    "items": [
+      "Fixed saving and editing notes across all note types including Insight",
+      "Fixed note editing from the home screen and notes list",
+      "Live synchronization of notes counter on the home screen",
+      "Clear, helpful status messages when saving notes"
+    ]
+  },
+  {
     "version": "v29",
     "date": "2026-10-17",
     "items": [

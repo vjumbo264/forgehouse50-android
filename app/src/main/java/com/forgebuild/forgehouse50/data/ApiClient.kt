@@ -108,7 +108,17 @@ class ApiClient(private val session: SessionStore) {
         val msg = runCatching {
             json.decodeFromString<GenericOk>(text).error
         }.getOrNull()
-        throw ApiException(res.status.value, msg ?: "Request failed (HTTP ${res.status.value})")
+        val friendlyMessage = when (res.status.value) {
+            400 -> msg ?: "Invalid request details. Please check your input."
+            401 -> "Session expired. Please sign in again."
+            403 -> "You do not have permission to perform this action."
+            404 -> msg ?: "The requested item could not be found."
+            405 -> "Could not save your note. Please try again."
+            429 -> "Rate limit reached. Please wait a moment and try again."
+            500, 502, 503, 504 -> "Could not save your note. Please try again."
+            else -> msg ?: "Request failed. Please try again."
+        }
+        throw ApiException(res.status.value, friendlyMessage)
     }
 
     class ApiException(val status: Int, message: String) : Exception(message)
@@ -212,10 +222,13 @@ class ApiClient(private val session: SessionStore) {
             verse?.let { put("verse", it) }; dayNumber?.let { put("day_number", it) }
         })
 
-    suspend fun updateNote(id: String, noteType: String, body: String, showName: Boolean? = null): GenericOk =
-        put("/notes/", buildJsonObject {
-            put("note_type", noteType); put("body", body)
+    suspend fun updateNote(id: String, noteType: String, body: String, showName: Boolean? = null, allowGroupShare: Boolean? = null): GenericOk =
+        put("/notes/$id", buildJsonObject {
+            put("id", id)
+            put("note_type", noteType)
+            put("body", body)
             showName?.let { put("show_name", it) }
+            allowGroupShare?.let { put("allow_group_share", it) }
         })
 
     // ── Community ──────────────────────────────────────────────────────────
@@ -259,16 +272,16 @@ class ApiClient(private val session: SessionStore) {
     }
 
     suspend fun adminInboxReply(inboxId: String, text: String): GenericOk =
-        post("/admin/inbox//reply", buildJsonObject { put("text", text) })
+        post("/admin/inbox/$inboxId/reply", buildJsonObject { put("text", text) })
 
     suspend fun adminInboxDeleteReply(inboxId: String): GenericOk =
-        del("/admin/inbox//reply")
+        del("/admin/inbox/$inboxId/reply")
 
     suspend fun adminInboxPublish(inboxId: String, publish: Boolean = true): GenericOk =
-        post("/admin/inbox//publish", buildJsonObject { put("publish", publish) })
+        post("/admin/inbox/$inboxId/publish", buildJsonObject { put("publish", publish) })
 
     suspend fun adminInboxHide(inboxId: String, hide: Boolean = true): GenericOk =
-        post("/admin/inbox//hide", buildJsonObject { put("hide", hide) })
+        post("/admin/inbox/$inboxId/hide", buildJsonObject { put("hide", hide) })
 
     suspend fun deleteNote(id: String): GenericOk = del("/notes/$id")
 

@@ -177,7 +177,9 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
                     onClick = {
                         scope.launch {
                             runCatching { repo.api.deleteNote(n.id) }
-                            notes = notes.filterNot { it.id == n.id }
+                            val updated = notes.filterNot { it.id == n.id }
+                            notes = updated
+                            AppCache.saveNotes(context, com.forgebuild.forgehouse50.data.NotesResponse(notes = updated))
                             noteToDelete = null
                         }
                     }
@@ -987,12 +989,22 @@ fun NoteEditScreen(
                         r.onSuccess {
                             if (it.ok) {
                                 prefs.edit().remove(draftKey).apply()
+                                scope.launch {
+                                    runCatching {
+                                        val freshNotes = repo.api.notes()
+                                        AppCache.saveNotes(context, freshNotes)
+                                        val freshMe = repo.api.me()
+                                        AppCache.saveMe(context, freshMe)
+                                        val freshToday = repo.api.today()
+                                        AppCache.saveToday(context, freshToday)
+                                    }
+                                }
                                 onBack()
                             } else {
-                                error = it.error ?: "Save failed"
+                                error = it.error ?: "Could not save your note. Please try again."
                             }
                         }.onFailure {
-                            error = it.message ?: "Failed to save note"
+                            error = it.message ?: "Could not save your note. Please try again."
                         }
                         busy = false
                     }

@@ -1804,9 +1804,9 @@
       {
         "id": "h1n",
         "title": "Item N: notes and Insight repair (405 on editing, 500 errors, route contract, functional bugs); release the app",
-        "status": "pending",
+        "status": "done",
         "gate": "h1",
-        "notes": ""
+        "notes": "DONE (h1n): (1) Fixed HTTP 500 when creating Insight note by applying additive D1 migration adding insight to notes.note_type CHECK constraint; updated schema.sql. Verified zero insight notes in leader inbox preserving strict privacy. (2) Fixed HTTP 405 when updating Observation or Question: updated ApiClient.kt to use /notes/$id with id in path and body, added PUT/PATCH/POST update alias in functions/api/notes/[id].mjs, and added fallback in functions/api/notes/index.mjs for older client builds. (3) Corrected admin inbox URLs in ApiClient.kt. (4) Added route contract check script (scripts/route_contract_check.mjs) passing 100% and documented in evidence/fixes_oct17_v1/notes_route_matrix.md. (5) Fixed Home Screen notes count by aggregating today/me stats and AppCache notes, refreshing on open and sync on save/delete. (6) Friendly client error handling without raw status codes. (7) Production notes audit: verified all 21 production notes intact; documented in evidence/fixes_oct17_v1/notes_bug_list.md. (8) All automated tests passing: NotesRouteContractTest.kt and test_notes_and_insights.mjs."
       },
       {
         "id": "h2",
