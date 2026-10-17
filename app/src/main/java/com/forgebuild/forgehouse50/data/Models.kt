@@ -322,6 +322,9 @@ data class Note(
     val sent_to_leaders: Boolean = false,
     val inbox_status: String? = null,
     val show_name: Boolean = false,
+    val allow_group_share: Boolean = false,
+    val first_sent_at: String? = null,
+    val sent_at: String? = null,
     val reply: NoteReply? = null,
 )
 

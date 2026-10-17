@@ -1825,9 +1825,9 @@
       {
         "id": "h4",
         "title": "Item 4: Prayer and Application to leaders, send feedback states, timestamps (4a, 4b, 4c)",
-        "status": "pending",
+        "status": "done",
         "gate": "h3",
-        "notes": ""
+        "notes": "DONE (h4): (1) Prayer and Application delivered to leaders (4a): schema and API updated so Observation, Question, Prayer, and Application notes copy to leader_inbox; Insight notes remain strictly confidential. (2) Group share permission gate (4a): allow_group_share flag added for prayers and applications; server strictly rejects publishing to community without author permission. (3) Send feedback states (4b): added SendFeedbackState enum and ExpressiveButtonLoader transition with Sent checkmark before dismissal. (4) WAT (Africa/Lagos, UTC+1) timestamps (4c): WatTimeFormatter and server first_sent_at / sent_at / replied_at fields render consistent timestamps across cards and replies. (5) Updated privacy notice dialogue across app and web. (6) Automated unit tests passing: NotesSharingPolicyTest.kt, test_item4_notes_policy.mjs, and route_contract_check.mjs."
       },
       {
         "id": "h5",

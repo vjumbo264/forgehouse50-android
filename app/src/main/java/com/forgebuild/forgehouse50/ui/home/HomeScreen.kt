@@ -115,7 +115,7 @@ fun HomeScreen(
             },
             text = {
                 Text(
-                    "Observations and Questions you write can now be read by your leaders so they can help you. Insights, Prayers and Applications stay private.",
+                    "Observations, Questions, Prayers and Applications are sent to your leaders. They may reply, and may share some with the group, using your name only if you allow it. Insights stay private. If you delete a note, your leaders keep the copy you sent.",
                     style = MaterialTheme.typography.bodyMedium
                 )
             },

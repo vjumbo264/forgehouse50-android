@@ -215,10 +215,10 @@ class ApiClient(private val session: SessionStore) {
             if (day in 1..50) parameter("day", day)
         }
 
-    suspend fun createNote(noteType: String, body: String, book: String, chapter: Int, verse: Int?, dayNumber: Int?, showName: Boolean = false): GenericOk =
+    suspend fun createNote(noteType: String, body: String, book: String, chapter: Int, verse: Int?, dayNumber: Int?, showName: Boolean = false, allowGroupShare: Boolean = false): GenericOk =
         post("/notes", buildJsonObject {
             put("note_type", noteType); put("body", body); put("book", book); put("chapter", chapter)
-            put("show_name", showName)
+            put("show_name", showName); put("allow_group_share", allowGroupShare)
             verse?.let { put("verse", it) }; dayNumber?.let { put("day_number", it) }
         })
 

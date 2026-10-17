@@ -73,6 +73,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.forgebuild.forgehouse50.data.AppCache
 import com.forgebuild.forgehouse50.data.Note
+import com.forgebuild.forgehouse50.data.WatTimeFormatter
+import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.data.ScriptureReferenceUtils
 import com.forgebuild.forgehouse50.ui.ExpressiveButton
@@ -81,6 +83,13 @@ import com.forgebuild.forgehouse50.ui.NOTE_TYPES
 import com.forgebuild.forgehouse50.ui.noteTypeLabel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+enum class SendFeedbackState {
+    Idle,
+    Sending,
+    Sent,
+    Error
+}
 
 fun noteTypeIcon(type: String) = when (type.lowercase()) {
     "observation" -> Icons.Filled.Visibility
@@ -292,7 +301,7 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
                     modifier = Modifier.fillMaxSize().padding(bottom = 80.dp)
                 ) {
                     items(notes, key = { it.id }) { n ->
-                        val isLeaderType = n.note_type == "observation" || n.note_type == "question"
+                        val isLeaderType = n.note_type in listOf("observation", "question", "prayer", "application")
                         Card(
                             onClick = { onEdit(n.id, n.day_number) },
                             colors = CardDefaults.cardColors(
@@ -359,6 +368,14 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
+                                        val sentLabel = WatTimeFormatter.formatSentTime(n.first_sent_at, n.sent_at)
+                                        if (sentLabel.isNotBlank()) {
+                                            Text(
+                                                sentLabel,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     } else {
                                         Surface(
                                             shape = MaterialTheme.shapes.extraSmall,
@@ -408,8 +425,9 @@ fun NotesScreen(repo: Repository, onBack: () -> Unit, onEdit: (String?, Int?) ->
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(Modifier.padding(10.dp)) {
+                                            val replyTime = WatTimeFormatter.formatWatTime(n.reply?.created_at)
                                             Text(
-                                                "Leader Reply:",
+                                                if (replyTime.isNotBlank()) "Leader Reply · $replyTime:" else "Leader Reply:",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.tertiary
@@ -476,6 +494,8 @@ fun NoteEditScreen(
     var verse by remember { mutableStateOf(initialVerse.orEmpty()) }
     var body by remember { mutableStateOf(if (noteId == null) prefs.getString(draftKey, "").orEmpty() else "") }
     var showName by remember { mutableStateOf(false) }
+    var allowGroupShare by remember { mutableStateOf(false) }
+    var sendFeedbackState by remember { mutableStateOf(SendFeedbackState.Idle) }
 
     var showBookPicker by remember { mutableStateOf(false) }
     var showChapterPicker by remember { mutableStateOf(false) }
@@ -502,6 +522,7 @@ fun NoteEditScreen(
                     chapter = if (n.chapter > 0) "${n.chapter}" else "1"
                     verse = n.verse?.toString() ?: ""
                     showName = n.show_name
+                    allowGroupShare = n.allow_group_share
                 }
             }
             loaded = true
@@ -869,7 +890,8 @@ fun NoteEditScreen(
             Spacer(Modifier.height(14.dp))
 
             // Policy Notice Banner & Community Toggle
-            val isLeaderType = type == "observation" || type == "question"
+            val isLeaderType = type in listOf("observation", "question", "prayer", "application")
+            val isPrayerOrApp = type in listOf("prayer", "application")
             Surface(
                 shape = MaterialTheme.shapes.medium,
                 color = if (isLeaderType) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
@@ -920,6 +942,32 @@ fun NoteEditScreen(
                                 onCheckedChange = { showName = it }
                             )
                         }
+
+                        if (isPrayerOrApp) {
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                                    Text(
+                                        "Allow my leaders to share this with the group",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        "If turned off, leaders may read and reply privately, but cannot publish it to the community.",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Switch(
+                                    checked = allowGroupShare,
+                                    onCheckedChange = { allowGroupShare = it }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -953,11 +1001,12 @@ fun NoteEditScreen(
 
             Spacer(Modifier.height(18.dp))
 
-            // Primary Save Button
+            // Primary Save Button with Send Feedback (4b)
             ExpressiveButton(
                 onClick = {
                     scope.launch {
                         busy = true
+                        sendFeedbackState = SendFeedbackState.Sending
                         error = null
                         val canonBook = ScriptureReferenceUtils.canonicalBook(book) ?: book.trim()
                         val ch = chapter.trim().toIntOrNull() ?: 1
@@ -972,7 +1021,8 @@ fun NoteEditScreen(
                                     chapter = ch,
                                     verse = v,
                                     dayNumber = dayNumber,
-                                    showName = showName
+                                    showName = showName,
+                                    allowGroupShare = allowGroupShare
                                 )
                             }
                         } else {
@@ -981,13 +1031,15 @@ fun NoteEditScreen(
                                     id = noteId,
                                     noteType = type,
                                     body = body,
-                                    showName = showName
+                                    showName = showName,
+                                    allowGroupShare = allowGroupShare
                                 )
                             }
                         }
 
                         r.onSuccess {
                             if (it.ok) {
+                                sendFeedbackState = SendFeedbackState.Sent
                                 prefs.edit().remove(draftKey).apply()
                                 scope.launch {
                                     runCatching {
@@ -999,20 +1051,38 @@ fun NoteEditScreen(
                                         AppCache.saveToday(context, freshToday)
                                     }
                                 }
+                                delay(800L)
                                 onBack()
                             } else {
+                                sendFeedbackState = SendFeedbackState.Error
                                 error = it.error ?: "Could not save your note. Please try again."
+                                busy = false
                             }
                         }.onFailure {
+                            sendFeedbackState = SendFeedbackState.Error
                             error = it.message ?: "Could not save your note. Please try again."
+                            busy = false
                         }
-                        busy = false
                     }
                 },
-                enabled = !busy && body.isNotBlank(),
+                enabled = !busy && body.isNotBlank() && sendFeedbackState != SendFeedbackState.Sent,
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
-                Text(if (noteId == null) "Save Note" else "Update Note", fontWeight = FontWeight.Bold)
+                when (sendFeedbackState) {
+                    SendFeedbackState.Sending -> {
+                        ExpressiveButtonLoader()
+                        Spacer(Modifier.width(8.dp))
+                        Text("Sending…", fontWeight = FontWeight.Bold)
+                    }
+                    SendFeedbackState.Sent -> {
+                        Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Sent", fontWeight = FontWeight.Bold)
+                    }
+                    else -> {
+                        Text(if (noteId == null) "Save Note" else "Update Note", fontWeight = FontWeight.Bold)
+                    }
+                }
             }
 
             Spacer(Modifier.height(28.dp))
