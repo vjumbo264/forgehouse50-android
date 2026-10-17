@@ -38,6 +38,8 @@ import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -1036,7 +1038,7 @@ fun ReadScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(Modifier.height(4.dp))
-                    availableTranslations.forEach { tId ->
+                    for (tId in availableTranslations) {
                         val normId = repo.normalizeTranslation(tId)
                         val isSelected = repo.normalizeTranslation(translation) == normId
                         val code = normId.removePrefix("versewell-").uppercase()
