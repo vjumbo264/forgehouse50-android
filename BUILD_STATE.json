@@ -1768,9 +1768,9 @@
       {
         "id": "g9",
         "title": "Item 9 \u2014 announcements",
-        "status": "pending",
+        "status": "done",
         "gate": "g8",
-        "notes": ""
+        "notes": "DONE (g9): Item 9 Announcements complete across backend, Android app, and website. (1) Backend: created announcements table (id, title, body, created_by, status active|archived, created_at, updated_at). Added admin endpoints for creation, editing, status toggling, and deletion with audit logging. Added participant endpoints /api/announcements/latest and /api/announcements with cursor pagination, title (80) and body (1000) length limits. Backend tests in scripts/test_item9_announcements.mjs passing 100%. (2) Android App: AnnouncementsScreen with full history, clean date formatting, and empty states. HomeScreen announcement banner with unread indicator dot (tracked locally per announcement ID). AdminAnnouncementsTab with full composer, character limits, edit, and delete dialogs. Wired into AppNavHost and AdminScreen tab 3. (3) Website: HomeView announcement card and AdminView announcements management."
       },
       {
         "id": "g10",
