@@ -1923,16 +1923,16 @@
           {
             "id": "h9i",
             "title": "Admin screens and quote-image share UI (visual only)",
-            "status": "in_progress",
+            "status": "done",
             "gate": "h9h",
-            "notes": "IN_PROGRESS (h9i): Refining Admin screens & quote-image share UI."
+            "notes": "DONE (h9i): Refined Leaders Inbox search bar with 14dp rounded shape; standardized Share as image button to FilledTonalButton with distinct M3 visual priority; verified QuoteImageGenerator 3 palettes and continuation cards."
           },
           {
             "id": "h9j",
             "title": "Full regression run, contrast checks, evidence/ui_pass_v1/before_after.md, release app, deploy website, smoke test, complete",
-            "status": "pending",
+            "status": "in_progress",
             "gate": "h9i",
-            "notes": "Pending completion of h9i."
+            "notes": "IN_PROGRESS (h9j): Running regression test suites, updating before_after.md, verifying release packaging and website smoke tests."
           }
         ]
       }

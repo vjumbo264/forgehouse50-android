@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -214,6 +215,7 @@ fun LeadersInboxTab(
                     }
                 }
             },
+            shape = RoundedCornerShape(14.dp),
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
@@ -478,7 +480,7 @@ fun LeadersInboxTab(
                                 }
 
                                 if (isAnswered && QuoteImageGenerator.canShareAsImage(item)) {
-                                    OutlinedButton(
+                                    FilledTonalButton(
                                         onClick = {
                                             QuoteImageGenerator.shareQuoteImages(context, listOf(item))
                                         },
