@@ -15,6 +15,11 @@ class ContinuousReaderLogicTest {
         val itemCount: Int,
     )
 
+    sealed class BottomDockState {
+        data class ReadingState(val timerSeconds: Int, val canComplete: Boolean) : BottomDockState()
+        data class SelectionState(val rangeText: String, val runningTimerSeconds: Int) : BottomDockState()
+    }
+
     private fun findCurrentChapter(boundsList: List<ChapterBounds>, firstVisibleItem: Int): ChapterBounds? {
         return boundsList.lastOrNull { it.startIndex <= firstVisibleItem } ?: boundsList.firstOrNull()
     }
@@ -215,10 +220,7 @@ class ContinuousReaderLogicTest {
         // In the redesigned reader (2b):
         // Bottom UI is owned by ONE single BottomDock container.
         // It switches between ReadingState and VerseSelectionState with ZERO overlap.
-        sealed class BottomDockState {
-            data class ReadingState(val timerSeconds: Int, val canComplete: Boolean) : BottomDockState()
-            data class SelectionState(val rangeText: String, val runningTimerSeconds: Int) : BottomDockState()
-        }
+
 
         fun resolveDockState(selectedVerses: Set<Int>, timerSeconds: Int, canComplete: Boolean): BottomDockState {
             return if (selectedVerses.isNotEmpty()) {
