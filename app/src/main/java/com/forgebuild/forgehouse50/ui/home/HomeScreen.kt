@@ -373,7 +373,7 @@ fun HomeScreen(
                                         fontWeight = FontWeight.Bold,
                                     )
                                     Text(
-                                        "${(s.progress * 100).toInt()}%\職",
+                                        "${(s.progress * 100).toInt()}%",
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.primary,
