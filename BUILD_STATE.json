@@ -1888,16 +1888,16 @@
           {
             "id": "h9d",
             "title": "Reader refinement (app and website)",
-            "status": "in_progress",
+            "status": "done",
             "gate": "h9c",
-            "notes": "Refining reader screen layout, bottom dock, headers, and calm counters."
+            "notes": "DONE (h9d): Reader redesigned with 48dp action touch targets in header (Aa text size, custom translation chip surface, note shortcut), 36dp chapter nav targets, calm counter chip in surfaceContainerLow, refined 4dp chapter progress bar, and unified bottom dock in surfaceContainer with 6dp tonal elevation and 12dp rounded selection buttons."
           },
           {
             "id": "h9e",
             "title": "Today (home) and its cards refinement",
-            "status": "pending",
+            "status": "in_progress",
             "gate": "h9d",
-            "notes": "Pending completion of h9d."
+            "notes": "Refining Today / Home screen cards hierarchy, spacing tokens, and shimmering skeletons."
           },
           {
             "id": "h9f",

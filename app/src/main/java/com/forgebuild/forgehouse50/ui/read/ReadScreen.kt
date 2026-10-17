@@ -730,34 +730,47 @@ fun ReadScreen(
                     )
 
                     // Compact translation chip (tap opens bottom sheet)
-                    FilterChip(
-                        selected = true,
-                        onClick = { showTranslationPicker = true },
-                        label = {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+                        modifier = Modifier
+                            .padding(end = 4.dp)
+                            .clickable { showTranslationPicker = true },
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.LibraryBooks,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                            Spacer(Modifier.width(6.dp))
                             Text(
                                 translation.removePrefix("versewell-").uppercase(),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Filled.LibraryBooks, null, modifier = Modifier.size(14.dp))
-                        },
-                        modifier = Modifier.padding(end = 4.dp),
-                    )
+                        }
+                    }
 
-                    // Text size button (replaces oversized A-/A+ pill: opens compact dialog with slider and preview)
+                    // Text size button (compact 48dp action target)
                     IconButton(
                         onClick = { showFontSizeDialog = true },
-                        modifier = Modifier.size(44.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
                         ) {
                             Text(
                                 "Aa",
-                                style = MaterialTheme.typography.labelLarge,
+                                style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -765,15 +778,28 @@ fun ReadScreen(
                         }
                     }
 
-                    // Note shortcut
+                    // Note shortcut (compact 48dp action target)
                     IconButton(
                         onClick = {
                             val cur = currentChapter
                             onAddNote(activeDay, cur?.first.orEmpty(), cur?.second ?: 1, "1", "observation")
                         },
-                        modifier = Modifier.size(44.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
-                        Icon(Icons.Filled.Edit, "Add note", modifier = Modifier.size(20.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+                        ) {
+                            Box(modifier = Modifier.padding(6.dp), contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Filled.Edit,
+                                    contentDescription = "Add note",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -824,7 +850,7 @@ fun ReadScreen(
                             }
                         },
                         enabled = currentChapterIdx > 0,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(36.dp),
                     ) {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous chapter", Modifier.size(18.dp))
                     }
@@ -839,7 +865,7 @@ fun ReadScreen(
                             }
                         },
                         enabled = currentChapterIdx < chapters.lastIndex,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(36.dp),
                     ) {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next chapter", Modifier.size(18.dp))
                     }
@@ -863,8 +889,8 @@ fun ReadScreen(
                     } else if (versesLeft > 0 || chaptersLeft > 0) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
                         ) {
                             val counterText = if (chaptersLeft > 0) {
                                 "$versesLeft verses · $chaptersLeft ch left"
@@ -894,9 +920,9 @@ fun ReadScreen(
         // ONE bottom dock composable (2b): owns all bottom UI and reserves real height in contentPadding
         Surface(
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.98f),
-            tonalElevation = 8.dp,
-            shadowElevation = 10.dp,
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.98f),
+            tonalElevation = 6.dp,
+            shadowElevation = 8.dp,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
             modifier = Modifier
                 .fillMaxWidth()
@@ -960,7 +986,8 @@ fun ReadScreen(
                                 selectedVerses = emptySet()
                                 onAddNote(activeDay, b, c, v, "question")
                             },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                         ) {
                             Icon(Icons.Filled.HelpOutline, null, Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
@@ -976,7 +1003,8 @@ fun ReadScreen(
                                 selectedVerses = emptySet()
                                 onAddNote(activeDay, b, c, v, "observation")
                             },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                         ) {
                             Icon(Icons.Filled.Edit, null, Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
@@ -985,7 +1013,7 @@ fun ReadScreen(
 
                         IconButton(
                             onClick = { selectedVerses = emptySet() },
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(40.dp),
                         ) {
                             Icon(Icons.Filled.Close, "Clear selection", Modifier.size(18.dp))
                         }
