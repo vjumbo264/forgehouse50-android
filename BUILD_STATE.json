@@ -1874,16 +1874,16 @@
           {
             "id": "h9b",
             "title": "Before screenshots for every listed screen and evidence/ui_pass_v1/ui_audit.md",
-            "status": "in_progress",
+            "status": "done",
             "gate": "h9a",
-            "notes": "Generating baseline evidence and comprehensive UI audit across all screens."
+            "notes": "DONE (h9b): Baseline screenshots generated (mobile/desktop, light/dark) and comprehensive UI audit documented in evidence/ui_pass_v1/ui_audit.md covering all 7 screen groups."
           },
           {
             "id": "h9c",
             "title": "Design language into DESIGN_SYSTEM.md and shared tokens/components in code",
-            "status": "pending",
+            "status": "in_progress",
             "gate": "h9b",
-            "notes": "Pending completion of h9b."
+            "notes": "Consolidating design tokens in DESIGN_SYSTEM.md and shared UI components."
           },
           {
             "id": "h9d",
