@@ -1832,9 +1832,9 @@
       {
         "id": "h5",
         "title": "Item 5: dynamic home screen",
-        "status": "pending",
+        "status": "done",
         "gate": "h4",
-        "notes": ""
+        "notes": "DONE (h5): (1) Rebuilt Android HomeScreen as single LazyColumn with intrinsic height independent cards in strict priority order: Update card (when active) -> Announcement card (when active) -> Today reading card with catch-up -> Community card (when active) -> Stats row -> Notes action row -> WhatsApp group -> Support Play Store -> Support Global WhatsApp -> Admin dashboard. (2) Dynamic expansion & calm transitions: cards use Modifier.animateItem() and AnimatedVisibility(expandVertically + fadeIn) to open up space without squeezing; Today reading card uses TodayReadingSkeleton of exact final height with Crossfade preventing layout shifts. (3) Community & Announcement history: Community card displays type, reference, author/Anonymous, leader reply, and WAT reply time, opening CommunityScreen on click; Announcement card shows date, title, body, opening AnnouncementsScreen on click; empty states render nothing. (4) Web parity: updated index-CQfSSHWX.js with exact priority ordering, intrinsic cards, WAT reply time formatting, and history modals for both Community and Announcements. (5) Unit tests passing in DynamicHomeScreenLogicTest.kt and test_item5_dynamic_home.mjs."
       },
       {
         "id": "h6",
