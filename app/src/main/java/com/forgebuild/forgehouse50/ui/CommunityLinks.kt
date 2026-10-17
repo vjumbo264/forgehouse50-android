@@ -112,6 +112,55 @@ fun JoinWhatsAppGroupButton(context: Context, modifier: Modifier = Modifier) {
     )
 }
 
+/**
+ * "Help us get ForgeHouse 50 on Play Store" support card (Item 7).
+ */
+@Composable
+fun SupportPlayStoreCard(modifier: Modifier = Modifier) {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        androidx.compose.foundation.layout.Column(
+            modifier = Modifier.padding(18.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(36.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Filled.Favorite,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = "Help us get ForgeHouse 50 on Play Store",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Spacer(androidx.compose.ui.Modifier.height(10.dp))
+            Text(
+                text = "Publishing on Google Play needs a registration fee. Your support helps us put ForgeHouse 50 on the Play Store so more people can read the New Testament with us.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 /** "Support ForgeHouse Global" — direct wa.me chat with admin. */
 @Composable
 fun SupportWhatsAppButton(context: Context, modifier: Modifier = Modifier) {

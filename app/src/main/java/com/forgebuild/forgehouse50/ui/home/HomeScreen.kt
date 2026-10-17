@@ -57,6 +57,7 @@ import com.forgebuild.forgehouse50.ui.ActionPillRow
 import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 import com.forgebuild.forgehouse50.ui.JoinWhatsAppGroupButton
 import com.forgebuild.forgehouse50.ui.SupportWhatsAppButton
+import com.forgebuild.forgehouse50.ui.SupportPlayStoreCard
 import com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider
 import com.forgebuild.forgehouse50.widget.WidgetRefreshWorker
 
@@ -396,6 +397,11 @@ fun HomeScreen(
 
         // Action Row 2: Join WhatsApp Group
         JoinWhatsAppGroupButton(context)
+
+        Spacer(Modifier.height(12.dp))
+
+        // Support Card (Item 7)
+        SupportPlayStoreCard()
 
         Spacer(Modifier.height(12.dp))
 

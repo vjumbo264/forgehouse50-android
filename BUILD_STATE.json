@@ -1754,9 +1754,9 @@
       {
         "id": "g7",
         "title": "Item 7 \u2014 support message (both clients)",
-        "status": "pending",
+        "status": "done",
         "gate": "g6",
-        "notes": ""
+        "notes": "DONE (g7): Support screen message added to both clients with identical calm copy and no emojis: heading \"Help us get ForgeHouse 50 on Play Store\", body \"Publishing on Google Play needs a registration fee. Your support helps us put ForgeHouse 50 on the Play Store so more people can read the New Testament with us.\" placed above the support actions in Android app (CommunityLinks SupportPlayStoreCard & HomeScreen) and website (HomeView and ProfileView)."
       },
       {
         "id": "g8",
