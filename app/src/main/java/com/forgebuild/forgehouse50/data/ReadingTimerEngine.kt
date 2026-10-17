@@ -197,6 +197,8 @@ class ReadingTimer(
  * No emojis, no cheesiness. Shown only after 5:00.
  */
 object ReaderEncouragement {
+    fun forReadingTime(seconds: Int): String? = getMessage(seconds)
+
     val messagesByMinute: Map<Int, String> = mapOf(
         5 to "Five minutes in. Steady and faithful.",
         6 to "The word is a lamp unto your feet.",

@@ -1,7 +1,7 @@
 package com.forgebuild.forgehouse50
 
 import com.forgebuild.forgehouse50.data.LeaderInboxItem
-import com.forgebuild.forgehouse50.data.LeaderReply
+import com.forgebuild.forgehouse50.data.LeaderInboxReply
 import com.forgebuild.forgehouse50.ui.admin.QuoteImageGenerator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -51,7 +51,7 @@ class QuoteImageGeneratorLogicTest {
         val answeredObs = LeaderInboxItem(
             id = "2",
             type = "observation",
-            reply = LeaderReply(text = "Amen"),
+            reply = LeaderInboxReply(text = "Amen"),
             status = "answered"
         )
         assertTrue(QuoteImageGenerator.canShareAsImage(answeredObs))
@@ -60,7 +60,7 @@ class QuoteImageGeneratorLogicTest {
         val insight = LeaderInboxItem(
             id = "3",
             type = "insight",
-            reply = LeaderReply(text = "Private reflection"),
+            reply = LeaderInboxReply(text = "Private reflection"),
             status = "answered"
         )
         assertFalse("Insight notes must never be shared as quote images", QuoteImageGenerator.canShareAsImage(insight))
@@ -70,7 +70,7 @@ class QuoteImageGeneratorLogicTest {
             id = "4",
             type = "prayer",
             allow_group_share = false,
-            reply = LeaderReply(text = "Praying with you"),
+            reply = LeaderInboxReply(text = "Praying with you"),
             status = "answered"
         )
         assertFalse(QuoteImageGenerator.canShareAsImage(prayerNoShare))
@@ -80,7 +80,7 @@ class QuoteImageGeneratorLogicTest {
             id = "5",
             type = "prayer",
             allow_group_share = true,
-            reply = LeaderReply(text = "Praying with you"),
+            reply = LeaderInboxReply(text = "Praying with you"),
             status = "answered"
         )
         assertTrue(QuoteImageGenerator.canShareAsImage(prayerWithShare))
@@ -90,7 +90,7 @@ class QuoteImageGeneratorLogicTest {
             id = "6",
             type = "application",
             allow_group_share = false,
-            reply = LeaderReply(text = "Well applied"),
+            reply = LeaderInboxReply(text = "Well applied"),
             status = "answered"
         )
         assertFalse(QuoteImageGenerator.canShareAsImage(appNoShare))
@@ -100,7 +100,7 @@ class QuoteImageGeneratorLogicTest {
             id = "7",
             type = "application",
             allow_group_share = true,
-            reply = LeaderReply(text = "Well applied"),
+            reply = LeaderInboxReply(text = "Well applied"),
             status = "answered"
         )
         assertTrue(QuoteImageGenerator.canShareAsImage(appWithShare))
@@ -113,7 +113,7 @@ class QuoteImageGeneratorLogicTest {
             type = "observation",
             reference = "Matthew 5:3",
             text = "Blessed are the poor in spirit, for theirs is the kingdom of heaven.",
-            reply = LeaderReply(text = "True spiritual humility is the doorway to God's presence.")
+            reply = LeaderInboxReply(text = "True spiritual humility is the doorway to God's presence.")
         )
         val cards = QuoteImageGenerator.splitTextToCards(item, globalIndex = 0)
         assertEquals(1, cards.size)
@@ -131,7 +131,7 @@ class QuoteImageGeneratorLogicTest {
             type = "question",
             reference = "Romans 8:28",
             text = longQuote,
-            reply = LeaderReply(text = longReply)
+            reply = LeaderInboxReply(text = longReply)
         )
         val cards = QuoteImageGenerator.splitTextToCards(item, globalIndex = 1)
         assertEquals(2, cards.size)
@@ -145,7 +145,7 @@ class QuoteImageGeneratorLogicTest {
 
     @Test
     fun testCyclingPalettes() {
-        val item = LeaderInboxItem(id = "item", type = "observation", reply = LeaderReply(text = "ok"))
+        val item = LeaderInboxItem(id = "item", type = "observation", reply = LeaderInboxReply(text = "ok"))
         val c0 = QuoteImageGenerator.splitTextToCards(item, 0)
         val c1 = QuoteImageGenerator.splitTextToCards(item, 1)
         val c2 = QuoteImageGenerator.splitTextToCards(item, 2)

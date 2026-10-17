@@ -104,6 +104,8 @@ fun ProfileScreen(
     onOpenChangelog: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    var showUpdateChoiceDialog by remember { mutableStateOf(false) }
+    var availableUpdateForChoice by remember { mutableStateOf<com.forgebuild.forgehouse50.update.UpdateInfo?>(null) }
     val scope = rememberCoroutineScope()
     var me by remember { mutableStateOf(AppCache.getMe(context)) }
     var pickingAvatar by remember { mutableStateOf(false) }
@@ -287,10 +289,7 @@ fun ProfileScreen(
         Spacer(Modifier.height(16.dp))
 
         // Action row: In-app update status
-        var showUpdateChoiceDialog by remember { mutableStateOf(false) }
-    var availableUpdateForChoice by remember { mutableStateOf<com.forgebuild.forgehouse50.update.UpdateInfo?>(null) }
-    val updateState by UpdateManager.uiState.collectAsState()
-        val updateContext = LocalContext.current
+        val updateState by UpdateManager.uiState.collectAsState()
 
         Surface(
             onClick = {
@@ -304,7 +303,7 @@ fun ProfileScreen(
                     }
                     is UpdateUiState.Downloading -> {
                         if (s.isHidden) {
-                            UpdateManager.startDownload(updateContext, repo.session, s.update, isHidden = false)
+                            UpdateManager.startDownload(context, repo.session, s.update, isHidden = false)
                         }
                     }
                     is UpdateUiState.ReadyToInstall, is UpdateUiState.PermissionRequired -> {
@@ -312,7 +311,7 @@ fun ProfileScreen(
                     }
                     is UpdateUiState.Error -> {
                         if (s.update != null) {
-                            UpdateManager.startDownload(updateContext, repo.session, s.update, isHidden = false)
+                            UpdateManager.startDownload(context, repo.session, s.update, isHidden = false)
                         } else {
                             UpdateManager.check(updateContext, repo.session, force = true)
                         }
@@ -821,7 +820,7 @@ fun ProfileScreen(
                         onClick = {
                             showUpdateChoiceDialog = false
                             repo.session.preferredUpdateMode = "in_app"
-                            UpdateManager.startDownload(updateContext, repo.session, upd, isHidden = false)
+                            UpdateManager.startDownload(context, repo.session, upd, isHidden = false)
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -832,7 +831,7 @@ fun ProfileScreen(
                         onClick = {
                             showUpdateChoiceDialog = false
                             repo.session.preferredUpdateMode = "browser"
-                            com.forgebuild.forgehouse50.update.UpdateChecker.openInBrowser(updateContext, upd.apkUrl)
+                            com.forgebuild.forgehouse50.update.UpdateChecker.openInBrowser(context, upd.apkUrl)
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {

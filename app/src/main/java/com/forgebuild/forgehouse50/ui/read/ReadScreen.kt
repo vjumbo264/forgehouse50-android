@@ -1047,15 +1047,19 @@ fun ReadScreen(
                                 }
                             } else {
                                 val encouragement = remember(timerTick) {
-                                    ReaderEncouragement.forReadingTime(timerTick)
+                                    ReaderEncouragement.getMessage(timerTick)
                                 }
-                                Text(
-                                    encouragement,
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                )
+                                if (!encouragement.isNullOrBlank()) {
+                                    Text(
+                                        encouragement,
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                    )
+                                } else {
+                                    Spacer(Modifier.weight(1f))
+                                }
                             }
 
                             val m = timerTick / 60
