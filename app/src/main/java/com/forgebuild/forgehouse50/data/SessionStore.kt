@@ -89,6 +89,32 @@ class SessionStore(context: Context) {
         get() = prefs.getBoolean(KEY_KEEPALIVE_EXPLAINED, false)
         set(value) = prefs.edit().putBoolean(KEY_KEEPALIVE_EXPLAINED, value).apply()
 
+    /** Downloaded update metadata persisted across app restarts */
+    var downloadedUpdateVersionCode: Int
+        get() = prefs.getInt(KEY_DOWNLOADED_UPDATE_VC, 0)
+        set(value) = prefs.edit().putInt(KEY_DOWNLOADED_UPDATE_VC, value).apply()
+
+    var downloadedUpdatePath: String?
+        get() = prefs.getString(KEY_DOWNLOADED_UPDATE_PATH, null)
+        set(value) = prefs.edit().putString(KEY_DOWNLOADED_UPDATE_PATH, value).apply()
+
+    var downloadedUpdateSha256: String?
+        get() = prefs.getString(KEY_DOWNLOADED_UPDATE_SHA256, null)
+        set(value) = prefs.edit().putString(KEY_DOWNLOADED_UPDATE_SHA256, value).apply()
+
+    var downloadedUpdateVersionName: String?
+        get() = prefs.getString(KEY_DOWNLOADED_UPDATE_VN, null)
+        set(value) = prefs.edit().putString(KEY_DOWNLOADED_UPDATE_VN, value).apply()
+
+    fun clearDownloadedUpdate() {
+        prefs.edit()
+            .remove(KEY_DOWNLOADED_UPDATE_VC)
+            .remove(KEY_DOWNLOADED_UPDATE_PATH)
+            .remove(KEY_DOWNLOADED_UPDATE_SHA256)
+            .remove(KEY_DOWNLOADED_UPDATE_VN)
+            .apply()
+    }
+
     val isLoggedIn: Boolean get() = !sessionToken.isNullOrBlank()
     val isAdmin: Boolean get() = userRole == "admin"
 
@@ -118,5 +144,9 @@ class SessionStore(context: Context) {
         const val KEY_LAST_UPDATE_NOTIF_AT = "last_update_notif_at"
         const val KEY_UPDATE_LATER_DISMISSED_AT = "update_later_dismissed_at"
         const val KEY_CACHED_RELEASE_JSON = "cached_release_json"
+        const val KEY_DOWNLOADED_UPDATE_VC = "downloaded_update_vc"
+        const val KEY_DOWNLOADED_UPDATE_PATH = "downloaded_update_path"
+        const val KEY_DOWNLOADED_UPDATE_SHA256 = "downloaded_update_sha256"
+        const val KEY_DOWNLOADED_UPDATE_VN = "downloaded_update_vn"
     }
 }

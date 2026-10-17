@@ -1,6 +1,8 @@
 package com.forgebuild.forgehouse50
 
 import com.forgebuild.forgehouse50.update.UpdateLogic
+import com.forgebuild.forgehouse50.update.UpdateInfo
+import com.forgebuild.forgehouse50.update.UpdateUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -131,6 +133,183 @@ class UpdateLogicTest {
         // Non-existent file -> fail
         val nonExistent = File(tempFolder.root, "does_not_exist.apk")
         assertFalse(UpdateLogic.verifyApkFile(nonExistent, expectedSizeBytes = 100L, expectedSha256 = actualSha))
+    }
+
+    @Test
+    fun testStateMachineStandardFlow() {
+        val testFile = tempFolder.newFile("forgehouse50-v28.apk")
+        val sampleBytes = "FORGEHOUSE50_SIGNED_TEST_APK_V28_CONTENT".toByteArray()
+        testFile.writeBytes(sampleBytes)
+        val sha256 = UpdateLogic.computeSha256(testFile)
+        val sizeBytes = testFile.length()
+
+        val update = UpdateInfo(
+            versionName = "v28",
+            versionCode = 28,
+            tag = "forgehouse50-v28",
+            apkUrl = "https://example.com/v28.apk",
+            sizeBytes = sizeBytes,
+            sha256 = sha256,
+        )
+
+        // 1. Not downloaded -> Available
+        val initial = UpdateLogic.resolveInitialState(
+            currentVersionCode = 27,
+            remoteUpdate = update,
+            cachedFile = null,
+            cachedVersionCode = null,
+            cachedSha256 = null,
+        )
+        assertTrue(initial is UpdateUiState.Available)
+
+        // 2. Start download
+        val downloading = UpdateLogic.onDownloadStarted(update, isHidden = false)
+        assertTrue(downloading is UpdateUiState.Downloading)
+        assertEquals(0f, (downloading as UpdateUiState.Downloading).progress, 0.001f)
+        assertFalse(downloading.isHidden)
+
+        // 3. Progress update
+        val progressState = UpdateLogic.onDownloadProgress(downloading, 0.42f)
+        assertTrue(progressState is UpdateUiState.Downloading)
+        assertEquals(0.42f, (progressState as UpdateUiState.Downloading).progress, 0.001f)
+
+        // 4. Hide download
+        val hiddenState = UpdateLogic.onDownloadHidden(progressState)
+        assertTrue(hiddenState is UpdateUiState.Downloading)
+        assertTrue((hiddenState as UpdateUiState.Downloading).isHidden)
+        assertEquals(0.42f, hiddenState.progress, 0.001f)
+
+        // 5. Download complete & verified -> ReadyToInstall
+        val completed = UpdateLogic.onDownloadCompleted(update, testFile, sizeBytes, sha256)
+        assertTrue(completed is UpdateUiState.ReadyToInstall)
+        assertTrue(testFile.exists())
+
+        // 6. Install requested without permission -> PermissionRequired (file kept!)
+        val permNeeded = UpdateLogic.onInstallRequested(completed, canRequestPackageInstalls = false)
+        assertTrue(permNeeded is UpdateUiState.PermissionRequired)
+        assertTrue(testFile.exists()) // NEVER discarded!
+
+        // 7. Return from permission settings with permission granted -> ReadyToInstall (same file!)
+        val returned = UpdateLogic.onResumeFromPermissionSettings(permNeeded, canRequestPackageInstalls = true)
+        assertTrue(returned is UpdateUiState.ReadyToInstall)
+        assertEquals(testFile.absolutePath, (returned as UpdateUiState.ReadyToInstall).apkFile.absolutePath)
+
+        // 8. Trigger install with permission -> ReadyToInstall for installation
+        val installReady = UpdateLogic.onInstallRequested(returned, canRequestPackageInstalls = true)
+        assertTrue(installReady is UpdateUiState.ReadyToInstall)
+    }
+
+    @Test
+    fun testResumeAfterProcessDeath() {
+        val testFile = tempFolder.newFile("forgehouse50-v28-saved.apk")
+        val sampleBytes = "FORGEHOUSE50_SAVED_APK_FOR_PROCESS_DEATH_TEST".toByteArray()
+        testFile.writeBytes(sampleBytes)
+        val sha256 = UpdateLogic.computeSha256(testFile)
+        val sizeBytes = testFile.length()
+
+        val update = UpdateInfo(
+            versionName = "v28",
+            versionCode = 28,
+            tag = "forgehouse50-v28",
+            apkUrl = "https://example.com/v28.apk",
+            sizeBytes = sizeBytes,
+            sha256 = sha256,
+        )
+
+        // Simulate app cold restart: local verified file exists for version 28
+        val state = UpdateLogic.resolveInitialState(
+            currentVersionCode = 27,
+            remoteUpdate = update,
+            cachedFile = testFile,
+            cachedVersionCode = 28,
+            cachedSha256 = sha256,
+        )
+
+        // Must restore immediately to ReadyToInstall without downloading again
+        assertTrue(state is UpdateUiState.ReadyToInstall)
+        assertEquals(testFile.absolutePath, (state as UpdateUiState.ReadyToInstall).apkFile.absolutePath)
+    }
+
+    @Test
+    fun testChecksumMismatchDeletesAndRequiresRedownload() {
+        val corruptedFile = tempFolder.newFile("corrupted.apk")
+        corruptedFile.writeBytes("CORRUPTED_BYTES".toByteArray())
+
+        val update = UpdateInfo(
+            versionName = "v28",
+            versionCode = 28,
+            tag = "forgehouse50-v28",
+            apkUrl = "https://example.com/v28.apk",
+            sizeBytes = 5000L,
+            sha256 = "expected_correct_sha256_hash",
+        )
+
+        // 1. Completion with invalid checksum deletes corrupted file and returns Error
+        val result = UpdateLogic.onDownloadCompleted(
+            update = update,
+            apkFile = corruptedFile,
+            expectedSizeBytes = update.sizeBytes,
+            expectedSha256 = update.sha256,
+        )
+        assertTrue(result is UpdateUiState.Error)
+        assertFalse(corruptedFile.exists()) // Corrupted file was deleted!
+
+        // 2. Resolving state after deletion yields Available to allow clean re-download
+        val nextState = UpdateLogic.resolveInitialState(
+            currentVersionCode = 27,
+            remoteUpdate = update,
+            cachedFile = corruptedFile,
+            cachedVersionCode = 28,
+            cachedSha256 = update.sha256,
+        )
+        assertTrue(nextState is UpdateUiState.Available)
+    }
+
+    @Test
+    fun testOutdatedFileCleanedUpOnVersionUpgrade() {
+        val oldFile = tempFolder.newFile("forgehouse50-v27-old.apk")
+        oldFile.writeBytes("OLD_VERSION_APK".toByteArray())
+
+        // App was upgraded to v28 (currentVersionCode >= cachedVersionCode)
+        val state = UpdateLogic.resolveInitialState(
+            currentVersionCode = 28,
+            remoteUpdate = null,
+            cachedFile = oldFile,
+            cachedVersionCode = 27,
+            cachedSha256 = "sha27",
+        )
+
+        assertTrue(state is UpdateUiState.UpToDate)
+        assertFalse(oldFile.exists()) // Old file deleted!
+    }
+
+    @Test
+    fun testOutdatedFileCleanedUpWhenNewerRemoteUpdateAvailable() {
+        val oldFile = tempFolder.newFile("forgehouse50-v28-intermediate.apk")
+        oldFile.writeBytes("INTERMEDIATE_APK".toByteArray())
+
+        val update29 = UpdateInfo(
+            versionName = "v29",
+            versionCode = 29,
+            tag = "forgehouse50-v29",
+            apkUrl = "https://example.com/v29.apk",
+            sizeBytes = 2000L,
+            sha256 = "sha29",
+        )
+
+        // Local file was for v28, but v29 is now released
+        val state = UpdateLogic.resolveInitialState(
+            currentVersionCode = 27,
+            remoteUpdate = update29,
+            cachedFile = oldFile,
+            cachedVersionCode = 28,
+            cachedSha256 = "sha28",
+        )
+
+        // Intermediate old file is deleted and new update is available to download
+        assertFalse(oldFile.exists())
+        assertTrue(state is UpdateUiState.Available)
+        assertEquals(29, (state as UpdateUiState.Available).update.versionCode)
     }
 
     @Test

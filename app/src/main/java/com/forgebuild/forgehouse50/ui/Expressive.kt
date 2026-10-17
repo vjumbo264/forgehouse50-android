@@ -89,7 +89,20 @@ fun ExpressiveLinearProgress(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
 ) {
-    LinearWavyProgressIndicator(progress = progress, modifier = modifier, color = color)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val areAnimationsEnabled = runCatching {
+        android.provider.Settings.Global.getFloat(
+            context.contentResolver,
+            android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,
+            1.0f
+        ) != 0f
+    }.getOrDefault(true)
+
+    if (areAnimationsEnabled) {
+        LinearWavyProgressIndicator(progress = progress, modifier = modifier, color = color)
+    } else {
+        androidx.compose.material3.LinearProgressIndicator(progress = progress, modifier = modifier, color = color)
+    }
 }
 
 /** Expressive indeterminate circular progress (official wavy indicator). */

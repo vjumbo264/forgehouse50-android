@@ -74,6 +74,13 @@ import com.forgebuild.forgehouse50.ui.changelog.ChangelogScreen
 import com.forgebuild.forgehouse50.update.DownloadResult
 import com.forgebuild.forgehouse50.update.PendingUpdate
 import com.forgebuild.forgehouse50.update.UpdateChecker
+import com.forgebuild.forgehouse50.update.UpdateManager
+import com.forgebuild.forgehouse50.update.UpdateUiState
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 
 object Routes {
@@ -128,13 +135,21 @@ fun AppNavHost(
     var signupLabel by remember { mutableStateOf("Joining closes on 21 Oct 2026") }
     var configLoaded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    var pendingUpdate by remember { mutableStateOf<PendingUpdate?>(null) }
-    var isDownloadingUpdate by remember { mutableStateOf(false) }
-    var downloadProgress by remember { mutableStateOf(0f) }
-    var updateErrorDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
-    var updateErrorApkUrl by remember { mutableStateOf<String?>(null) }
-    var showPermissionDialog by remember { mutableStateOf(false) }
-    var downloadedApkToInstall by remember { mutableStateOf<java.io.File?>(null) }
+    val updateState by UpdateManager.uiState.collectAsState()
+    var updateLaterDismissed by remember { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                UpdateManager.onResume(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // Public config (join window state) — fetched once per cold start.
     LaunchedEffect(Unit) {
@@ -145,18 +160,14 @@ fun AppNavHost(
         configLoaded = true
     }
 
-    // In-app update check: checked on launch/resume and periodically while in use.
+    // In-app update check: initialized on startup, checked on login and periodically while in use.
     LaunchedEffect(loggedIn, authenticatedTick) {
+        UpdateManager.init(context, repo.session)
         if (loggedIn) {
-            pendingUpdate = UpdateChecker.check(context, repo.session)
+            UpdateManager.check(context, repo.session)
             while (isActive) {
                 delay(15 * 60 * 1000L)
-                if (pendingUpdate == null) {
-                    val u = UpdateChecker.check(context, repo.session, isInUseCheck = true)
-                    if (u != null) {
-                        pendingUpdate = u
-                    }
-                }
+                UpdateManager.check(context, repo.session, isInUseCheck = true)
             }
         }
     }
@@ -373,149 +384,118 @@ fun AppNavHost(
         }
 
         // Update dialog and installation flow
-        pendingUpdate?.let { update ->
-            val formattedSize = remember(update.sizeBytes) {
-                if (update.sizeBytes > 0) {
-                    val mb = update.sizeBytes / (1024f * 1024f)
-                    " · %.1f MB".format(mb)
-                } else ""
+        when (val s = updateState) {
+            is UpdateUiState.Available -> {
+                if (!updateLaterDismissed) {
+                    val update = s.update
+                    val formattedSize = remember(update.sizeBytes) {
+                        if (update.sizeBytes > 0) {
+                            val mb = update.sizeBytes / (1024f * 1024f)
+                            " · %.1f MB".format(mb)
+                        } else ""
+                    }
+                    AlertDialog(
+                        onDismissRequest = {
+                            repo.session.updateLaterDismissedAt = System.currentTimeMillis()
+                            updateLaterDismissed = true
+                        },
+                        title = { Text("Update available") },
+                        text = {
+                            Text(
+                                "Version ${update.versionName} is ready to install$formattedSize.",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                UpdateManager.startDownload(context, repo.session, update, isHidden = false)
+                            }) { Text("Update now") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = {
+                                repo.session.updateLaterDismissedAt = System.currentTimeMillis()
+                                updateLaterDismissed = true
+                            }) { Text("Later") }
+                        },
+                    )
+                }
             }
-            AlertDialog(
-                onDismissRequest = {
-                    repo.session.updateLaterDismissedAt = System.currentTimeMillis()
-                    pendingUpdate = null
-                },
-                title = { Text("Update available") },
-                text = {
-                    Text(
-                        "Version ${update.versionName} is ready to install$formattedSize.",
-                        style = MaterialTheme.typography.bodyMedium,
+            is UpdateUiState.Downloading -> {
+                if (!s.isHidden) {
+                    AlertDialog(
+                        onDismissRequest = { UpdateManager.hideDownload() },
+                        title = { Text("Downloading update") },
+                        text = {
+                            Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                                Text(
+                                    "${(s.progress * 100).toInt()}% completed",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                ExpressiveLinearProgress(
+                                    progress = { s.progress },
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        },
+                        confirmButton = {},
+                        dismissButton = {
+                            TextButton(onClick = { UpdateManager.hideDownload() }) {
+                                Text("Hide")
+                            }
+                        },
                     )
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        if (!UpdateChecker.isOnline(context)) {
-                            updateErrorDialog = Pair("Offline", "Connect to the internet to update.")
-                            updateErrorApkUrl = null
-                            return@TextButton
-                        }
-                        isDownloadingUpdate = true
-                        downloadProgress = 0f
-                        scope.launch {
-                            val res = UpdateChecker.downloadAndVerify(context, update) { p ->
-                                downloadProgress = p
-                            }
-                            isDownloadingUpdate = false
-                            when (res) {
-                                is DownloadResult.Success -> {
-                                    pendingUpdate = null
-                                    downloadedApkToInstall = res.apkFile
-                                    if (!UpdateChecker.canRequestPackageInstalls(context)) {
-                                        showPermissionDialog = true
-                                    } else {
-                                        UpdateChecker.installApk(context, res.apkFile)
-                                    }
-                                }
-                                is DownloadResult.VerificationFailed -> {
-                                    updateErrorDialog = Pair("Update verification failed", res.reason)
-                                    updateErrorApkUrl = res.apkUrl
-                                }
-                                is DownloadResult.Failure -> {
-                                    updateErrorDialog = Pair("Download failed", res.message)
-                                    updateErrorApkUrl = res.apkUrl
-                                }
-                            }
-                        }
-                    }) { Text("Update now") }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        repo.session.updateLaterDismissedAt = System.currentTimeMillis()
-                        pendingUpdate = null
-                    }) { Text("Later") }
-                },
-            )
-        }
-
-        if (isDownloadingUpdate) {
-            AlertDialog(
-                onDismissRequest = { /* Modal during download */ },
-                title = { Text("Downloading update") },
-                text = {
-                    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                }
+            }
+            is UpdateUiState.PermissionRequired -> {
+                AlertDialog(
+                    onDismissRequest = { /* Keep state */ },
+                    title = { Text("Permission required") },
+                    text = {
                         Text(
-                            "${(downloadProgress * 100).toInt()}% completed",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            "To install this update directly, ForgeHouse 50 needs permission to install unknown apps. Tap Settings to allow.",
+                            style = MaterialTheme.typography.bodyMedium,
                         )
-                        Spacer(Modifier.height(8.dp))
-                        LinearProgressIndicator(
-                            progress = { downloadProgress },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                },
-                confirmButton = {},
-            )
-        }
-
-        if (showPermissionDialog) {
-            AlertDialog(
-                onDismissRequest = { showPermissionDialog = false },
-                title = { Text("Permission required") },
-                text = {
-                    Text(
-                        "To install this update directly, ForgeHouse 50 needs permission to install unknown apps. Tap Settings to allow.",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showPermissionDialog = false
-                        UpdateChecker.openUnknownAppSourcesSettings(context)
-                    }) { Text("Settings") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showPermissionDialog = false }) { Text("Cancel") }
-                },
-            )
-        }
-
-        updateErrorDialog?.let { (title, msg) ->
-            AlertDialog(
-                onDismissRequest = {
-                    updateErrorDialog = null
-                    updateErrorApkUrl = null
-                },
-                title = { Text(title) },
-                text = {
-                    Text(
-                        if (updateErrorApkUrl != null) "$msg\n\nTap below to open in your browser instead." else msg,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                },
-                confirmButton = {
-                    if (updateErrorApkUrl != null) {
+                    },
+                    confirmButton = {
                         TextButton(onClick = {
-                            UpdateChecker.openInBrowser(context, updateErrorApkUrl!!)
-                            updateErrorDialog = null
-                            updateErrorApkUrl = null
-                        }) { Text("Open in browser") }
-                    } else {
+                            UpdateChecker.openUnknownAppSourcesSettings(context)
+                        }) { Text("Settings") }
+                    },
+                    dismissButton = {
                         TextButton(onClick = {
-                            updateErrorDialog = null
-                        }) { Text("OK") }
-                    }
-                },
-                dismissButton = {
-                    if (updateErrorApkUrl != null) {
-                        TextButton(onClick = {
-                            updateErrorDialog = null
-                            updateErrorApkUrl = null
+                            UpdateManager.dismissError()
                         }) { Text("Cancel") }
-                    }
-                },
-            )
+                    },
+                )
+            }
+            is UpdateUiState.Error -> {
+                AlertDialog(
+                    onDismissRequest = { UpdateManager.dismissError() },
+                    title = { Text("Update failed") },
+                    text = {
+                        Text(
+                            if (s.apkUrl != null) "${s.message}\n\nTap below to open in your browser instead." else s.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    },
+                    confirmButton = {
+                        if (s.apkUrl != null) {
+                            TextButton(onClick = {
+                                UpdateChecker.openInBrowser(context, s.apkUrl)
+                                UpdateManager.dismissError()
+                            }) { Text("Open in browser") }
+                        } else {
+                            TextButton(onClick = { UpdateManager.dismissError() }) { Text("OK") }
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { UpdateManager.dismissError() }) { Text("Cancel") }
+                    },
+                )
+            }
+            else -> {}
         }
     }
 }

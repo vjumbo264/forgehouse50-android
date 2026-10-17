@@ -58,6 +58,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.DownloadDone
+import androidx.compose.material.icons.filled.Downloading
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.forgebuild.forgehouse50.ui.ExpressiveLinearProgress
+import com.forgebuild.forgehouse50.update.UpdateManager
+import com.forgebuild.forgehouse50.update.UpdateUiState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
@@ -326,6 +334,120 @@ fun ProfileScreen(
         }
 
         Spacer(Modifier.height(16.dp))
+
+        // Action row: In-app update status
+        val updateState by UpdateManager.uiState.collectAsState()
+        val updateContext = LocalContext.current
+
+        Surface(
+            onClick = {
+                when (val s = updateState) {
+                    is UpdateUiState.UpToDate -> {
+                        UpdateManager.check(updateContext, repo.session, force = true)
+                    }
+                    is UpdateUiState.Available -> {
+                        UpdateManager.startDownload(updateContext, repo.session, s.update, isHidden = false)
+                    }
+                    is UpdateUiState.Downloading -> {
+                        if (s.isHidden) {
+                            UpdateManager.startDownload(updateContext, repo.session, s.update, isHidden = false)
+                        }
+                    }
+                    is UpdateUiState.ReadyToInstall, is UpdateUiState.PermissionRequired -> {
+                        UpdateManager.triggerInstall(updateContext)
+                    }
+                    is UpdateUiState.Error -> {
+                        if (s.update != null) {
+                            UpdateManager.startDownload(updateContext, repo.session, s.update, isHidden = false)
+                        } else {
+                            UpdateManager.check(updateContext, repo.session, force = true)
+                        }
+                    }
+                }
+            },
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 2.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val (icon, iconContainerColor, iconContentColor) = when (updateState) {
+                        is UpdateUiState.UpToDate -> Triple(
+                            Icons.Filled.CheckCircle,
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        is UpdateUiState.Available -> Triple(
+                            Icons.Filled.SystemUpdate,
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        is UpdateUiState.Downloading -> Triple(
+                            Icons.Filled.Downloading,
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        is UpdateUiState.ReadyToInstall, is UpdateUiState.PermissionRequired -> Triple(
+                            Icons.Filled.DownloadDone,
+                            MaterialTheme.colorScheme.tertiaryContainer,
+                            MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                        is UpdateUiState.Error -> Triple(
+                            Icons.Filled.SystemUpdate,
+                            MaterialTheme.colorScheme.errorContainer,
+                            MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    }
+
+                    Surface(
+                        shape = CircleShape,
+                        color = iconContainerColor,
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                icon,
+                                contentDescription = null,
+                                tint = iconContentColor,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    val labelText = when (val s = updateState) {
+                        is UpdateUiState.UpToDate -> "You are up to date"
+                        is UpdateUiState.Available -> "Update available, tap to download"
+                        is UpdateUiState.Downloading -> "Downloading ${(s.progress * 100).toInt()}%"
+                        is UpdateUiState.ReadyToInstall, is UpdateUiState.PermissionRequired -> "Update ready to install, tap to install"
+                        is UpdateUiState.Error -> "Update failed — tap to retry"
+                    }
+                    Text(
+                        labelText,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                if (updateState is UpdateUiState.Downloading) {
+                    val progressVal = (updateState as UpdateUiState.Downloading).progress
+                    Spacer(Modifier.height(8.dp))
+                    ExpressiveLinearProgress(
+                        progress = { progressVal },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
 
         // Action row: Manage translations
         Surface(

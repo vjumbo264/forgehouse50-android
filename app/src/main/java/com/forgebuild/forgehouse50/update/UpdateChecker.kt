@@ -37,14 +37,7 @@ data class AppReleaseDto(
     val changelog: List<String>? = null,
 )
 
-data class PendingUpdate(
-    val versionName: String,
-    val versionCode: Int,
-    val tag: String,
-    val apkUrl: String,
-    val sizeBytes: Long,
-    val sha256: String?,
-)
+typealias PendingUpdate = UpdateInfo
 
 sealed interface DownloadResult {
     data class Success(val apkFile: File) : DownloadResult

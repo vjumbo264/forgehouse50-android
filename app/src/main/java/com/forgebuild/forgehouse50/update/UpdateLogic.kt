@@ -3,6 +3,24 @@ package com.forgebuild.forgehouse50.update
 import java.io.File
 import java.security.MessageDigest
 
+data class UpdateInfo(
+    val versionName: String,
+    val versionCode: Int,
+    val tag: String,
+    val apkUrl: String,
+    val sizeBytes: Long,
+    val sha256: String?,
+)
+
+sealed interface UpdateUiState {
+    data object UpToDate : UpdateUiState
+    data class Available(val update: UpdateInfo) : UpdateUiState
+    data class Downloading(val update: UpdateInfo, val progress: Float, val isHidden: Boolean = false) : UpdateUiState
+    data class ReadyToInstall(val update: UpdateInfo, val apkFile: File) : UpdateUiState
+    data class PermissionRequired(val update: UpdateInfo, val apkFile: File) : UpdateUiState
+    data class Error(val update: UpdateInfo?, val message: String, val apkUrl: String? = null) : UpdateUiState
+}
+
 object UpdateLogic {
     const val NETWORK_CHECK_THROTTLE_MS = 30 * 60 * 1000L      // 30 minutes
     const val LATER_REAPPEAR_IN_USE_MS = 2 * 60 * 60 * 1000L    // 2 hours
@@ -81,5 +99,147 @@ object UpdateLogic {
             val lower = item.lowercase()
             !lower.contains("admin") && !lower.contains("delete user")
         }
+    }
+
+    /**
+     * Resolves the initial UpdateUiState from current installed version, available remote update,
+     * and cached downloaded file if present. Cleans up outdated files if installed version is current.
+     */
+    fun resolveInitialState(
+        currentVersionCode: Int,
+        remoteUpdate: UpdateInfo?,
+        cachedFile: File?,
+        cachedVersionCode: Int?,
+        cachedSha256: String?,
+    ): UpdateUiState {
+        // If current app is already at or above remote update, or no remote update available:
+        if (remoteUpdate == null || remoteUpdate.versionCode <= currentVersionCode) {
+            if (cachedFile != null && cachedFile.exists()) {
+                cleanupOutdatedApk(cachedFile, cachedVersionCode, currentVersionCode)
+            }
+            return UpdateUiState.UpToDate
+        }
+
+        // A remote update is available (remoteUpdate.versionCode > currentVersionCode).
+        // Check if we already have a complete, verified download for this exact version:
+        if (cachedFile != null && cachedFile.exists() && cachedVersionCode == remoteUpdate.versionCode) {
+            val isValid = verifyApkFile(cachedFile, remoteUpdate.sizeBytes, remoteUpdate.sha256 ?: cachedSha256)
+            if (isValid) {
+                return UpdateUiState.ReadyToInstall(remoteUpdate, cachedFile)
+            } else {
+                // Corrupted or size mismatch: delete and require clean download
+                cachedFile.delete()
+            }
+        } else if (cachedFile != null && cachedFile.exists() && (cachedVersionCode ?: 0) < remoteUpdate.versionCode) {
+            // Outdated cached APK from an earlier version: clean up
+            cachedFile.delete()
+        }
+
+        return UpdateUiState.Available(remoteUpdate)
+    }
+
+    /**
+     * Transition when user initiates download.
+     */
+    fun onDownloadStarted(update: UpdateInfo, isHidden: Boolean = false): UpdateUiState {
+        return UpdateUiState.Downloading(update, progress = 0f, isHidden = isHidden)
+    }
+
+    /**
+     * Transition on download progress update.
+     */
+    fun onDownloadProgress(currentState: UpdateUiState, progress: Float): UpdateUiState {
+        return when (currentState) {
+            is UpdateUiState.Downloading -> currentState.copy(progress = progress.coerceIn(0f, 1f))
+            else -> currentState
+        }
+    }
+
+    /**
+     * Transition when user taps "Hide" during download.
+     */
+    fun onDownloadHidden(currentState: UpdateUiState): UpdateUiState {
+        return when (currentState) {
+            is UpdateUiState.Downloading -> currentState.copy(isHidden = true)
+            else -> currentState
+        }
+    }
+
+    /**
+     * Transition when download finishes. Verifies SHA-256 and size.
+     */
+    fun onDownloadCompleted(
+        update: UpdateInfo,
+        apkFile: File,
+        expectedSizeBytes: Long?,
+        expectedSha256: String?,
+    ): UpdateUiState {
+        val isValid = verifyApkFile(apkFile, expectedSizeBytes, expectedSha256)
+        return if (isValid) {
+            UpdateUiState.ReadyToInstall(update, apkFile)
+        } else {
+            apkFile.delete()
+            UpdateUiState.Error(
+                update = update,
+                message = "Update package verification failed (checksum or size mismatch).",
+                apkUrl = update.apkUrl,
+            )
+        }
+    }
+
+    /**
+     * Transition when user triggers install.
+     */
+    fun onInstallRequested(
+        currentState: UpdateUiState,
+        canRequestPackageInstalls: Boolean,
+    ): UpdateUiState {
+        return when (currentState) {
+            is UpdateUiState.ReadyToInstall -> {
+                if (!canRequestPackageInstalls) {
+                    UpdateUiState.PermissionRequired(currentState.update, currentState.apkFile)
+                } else {
+                    currentState
+                }
+            }
+            is UpdateUiState.PermissionRequired -> {
+                if (!canRequestPackageInstalls) {
+                    currentState
+                } else {
+                    UpdateUiState.ReadyToInstall(currentState.update, currentState.apkFile)
+                }
+            }
+            else -> currentState
+        }
+    }
+
+    /**
+     * Transition when returning from unknown app sources system settings.
+     */
+    fun onResumeFromPermissionSettings(
+        currentState: UpdateUiState,
+        canRequestPackageInstalls: Boolean,
+    ): UpdateUiState {
+        return when (currentState) {
+            is UpdateUiState.PermissionRequired -> {
+                if (canRequestPackageInstalls) {
+                    UpdateUiState.ReadyToInstall(currentState.update, currentState.apkFile)
+                } else {
+                    currentState
+                }
+            }
+            else -> currentState
+        }
+    }
+
+    /**
+     * Cleans up an APK if it is outdated compared to installed version.
+     */
+    fun cleanupOutdatedApk(file: File, cachedVersionCode: Int?, currentVersionCode: Int): Boolean {
+        if (!file.exists()) return false
+        if (cachedVersionCode == null || cachedVersionCode <= currentVersionCode) {
+            return file.delete()
+        }
+        return false
     }
 }
