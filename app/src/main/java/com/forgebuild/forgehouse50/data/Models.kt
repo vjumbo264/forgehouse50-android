@@ -680,7 +680,7 @@ object BundledFootnoteListSerializer : KSerializer<List<String>> {
                 is JsonObject -> {
                     val marker = item["marker"]?.jsonPrimitive?.contentOrNull?.trim() ?: ""
                     val text = item["text"]?.jsonPrimitive?.contentOrNull?.trim() ?: ""
-                    val note = if (marker.isNotEmpty() && text.isNotEmpty()) ". " else text.ifEmpty { marker }
+                    val note = if (marker.isNotEmpty() && text.isNotEmpty()) "$marker. $text" else text.ifEmpty { marker }
                     if (note.isNotEmpty()) result.add(note)
                 }
                 else -> {}
