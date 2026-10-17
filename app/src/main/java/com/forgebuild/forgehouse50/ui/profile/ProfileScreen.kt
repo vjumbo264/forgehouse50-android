@@ -295,7 +295,7 @@ fun ProfileScreen(
             onClick = {
                 when (val s = updateState) {
                     is UpdateUiState.UpToDate -> {
-                        UpdateManager.check(updateContext, repo.session, force = true)
+                        UpdateManager.check(context, repo.session, force = true)
                     }
                     is UpdateUiState.Available -> {
                         availableUpdateForChoice = s.update
@@ -307,13 +307,13 @@ fun ProfileScreen(
                         }
                     }
                     is UpdateUiState.ReadyToInstall, is UpdateUiState.PermissionRequired -> {
-                        UpdateManager.triggerInstall(updateContext)
+                        UpdateManager.triggerInstall(context)
                     }
                     is UpdateUiState.Error -> {
                         if (s.update != null) {
                             UpdateManager.startDownload(context, repo.session, s.update, isHidden = false)
                         } else {
-                            UpdateManager.check(updateContext, repo.session, force = true)
+                            UpdateManager.check(context, repo.session, force = true)
                         }
                     }
                 }

@@ -85,7 +85,7 @@ import com.forgebuild.forgehouse50.widget.WidgetRefreshWorker
  * Single lazy, scrollable list of independent cards with intrinsic heights in priority order:
  * 1. Update-ready card (if active)
  * 2. Announcement (if active)
- * 3. Today\x27s reading (with catch-up, calm placeholder skeleton on initial load)
+ * 3. Today's reading (with catch-up, calm placeholder skeleton on initial load)
  * 4. Community (latest answered item, showing reply and WAT reply time)
  * 5. Three stat cards (Points, Days, Streak)
  * 6. Action rows: My notes, WhatsApp group, Support, Admin
@@ -459,7 +459,7 @@ fun HomeScreen(
             }
         }
 
-        // Priority 3: Today\x27s reading (with catch-up) (Item 5)
+        // Priority 3: Today's reading (with catch-up) (Item 5)
         item(key = "today_reading_card") {
             Box(Modifier.fillMaxWidth().animateItem().animateContentSize()) {
                 Crossfade(targetState = (today != null), label = "today_crossfade") { isLoaded ->
@@ -483,7 +483,7 @@ fun HomeScreen(
                                     )
                                     Spacer(Modifier.height(6.dp))
                                     Text(
-                                        a?.summary ?: "Today\x27s reading",
+                                        a?.summary ?: "Today's reading",
                                         style = MaterialTheme.typography.headlineMedium,
                                         fontWeight = FontWeight.Bold,
                                     )
@@ -533,7 +533,7 @@ fun HomeScreen(
                                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                                         Icon(Icons.Filled.Quiz, null, Modifier.size(20.dp))
                                                         Spacer(Modifier.width(10.dp))
-                                                        Text("Take today\x27s quiz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                                        Text("Take today's quiz", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                                     }
                                                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(20.dp))
                                                 }
@@ -773,7 +773,7 @@ fun HomeScreen(
 }
 
 /**
- * Calm placeholder skeleton for Today\x27s reading card of final height, preventing layout jumps on initial load.
+ * Calm placeholder skeleton for Today's reading card of final height, preventing layout jumps on initial load.
  */
 @Composable
 fun TodayReadingSkeleton(modifier: Modifier = Modifier) {
