@@ -1,5 +1,16 @@
 [
   {
+    "version": "v27",
+    "date": "2026-10-17",
+    "items": [
+      "Continuous scripture reading across all chapters of the day",
+      "Chapter progress indicator and exact reading position restore",
+      "Clean verse-level section headings above scripture",
+      "Active reading timer with idle pause status and encouragement",
+      "Scripture reading reliability and passage schedule enhancements"
+    ]
+  },
+  {
     "version": "v26",
     "date": "2026-10-15",
     "items": [
