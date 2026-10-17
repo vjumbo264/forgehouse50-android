@@ -1681,7 +1681,7 @@
         "notes": "DONE (f7): Item 7 Profile pictures implemented across backend, Android app, website, and admin moderation. 7a Backend: D1 profile_pictures & profile_picture_uploads tables with migration profile_pictures_v1.sql; PUT/DELETE /api/profile/picture, GET /api/users/:id/picture (ETag, 304, immutable cache), POST /api/admin/users/:id/remove-picture; magic bytes detection; 100KB payload limit; 5/24h upload rate limit; user deletion cascade. 7b Android App: UserAvatar composable with Coil AsyncImage, Cookie session auth, deterministic ?v=<version> busting, circular clipping and instant illustration fallback; ProfilePictureProcessor with EXIF normalization, square crop, zoom scaling, 256x256 resizing, and stepped WebP/JPEG compression <= 100KB; ProfileScreen photo picker bottom sheet (take photo, choose from gallery, use illustration avatar, remove my picture), interactive crop dialog with zoom slider, and upload progress; LeaderboardScreen podium, rankings list, and Your Standing banner integration; AdminScreen participant list and detail card integration with admin moderation (Remove picture dialog); ProfilePictureLogicTest passing suite. 7c Website: index-CQfSSHWX.js updated across home header, podium, ranking list, profile card, and admin list with versioned photo URLs and fallback; Profile view provides photo upload file picker with canvas square crop/resize/compression to 256x256 <= 100KB, remove picture button, and avatar grid; sw.js bumped to fh50-v2-08. 7d Admin moderation: admin participant detail in both Android app and website offers honest Remove Picture moderation action reverting participant to illustration avatar."
       }
     ],
-    "verified_release": "forgehouse50-v25"
+    "verified_release": "forgehouse50-v27"
   },
   "fixes_oct15b_v1": {
     "status": "in_progress",
@@ -1726,9 +1726,9 @@
       {
         "id": "g4a",
         "title": "Item A — Release the Android app now (forgehouse50-v27, carries unreleased g2 chapter fix, g3 reader rebuild, g4 verse headings)",
-        "status": "pending",
+        "status": "done",
         "gate": "g4",
-        "notes": ""
+        "notes": "DONE (g4a): Released forgehouse50-v27 via GitHub Actions workflow run 39012676223 with signed APK, apksigner verified, SHA-256 b31d3ab71532f0054726ca74a609cc6a66386f3cceca4c9a890664bcb7e0a62d (9095772 bytes), release.json generated, downloaded back and verified byte-for-byte. Live /api/app-release successfully serves v27."
       },
       {
         "id": "g4b",
