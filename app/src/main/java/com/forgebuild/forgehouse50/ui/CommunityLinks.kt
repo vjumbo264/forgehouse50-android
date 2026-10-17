@@ -6,7 +6,9 @@ import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -123,7 +125,7 @@ fun SupportPlayStoreCard(modifier: Modifier = Modifier) {
         tonalElevation = 2.dp,
         modifier = modifier.fillMaxWidth(),
     ) {
-        androidx.compose.foundation.layout.Column(
+        Column(
             modifier = Modifier.padding(18.dp),
         ) {
             Row(
@@ -151,7 +153,7 @@ fun SupportPlayStoreCard(modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
-            Spacer(androidx.compose.ui.Modifier.height(10.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
                 text = "Publishing on Google Play needs a registration fee. Your support helps us put ForgeHouse 50 on the Play Store so more people can read the New Testament with us.",
                 style = MaterialTheme.typography.bodyMedium,

@@ -1,6 +1,7 @@
+package com.forgebuild.forgehouse50.ui
+
 import com.forgebuild.forgehouse50.ui.community.CommunityScreen
 import com.forgebuild.forgehouse50.ui.announcements.AnnouncementsScreen
-package com.forgebuild.forgehouse50.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState

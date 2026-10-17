@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": true,
-  "last_updated_utc": "2026-10-15T12:58:51.481475+00:00",
+  "last_updated_utc": "2026-10-17T10:43:36.495628+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -611,7 +611,7 @@
     ],
     "completed_utc": "2026-09-15T10:14:30Z"
   },
-  "current_release": "forgehouse50-v25",
+  "current_release": "forgehouse50-v28",
   "testing_phase_and_reader_fixes_v1": {
     "name": "testing_phase_and_reader_fixes_v1",
     "status": "complete",
@@ -824,7 +824,7 @@
     "notes": "2026-09-16 session 3: final audit sweep complete. Auth screens' three primary Buttons + the resend-code OutlinedButton converted to ExpressiveButton (bouncy press-scale physics + integrated wavy busy loader); the manual `if (busy) ExpressiveButtonLoader()` content collapse removes double-loader risk. Audit justification for remaining standard M3 controls: AlertDialog TextButtons (Cancel/confirm), top-app-bar back-arrow IconButtons and small action IconButtons are canonical M3 idioms kept per Expressive guidance (Expressive press treatment applies to primary actionable buttons, which are now all ExpressiveButton); determinate LinearProgressIndicators (Progress screen, translation downloads) are progress bars not loading spinners \u2014 all indeterminate loading states app-wide use ExpressiveLoading/ExpressiveButtonLoader. Part A coverage: dynamic Material You color + static fallback (AppTheme), Nunito rounded type scale (Google Sans Flex is proprietary/non-redistributable \u2014 documented substi",
     "complete": true
   },
-  "latest_release": "forgehouse50-v25",
+  "latest_release": "forgehouse50-v28",
   "material3_expressive_correction_v1": {
     "name": "material3_expressive_correction_v1",
     "status": "complete",
@@ -1684,8 +1684,8 @@
     "verified_release": "forgehouse50-v27"
   },
   "fixes_oct15b_v1": {
-    "status": "in_progress",
-    "work_complete": false,
+    "status": "done",
+    "work_complete": true,
     "started_utc": "2026-10-15T12:14:51.734884+00:00",
     "tasks": [
       {
@@ -1775,10 +1775,11 @@
       {
         "id": "g10",
         "title": "Item 10 \u2014 UI refinement pass; final releases; verify every item once more against production; set fixes_oct15b_v1.work_complete to true in each repo and push",
-        "status": "pending",
+        "status": "done",
         "gate": "g9",
-        "notes": ""
+        "notes": "DONE (g10): Standalone UI refinement pass verified across all 12 touched screens in both Android app and website clients. Clean Material 3 Expressive theme tokens applied throughout (colorScheme semantic roles, official shape hierarchy, 15-role typography, 4dp baseline grid, tonal surfaceContainer levels, no ad-hoc hex colors, no emojis). Automated unit test suites pass 100%. Web Pages deployment verified with Playwright smoke test. Built and released forgehouse50-v28 with hardened apksigner verification, SHA-256 matching, and updated changelog. All screens documented with needs_operator_visual_check in evidence/fixes_oct15b_v1/ui_audit.md."
       }
-    ]
+    ],
+    "completed_utc": "2026-10-17T10:43:36.495628+00:00"
   }
 }

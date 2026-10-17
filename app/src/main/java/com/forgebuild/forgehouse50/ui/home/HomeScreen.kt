@@ -1,10 +1,11 @@
+package com.forgebuild.forgehouse50.ui.home
+
 import com.forgebuild.forgehouse50.data.CommunityPost
 import com.forgebuild.forgehouse50.data.Announcement
 import com.forgebuild.forgehouse50.ui.announcements.formatAnnouncementDate
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.foundation.clickable
-package com.forgebuild.forgehouse50.ui.home
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
