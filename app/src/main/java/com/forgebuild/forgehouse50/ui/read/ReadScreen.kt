@@ -1100,8 +1100,6 @@ fun ReadScreen(
 /**
  * Strips cross-chapter running alphabetic/numeric prefixes like "a ", "b. ", "1) ", "d a " from raw footnote strings (Issue 3).
  */
- * Strips cross-chapter running alphabetic/numeric prefixes like "a ", "b. ", "1) ", "d a " from raw footnote strings (Issue 3).
- */
 private fun cleanFootnoteText(raw: String): String {
     val stripped = raw.replace(Regex("^(?:[a-zA-Z]{1,2}[.)\\s]\\s*|\\d{1,2}[.)\\s]\\s*)+"), "")
     return stripped.trim().ifEmpty { raw.trim() }
