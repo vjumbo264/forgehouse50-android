@@ -31,7 +31,11 @@ class Repository(
 ) {
     val api = ApiClient(session)
     private val db = AppDatabase.get(appContext)
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
+    val downloadManager: TranslationDownloadManager by lazy { TranslationDownloadManager(this) }
+
+    fun normalizeTranslation(id: String): String =
+        if (id.startsWith("versewell-")) id.lowercase() else "versewell-${id.lowercase()}"
 
     companion object {
         const val KJV_ID = "versewell-kjv"
@@ -54,7 +58,8 @@ class Repository(
 
     /** True when [translation] is fully on-device (bundled KJV or downloaded). */
     suspend fun isTranslationAvailable(translation: String): Boolean = withContext(Dispatchers.IO) {
-        translation == KJV_ID || db.translationDao().get(translation) != null
+        val norm = normalizeTranslation(translation)
+        norm == KJV_ID || db.translationDao().get(norm) != null
     }
 
     /** Import the bundled KJV asset into Room once. No-op if already done. */
@@ -80,11 +85,12 @@ class Repository(
     suspend fun getPassage(book: String, cs: Int, ce: Int, translation: String): PassageResponse =
         withContext(Dispatchers.IO) {
             ensureBundledKjvImported()
+            val norm = normalizeTranslation(translation)
             val have = (cs..ce).mapNotNull { ch ->
-                db.scriptureDao().chapter(AppDatabase.chapterKey(translation, book, ch))
+                db.scriptureDao().chapter(AppDatabase.chapterKey(norm, book, ch))
             }
-            if (have.size == (ce - cs + 1)) return@withContext assembleFromCache(book, cs, ce, translation, have)
-            val fresh = api.passage(book, cs, ce, translation)
+            if (have.size == (ce - cs + 1)) return@withContext assembleFromCache(book, cs, ce, norm, have)
+            val fresh = api.passage(book, cs, ce, norm)
             storePassage(book, fresh)
             fresh
         }
@@ -201,22 +207,28 @@ class Repository(
         } else {
             bytes.inputStream().bufferedReader().use { it.readText() }
         }
-        val books = json.decodeFromString<Map<String, Map<String, BundledChapter>>>(text)
-        importBundle(translation, books, name)
-        val size = db.scriptureDao().sizeBytesFor(translation)
-        val count = db.scriptureDao().chapterCountFor(translation)
-        db.translationDao().put(DownloadedTranslation(translation = translation, name = name, chapterCount = count, sizeBytes = size))
+        val books = try {
+            json.decodeFromString<Map<String, Map<String, BundledChapter>>>(text)
+        } catch (e: Throwable) {
+            throw IllegalStateException("Scripture bundle could not be parsed. Please retry download.", e)
+        }
+        val norm = normalizeTranslation(translation)
+        importBundle(norm, books, name)
+        val size = db.scriptureDao().sizeBytesFor(norm)
+        val count = db.scriptureDao().chapterCountFor(norm)
+        db.translationDao().put(DownloadedTranslation(translation = norm, name = name, chapterCount = count, sizeBytes = size))
     }
 
     /** Remove a downloaded translation and free its storage. */
     suspend fun removeTranslation(translation: String): Unit = withContext(Dispatchers.IO) {
-        db.scriptureDao().clearTranslation(translation)
-        db.translationDao().delete(translation)
+        val norm = normalizeTranslation(translation)
+        db.scriptureDao().clearTranslation(norm)
+        db.translationDao().delete(norm)
     }
 
     /** Profile → Downloaded content: per-translation bytes for the storage UI. */
     suspend fun translationSizeBytes(translation: String): Long =
-        withContext(Dispatchers.IO) { db.scriptureDao().sizeBytesFor(translation) }
+        withContext(Dispatchers.IO) { db.scriptureDao().sizeBytesFor(normalizeTranslation(translation)) }
 
     suspend fun scriptureChapterCount(): Int = withContext(Dispatchers.IO) { db.scriptureDao().chapterCount() }
 

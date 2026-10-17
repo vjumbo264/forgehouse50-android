@@ -1,6 +1,16 @@
 package com.forgebuild.forgehouse50.data
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
@@ -650,14 +660,78 @@ data class GenericOk(val ok: Boolean = false, val error: String? = null, val poi
 
 // ── Bundled KJV asset (bible/kjv.json.gz) — compact field names to keep the
 // bundled file small; decoded then mapped to the full Verse/Intro DTOs. ────
+object BundledFootnoteListSerializer : KSerializer<List<String>> {
+    override val descriptor: SerialDescriptor = ListSerializer(String.serializer()).descriptor
+
+    override fun serialize(encoder: Encoder, value: List<String>) {
+        ListSerializer(String.serializer()).serialize(encoder, value)
+    }
+
+    override fun deserialize(decoder: Decoder): List<String> {
+        val jsonDecoder = decoder as? JsonDecoder ?: return emptyList()
+        val element = jsonDecoder.decodeJsonElement()
+        if (element !is JsonArray) return emptyList()
+        val result = mutableListOf<String>()
+        for (item in element) {
+            when (item) {
+                is JsonPrimitive -> {
+                    if (item.isString) result.add(item.content)
+                }
+                is JsonObject -> {
+                    val marker = item["marker"]?.jsonPrimitive?.contentOrNull?.trim() ?: ""
+                    val text = item["text"]?.jsonPrimitive?.contentOrNull?.trim() ?: ""
+                    val note = if (marker.isNotEmpty() && text.isNotEmpty()) ". " else text.ifEmpty { marker }
+                    if (note.isNotEmpty()) result.add(note)
+                }
+                else -> {}
+            }
+        }
+        return result
+    }
+}
+
+object BundledVerseListSerializer : KSerializer<List<BundledVerse>> {
+    override val descriptor: SerialDescriptor = ListSerializer(BundledVerse.serializer()).descriptor
+
+    override fun serialize(encoder: Encoder, value: List<BundledVerse>) {
+        ListSerializer(BundledVerse.serializer()).serialize(encoder, value)
+    }
+
+    override fun deserialize(decoder: Decoder): List<BundledVerse> {
+        val jsonDecoder = decoder as? JsonDecoder ?: return emptyList()
+        val element = jsonDecoder.decodeJsonElement()
+        if (element !is JsonArray) return emptyList()
+        val result = mutableListOf<BundledVerse>()
+        for (item in element) {
+            try {
+                val verse = jsonDecoder.json.decodeFromJsonElement(BundledVerse.serializer(), item)
+                result.add(verse)
+            } catch (e: Throwable) {
+                // Log and skip bad verse so one bad verse never crashes a chapter or download
+            }
+        }
+        return result
+    }
+}
+
 @Serializable
-data class BundledVerse(val n: Int, val t: String, val f: List<String> = emptyList(), val h: String? = null)
+data class BundledVerse(
+    val n: Int,
+    val t: String,
+    @Serializable(with = BundledFootnoteListSerializer::class)
+    val f: List<String> = emptyList(),
+    val h: String? = null
+)
 
 @Serializable
 data class BundledIntro(val s: Int = 0, val e: Int = 0, val t: String = "")
 
 @Serializable
-data class BundledChapter(val v: List<BundledVerse> = emptyList(), val i: List<BundledIntro> = emptyList())
+data class BundledChapter(
+    @Serializable(with = BundledVerseListSerializer::class)
+    val v: List<BundledVerse> = emptyList(),
+    val i: List<BundledIntro> = emptyList()
+)
 
 // ── testing_phase_and_reader_fixes_v1 / ISSUE 3: one-file-per-translation
 // scripture bundles hosted as static assets at {BASE}/bundles/<code>.json.gz ──

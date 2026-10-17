@@ -1,5 +1,15 @@
 [
   {
+    "version": "v29",
+    "date": "2026-10-17",
+    "items": [
+      "Bible translations repair with full offline support for all versions",
+      "Unified Bible translations screen with instant download progress and queue",
+      "Instant translation switching directly from the reader toolbar",
+      "Resilient bundle parsing and seamless offline scripture loading"
+    ]
+  },
+  {
     "version": "v28",
     "date": "2026-10-17",
     "items": [

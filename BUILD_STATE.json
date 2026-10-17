@@ -4,7 +4,7 @@
   "app_folder": "apps/forgehouse50/",
   "description_summary": "Native Android client for the live ForgeHouse 50 web app (forgehouse50.pages.dev, Cloudflare Pages+Workers+D1). Church NT 50-reading-day programme: per-user schedules (Tue/Fri excluded), VerseWell scripture text+audio, notes, one-attempt proportional quiz, points/badges, confidence-weighted leaderboard + final results, admin dashboard, Brevo OTP email auth. Same backend, same API routes as the web app at github.com/vjumbo264/forgehouse50.",
   "build_complete": true,
-  "last_updated_utc": "2026-10-17T12:37:18.636919+00:00",
+  "last_updated_utc": "2026-10-17T13:00:55.445751+00:00",
   "backend": {
     "base_url": "https://forgehouse50.pages.dev",
     "api_prefix": "/api",
@@ -1797,9 +1797,9 @@
       {
         "id": "h1",
         "title": "Item 1: translations repair: 1a format break and tolerant parser and old-build compatibility, 1b switching works, 1c single translations screen with live progress; release the app",
-        "status": "pending",
+        "status": "done",
         "gate": "h0",
-        "notes": ""
+        "notes": "DONE (h1): (1) Diagnosed bundle format regression from commit dc3b7603 where VerseWell footnotes object structure broke older app builds with Unexpected JSON token at offset 156 ($['Matthew']['1'].v[0].f[0]). Added BundledFootnoteListSerializer and BundledVerseListSerializer in Models.kt to make Android app tolerant of scalar and object footnotes, missing fields, and skip corrupted verses. (2) Flattened object-shaped footnotes into plain scalar strings in all 12 v1 bundles in public/bundles/*.json.gz; verified with strict v28 schema unit test across all 12 versions. Created v2 bundles (*.v2.json.gz) with format 2 and updated manifest.json. Updated build_bundles.mjs and tools/validate_bundles.py. Added bundle verification gate to verify_assets.mjs. (3) Fixed switching translations and KJV fallback on website and Android: normalized translation IDs in Repository.kt (normalizeTranslation), fixed buggy localBundle.books lookup in website JS ReaderView and eliminated fallback to hardcoded KJV (ut). (4) Single, unified TranslationsScreen.kt created with Downloaded section (active badge, delete confirmation, built-in KJV) and Available section with search if > 8. Created TranslationDownloadManager with persistent queue (concurrency 2), instant M3 wavy progress bar, and friendly error messages. Deleted duplicate translation list from ProfileScreen.kt. (5) Added bottom sheet translation picker to ReadScreen.kt. (6) Comprehensive TranslationsPipelineTest.kt added passing all unit tests."
       },
       {
         "id": "h2",

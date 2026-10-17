@@ -45,6 +45,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -148,6 +151,7 @@ fun ReadScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var completeBusy by remember { mutableStateOf(false) }
     var fontScale by remember { mutableFloatStateOf(repo.session.fontScale) }
+    var showTranslationPicker by remember { mutableStateOf(false) }
 
     val posStorage = remember { PrefsReaderPositionStorage(context) }
 
@@ -712,7 +716,7 @@ fun ReadScreen(
                     // Translation chip
                     FilterChip(
                         selected = true,
-                        onClick = onManageTranslations,
+                        onClick = { showTranslationPicker = true },
                         label = {
                             Text(
                                 translation.removePrefix("versewell-").uppercase(),
@@ -1013,10 +1017,89 @@ fun ReadScreen(
                 }
             }
         }
+        if (showTranslationPicker) {
+            ModalBottomSheet(
+                onDismissRequest = { showTranslationPicker = false },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "Select Bible translation",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    availableTranslations.forEach { tId ->
+                        val normId = repo.normalizeTranslation(tId)
+                        val isSelected = repo.normalizeTranslation(translation) == normId
+                        val code = normId.removePrefix("versewell-").uppercase()
+                        val label = if (normId == Repository.KJV_ID) "King James Version (KJV)" else code
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (repo.normalizeTranslation(translation) != normId) {
+                                        translation = normId
+                                        repo.session.translationId = normId
+                                    }
+                                    showTranslationPicker = false
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                else MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    label,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (isSelected) {
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        contentDescription = "Active",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            showTranslationPicker = false
+                            onManageTranslations()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.LibraryBooks, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Manage translations…")
+                    }
+                }
+            }
+        }
     }
 }
 
 /**
+ * Strips cross-chapter running alphabetic/numeric prefixes like "a ", "b. ", "1) ", "d a " from raw footnote strings (Issue 3).
+ */
  * Strips cross-chapter running alphabetic/numeric prefixes like "a ", "b. ", "1) ", "d a " from raw footnote strings (Issue 3).
  */
 private fun cleanFootnoteText(raw: String): String {
