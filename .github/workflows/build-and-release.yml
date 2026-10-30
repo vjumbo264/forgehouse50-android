@@ -1,0 +1,147 @@
+name: "Build & Release Signed APK"
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: "Release notes"
+        required: false
+        default: "Automated release build"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Run JVM unit tests
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:testDebugUnitTest --no-daemon
+
+      - name: Determine next versionCode and versionName
+        id: meta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Fetch existing releases in forgehouse50-android
+          HIGHEST=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --jq '.[].tag_name' 2>/dev/null | grep -oP '^v?\K[0-9]+$' | sort -n | tail -1 || true)
+          # Last release in old repo forgebuild was forgehouse50-v32 (versionCode 32)
+          BASE_CODE=32
+          if [ -z "$HIGHEST" ] || [ "$HIGHEST" -lt "$BASE_CODE" ]; then
+            NEXT_CODE=$(( BASE_CODE + 1 ))
+          else
+            NEXT_CODE=$(( HIGHEST + 1 ))
+          fi
+          
+          # VersionName: v3, v4, etc.
+          VERSION_NAME="3.${NEXT_CODE}"
+          TAG_NAME="v${NEXT_CODE}"
+
+          echo "code=$NEXT_CODE" >> "$GITHUB_OUTPUT"
+          echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "Target build: tag=$TAG_NAME, versionCode=$NEXT_CODE, versionName=$VERSION_NAME"
+
+      - name: Decode keystore
+        run: |
+          mkdir -p keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/release.jks
+
+      - name: Build release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew :app:assembleRelease --no-daemon \
+            -PforgebuildVersionCode="${{ steps.meta.outputs.code }}" \
+            -PforgebuildVersionName="${{ steps.meta.outputs.name }}"
+
+      - name: Verify APK signing and certificate fingerprint
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -V | tail -1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "apksigner not found"
+            exit 1
+          fi
+          echo "Verifying APK with apksigner: $APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
+
+          # Extract cert SHA-256 fingerprint
+          EXPECTED_FP="0B:0C:EA:45:4E:E4:39:20:34:D9:94:97:89:10:36:D9:D8:71:08:E1:14:6A:5B:E5:88:2E:CF:27:29:31:14:BD"
+          ACTUAL_FP=$("$APKSIGNER" verify --print-certs "$APK" | grep -i "Signer #1 certificate SHA-256 digest" | awk '{print $NF}' | tr 'a-f' 'A-F')
+          
+          echo "Expected fingerprint: $EXPECTED_FP"
+          echo "Actual fingerprint:   $ACTUAL_FP"
+
+          if [ "$ACTUAL_FP" != "$EXPECTED_FP" ]; then
+            echo "FATAL: Certificate fingerprint mismatch!"
+            exit 1
+          fi
+          echo "SUCCESS: Certificate fingerprint matches installed app certificate exactly!"
+
+      - name: Package artifacts & metadata
+        id: artifacts
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          CODE="${{ steps.meta.outputs.code }}"
+          NAME="${{ steps.meta.outputs.name }}"
+          APK_NAME="forgehouse50-${TAG}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$APK_NAME"
+          
+          SHA=$(sha256sum "$APK_NAME" | awk '{print $1}')
+          SIZE=$(stat -c%s "$APK_NAME")
+
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "size=$SIZE" >> "$GITHUB_OUTPUT"
+
+          cat << JSONEOF > release.json
+          {
+            "versionName": "$NAME",
+            "versionCode": $CODE,
+            "sha256": "$SHA",
+            "sizeBytes": $SIZE,
+            "releaseHold": true,
+            "tag": "$TAG",
+            "changelog": [
+              "ForgeHouse 50 standalone release $NAME",
+              "Audio support foundation and fixes"
+            ]
+          }
+          JSONEOF
+
+      - name: Create GitHub Pre-Release (Release Hold)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: "ForgeHouse 50 ${{ steps.meta.outputs.tag }} (Release Hold)"
+          prerelease: true
+          draft: false
+          body: |
+            ### ForgeHouse 50 - ${{ steps.meta.outputs.tag }}
+            **RELEASE HOLD ACTIVE**: This build is held in the new repo and will not be pushed to existing users until explicitly bridged.
+
+            - **Version Code**: `${{ steps.meta.outputs.code }}`
+            - **Version Name**: `${{ steps.meta.outputs.name }}`
+            - **SHA-256**: `${{ steps.artifacts.outputs.sha }}`
+            - **Size**: `${{ steps.artifacts.outputs.size }}` bytes
+            - **Signing Fingerprint Verified**: `0B:0C:EA:45:4E:E4:39:20:34:D9:94:97:89:10:36:D9:D8:71:08:E1:14:6A:5B:E5:88:2E:CF:27:29:31:14:BD`
+          files: |
+            forgehouse50-${{ steps.meta.outputs.tag }}.apk
+            release.json

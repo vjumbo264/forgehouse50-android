@@ -1,0 +1,56 @@
+name: "Publish Bridge Release to Old Repo (DANGER: PUSHES TO ALL USERS)"
+
+# CRITICAL SAFETY NOTICE:
+# Installed user phones currently check vjumbo264/forgebuild releases.
+# NEVER run this workflow without explicit confirmation from Victor.
+# When run, this publishes a signed APK to vjumbo264/forgebuild under tag forgehouse50-vN.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_push:
+        description: 'Type "yes" to confirm pushing update to ALL existing users'
+        required: true
+        default: 'no'
+      tag_name:
+        description: 'Tag from this repo to bridge (e.g. v33)'
+        required: true
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard check
+        run: |
+          if [ "${{ github.event.inputs.confirm_push }}" != "yes" ]; then
+            echo "ERROR: Confirmation input was not 'yes'. Aborting bridge release."
+            exit 1
+          fi
+          echo "Confirmation received. Proceeding with bridge release."
+
+      - name: Download release asset from new repo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.tag_name }}"
+          echo "Downloading assets for $TAG..."
+          gh release download "$TAG" -R vjumbo264/forgehouse50-android
+
+      - name: Publish to old repo vjumbo264/forgebuild
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          TAG="${{ github.event.inputs.tag_name }}"
+          NUM=$(echo "$TAG" | grep -oP '\d+')
+          OLD_TAG="forgehouse50-v${NUM}"
+          APK_FILE=$(ls *.apk | head -1)
+          OLD_APK="app-${OLD_TAG}.apk"
+          cp "$APK_FILE" "$OLD_APK"
+
+          echo "Publishing release $OLD_TAG to vjumbo264/forgebuild..."
+          gh release create "$OLD_TAG" \
+            -R vjumbo264/forgebuild \
+            --title "$OLD_TAG" \
+            --notes "ForgeHouse 50 Update $OLD_TAG (Bridged from forgehouse50-android)" \
+            "$OLD_APK" release.json
+          echo "Bridge release published successfully."
