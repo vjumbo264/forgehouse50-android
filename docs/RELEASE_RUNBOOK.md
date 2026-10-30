@@ -4,7 +4,7 @@
 - **New App Repo**: `vjumbo264/forgehouse50-android`
 - **Old App Host**: `vjumbo264/forgebuild` (releases held)
 - **Application ID**: `com.forgebuild.forgehouse50`
-- **Signing Key SHA-256 Fingerprint**: `0B:0C:EA:45:4E:E4:39:20:34:D9:94:97:89:10:36:D9:D8:71:08:E1:14:6A:5B:E5:88:2E:CF:27:29:31:14:BD`
+- **Signing Key SHA-256 Fingerprint**: `80:DA:9D:1C:A9:4A:E7:94:2D:7D:9C:BA:C2:F6:B9:5D:85:68:60:43:C9:EA:B5:EE:04:78:BB:2A:B6:2C:03:F0`
 
 ## Release Hold Policy
 All automated builds in `forgehouse50-android` create **pre-releases** in `forgehouse50-android` only.
