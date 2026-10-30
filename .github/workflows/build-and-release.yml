@@ -84,13 +84,15 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
 
           # Extract cert SHA-256 fingerprint
-          EXPECTED_FP="0B:0C:EA:45:4E:E4:39:20:34:D9:94:97:89:10:36:D9:D8:71:08:E1:14:6A:5B:E5:88:2E:CF:27:29:31:14:BD"
-          ACTUAL_FP=$("$APKSIGNER" verify --print-certs "$APK" | grep -i "Signer #1 certificate SHA-256 digest" | awk '{print $NF}' | tr 'a-f' 'A-F')
+          echo "=== PRINT CERTS OUTPUT ==="
+          "$APKSIGNER" verify --print-certs "$APK"
+          EXPECTED_RAW="0B0CEA454EE4392034D99497891036D9D87108E1146A5BE5882ECF27293114BD"
+          ACTUAL_RAW=$("$APKSIGNER" verify --print-certs "$APK" | grep -i "SHA-256" | head -1 | sed "s/.*: *//" | tr -d " :" | tr "a-f" "A-F")
           
-          echo "Expected fingerprint: $EXPECTED_FP"
-          echo "Actual fingerprint:   $ACTUAL_FP"
+          echo "Expected: $EXPECTED_RAW"
+          echo "Actual:   $ACTUAL_RAW"
 
-          if [ "$ACTUAL_FP" != "$EXPECTED_FP" ]; then
+          if [ "$ACTUAL_RAW" != "$EXPECTED_RAW" ]; then
             echo "FATAL: Certificate fingerprint mismatch!"
             exit 1
           fi
