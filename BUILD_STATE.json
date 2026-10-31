@@ -9,7 +9,7 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i7",
+  "current_phase": "i8",
   "queue": [
     {
       "id": "i0",
@@ -56,13 +56,13 @@
     {
       "id": "i7",
       "title": "Streak verification (verify first, fix only if wrong)",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Root-caused and fixed Oct 18 'Streak 0 while reading daily' server bug in functions/lib/points.mjs (forgehouse50 commit 04d9fb4, CI 41176970742 green): (1) streaks() previously checked highestCompleted < elapsedDays(today), which falsely reset every active daily reader's current streak to 0 at 00:00 WAT on every scheduled reading day before they completed today's reading; changed inactivity check to strictly past uncompleted reading days (r.date < today) so active streaks remain alive throughout today and grow +1 upon on-time completion (verified live on consistency leaderboard: active daily readers now show current=12, 6, 2 instead of 0 on Saturday morning, while Section 5 screenshot user with 7/50 on Day 13 correctly remains 0). (2) Fixed longest streak calculation so catch-up days (compDate > sched) never add to longest or current streak. (3) Added Cache-Control: no-store + deterministic NOW_MS support on /api/progress and /api/auth/me, plus 6-scenario SQLite D1 suite in test/streak_test.mjs."
     },
     {
       "id": "i8",
       "title": "Admin-first update channels + controlled rollout",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     },
     {
@@ -91,11 +91,12 @@
     "i3",
     "i4",
     "i5",
-    "i6"
+    "i6",
+    "i7"
   ],
   "next_steps": [
-    "Complete & verify i7 (Streak verification & unit tests on server logic)",
-    "Complete & verify i8 (Admin-first update channels + controlled rollout)"
+    "Complete & verify i8 (Admin-first update channels + controlled rollout across FH50 backend, Android updater, and Admin dashboard)",
+    "Complete & verify i9 (Community chat with group chat, admin-to-member private threads, moderation, and polling)"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
@@ -103,7 +104,8 @@
     "Signing secrets copied securely via temporary workflow in forgebuild directly to forgehouse50-android and all temporary workflows and logs deleted immediately.",
     "Starting next release at versionCode 33 (v32 was last in forgebuild).",
     "i1 NT verse counts verified across all 5 audio translations (260/260 chapters each): differences vs KJV's 7,957 verses in NIV (7,941), GW (7,943), VOICE (7,755), and TLB (7,557) are genuine critical-text footnotes or paraphrase combined-verse spans in the source SQLite Bibles, not missing chapters or importer loss.",
-    "FOR PASTOR CONFIRMATION (i6): Rest-day (Tuesday/Friday) catch-up reading is open until 19:00 Africa/Lagos (7pm WAT, before Bible Study) and configurable by admin in Programme settings; normal/read-ahead reading remains locked on rest days."
+    "FOR PASTOR CONFIRMATION (i6): Rest-day (Tuesday/Friday) catch-up reading is open until 19:00 Africa/Lagos (7pm WAT, before Bible Study) and configurable by admin in Programme settings; normal/read-ahead reading remains locked on rest days.",
+    "i7 Streak audit outcome: Confirmed AND fixed a genuine server-side bug (no app update needed) where checking highestCompleted < elapsedDays(today) reset every faithful daily reader's current streak to 0 every reading morning until they completed today's reading, and catch-up days could inflate longest streak. Fixed server-side in forgehouse50 (commit 04d9fb4): streak stays alive until a scheduled reading day strictly passes (r.date < today) uncompleted; catch-up days never add to current or longest; Tue/Fri rest days neither break nor add; screenshot user (Day 13, 7/50 done, 6 outstanding) confirmed genuinely Streak 0."
   ],
   "known_issues": [],
   "audio_status": {
@@ -116,7 +118,7 @@
       "of": 260
     },
     "tlb": {
-      "chapters_done": 29,
+      "chapters_done": 260,
       "of": 260
     },
     "gw": {
@@ -124,7 +126,7 @@
       "of": 260
     },
     "voice": {
-      "chapters_done": 16,
+      "chapters_done": 223,
       "of": 260
     }
   },
@@ -150,8 +152,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T05:59:50Z",
-  "last_session_note": "i6 Rest-day 7pm Lagos catch-up completed & verified on server + Android; starting i7 Streak verification.",
+  "last_updated": "2026-10-31T06:33:18Z",
+  "last_session_note": "i7 Streak verification & server-side fix deployed and verified live; starting i8 Admin-first update channels + controlled rollout.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,
