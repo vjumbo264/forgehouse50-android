@@ -98,8 +98,8 @@
     {
       "id": "j2",
       "title": "Mark complete stays locked until scrolled to the end, even after 5 minutes",
-      "status": "pending",
-      "notes": ""
+      "status": "done",
+      "notes": "Replaced loose heading check with bottom sentinel item at end of scripture reading. Requires both 300s active timer and genuine user scroll bringing sentinel into view. Persisted in posStorage."
     },
     {
       "id": "j3",
