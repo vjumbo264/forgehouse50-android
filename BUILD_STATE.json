@@ -9,7 +9,7 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i6",
+  "current_phase": "i7",
   "queue": [
     {
       "id": "i0",
@@ -50,13 +50,13 @@
     {
       "id": "i6",
       "title": "Rest days: catch-up still allowed, closes at 7pm Lagos",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Server (forgehouse50 commit c0da599) + Android enforced: on Tuesdays and Fridays (rest days), members with missed past days (scheduledDate < todayStr in Africa/Lagos) can read & complete catch-up (max 2 days/session, oldest first, 0 streak credit) until rest_day_catchup_cutoff_time (default 19:00 Africa/Lagos), after which /api/today & /api/read/complete close catch-up with 'Catch-up closes at 7pm today for Bible Study, continue tomorrow.' Normal/future reading stays locked on rest days and normal reading days remain unrestricted all day. Added Admin Programme tab cutoff editor + SQLite & JUnit tests."
     },
     {
       "id": "i7",
       "title": "Streak verification (verify first, fix only if wrong)",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     },
     {
@@ -90,18 +90,20 @@
     "i2",
     "i3",
     "i4",
-    "i5"
+    "i5",
+    "i6"
   ],
   "next_steps": [
-    "Complete & verify i6 (Rest days: catch-up allowed until 7pm Africa/Lagos, server + Android + admin setting)",
-    "Complete & verify i7 (Streak verification & unit tests on server logic)"
+    "Complete & verify i7 (Streak verification & unit tests on server logic)",
+    "Complete & verify i8 (Admin-first update channels + controlled rollout)"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
     "Installed APK certificate SHA-256 verified as 80:DA:9D:1C:A9:4A:E7:94:2D:7D:9C:BA:C2:F6:B9:5D:85:68:60:43:C9:EA:B5:EE:04:78:BB:2A:B6:2C:03:F0. All new releases must match this fingerprint.",
     "Signing secrets copied securely via temporary workflow in forgebuild directly to forgehouse50-android and all temporary workflows and logs deleted immediately.",
     "Starting next release at versionCode 33 (v32 was last in forgebuild).",
-    "i1 NT verse counts verified across all 5 audio translations (260/260 chapters each): differences vs KJV's 7,957 verses in NIV (7,941), GW (7,943), VOICE (7,755), and TLB (7,557) are genuine critical-text footnotes or paraphrase combined-verse spans in the source SQLite Bibles, not missing chapters or importer loss."
+    "i1 NT verse counts verified across all 5 audio translations (260/260 chapters each): differences vs KJV's 7,957 verses in NIV (7,941), GW (7,943), VOICE (7,755), and TLB (7,557) are genuine critical-text footnotes or paraphrase combined-verse spans in the source SQLite Bibles, not missing chapters or importer loss.",
+    "FOR PASTOR CONFIRMATION (i6): Rest-day (Tuesday/Friday) catch-up reading is open until 19:00 Africa/Lagos (7pm WAT, before Bible Study) and configurable by admin in Programme settings; normal/read-ahead reading remains locked on rest days."
   ],
   "known_issues": [],
   "audio_status": {
@@ -148,8 +150,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T05:52:17Z",
-  "last_session_note": "i5 Reader timer CancellationException leak fixed & unit tested; starting i6 Rest day 7pm Lagos catch-up window.",
+  "last_updated": "2026-10-31T05:59:50Z",
+  "last_session_note": "i6 Rest-day 7pm Lagos catch-up completed & verified on server + Android; starting i7 Streak verification.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,

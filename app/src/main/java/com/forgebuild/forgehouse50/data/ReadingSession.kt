@@ -52,6 +52,8 @@ object ReadingSession {
         val cannotFinishInTime: Boolean = false,
         /** End date used for the arithmetic (echoed for UI display). */
         val programmeEndDate: String? = null,
+        val restDayCatchupClosed: Boolean = false,
+        val restDayMessage: String? = null,
     )
 
     private fun parseDate(s: String?): LocalDate? =
@@ -111,43 +113,77 @@ object ReadingSession {
 
         val allOutstanding = (outstanding + listOfNotNull(todayDue)).sorted()
 
-        // No progress data at all yet: fall back to the backend's own "today".
-        if (allOutstanding.isEmpty()) {
-            val fallback = today?.today?.takeIf { !it.completed }?.day_number
-                ?: today?.next_reading_day?.takeIf {
-                    // zero backlog + read-ahead allowance (existing rule):
-                    // tomorrow's day is presentable at most 1 day ahead.
-                    it.day_number <= (today?.elapsed_days ?: 0) + 1
-                }?.day_number
+        val isRestDay = today != null && (!today.is_reading_day || today.rest_day?.is_rest_day == true)
+        val serverCatchupDays = today?.catch_up?.days?.map { it.day_number }.orEmpty()
+        val combinedOutstanding = if (allOutstanding.isNotEmpty()) {
+            allOutstanding
+        } else if (isRestDay && (today?.catch_up?.count ?: 0) > 0) {
+            serverCatchupDays
+        } else {
+            emptyList()
+        }
+
+        val restWindowOpen = if (isRestDay) {
+            (today?.rest_day?.catchup_allowed != false) && (today?.catch_up?.window_open != false)
+        } else {
+            true
+        }
+        val restMsg = today?.rest_day?.message ?: today?.catch_up?.cutoff_message
+
+        if (combinedOutstanding.isEmpty() && !(isRestDay && (today?.catch_up?.count ?: 0) > 0)) {
+            val fallback = if (isRestDay) {
+                null
+            } else {
+                today?.today?.takeIf { !it.completed }?.day_number
+                    ?: today?.next_reading_day?.takeIf {
+                        it.day_number <= (today?.elapsed_days ?: 0) + 1
+                    }?.day_number
+            }
             return SessionPlan(
                 days = listOfNotNull(fallback),
                 catchup = false,
                 backlogCount = 0,
-                readAheadAvailable = true,
+                readAheadAvailable = !isRestDay,
                 programmeEndDate = meEndDate,
+                restDayCatchupClosed = false,
+                restDayMessage = restMsg,
             )
         }
 
-        val backlog = allOutstanding.size
-        val inCatchup = backlog > 1
+        val backlog = maxOf(combinedOutstanding.size, if (isRestDay) (today?.catch_up?.count ?: 0) else 0)
+        val inCatchup = backlog > 1 || (isRestDay && backlog >= 1)
 
-        // Arithmetic-only status: remaining reading days before the end date.
         val end = parseDate(meEndDate)
         val remaining = if (end != null) readingDaysBetween(todayDate, end) else Int.MAX_VALUE
         val shortfall = if (end != null) (backlog - remaining).coerceAtLeast(0) else 0
 
-        // Present at most the 2 oldest outstanding days — never more.
-        val present = allOutstanding.take(2)
+        if (isRestDay && !restWindowOpen) {
+            return SessionPlan(
+                days = emptyList(),
+                catchup = true,
+                backlogCount = backlog,
+                remainingReadingDays = if (end != null) remaining else 0,
+                shortfallDays = shortfall,
+                readAheadAvailable = false,
+                cannotFinishInTime = shortfall > 0,
+                programmeEndDate = meEndDate,
+                restDayCatchupClosed = true,
+                restDayMessage = restMsg ?: "Catch-up closes at 7pm today for Bible Study, continue tomorrow.",
+            )
+        }
 
+        val present = combinedOutstanding.take(2)
         return SessionPlan(
             days = present,
             catchup = inCatchup,
             backlogCount = backlog,
             remainingReadingDays = if (end != null) remaining else 0,
             shortfallDays = shortfall,
-            readAheadAvailable = !inCatchup,
+            readAheadAvailable = !inCatchup && !isRestDay,
             cannotFinishInTime = shortfall > 0,
             programmeEndDate = meEndDate,
+            restDayCatchupClosed = false,
+            restDayMessage = restMsg,
         )
     }
 

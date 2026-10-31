@@ -276,7 +276,9 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
                         snackbarHostState = snackbarHostState,
                     )
                     4 -> ProgrammeTab(
+                        repo = repo,
                         programme = programme,
+                        snackbarHostState = snackbarHostState,
                         onStart = { confirmStart = true },
                         onEndTesting = { confirmEndTesting = true }
                     )
@@ -868,7 +870,22 @@ private fun ParticipantCard(
 }
 
 @Composable
-private fun ProgrammeTab(programme: AdminProgramme?, onStart: () -> Unit, onEndTesting: () -> Unit) {
+private fun ProgrammeTab(
+    repo: Repository,
+    programme: AdminProgramme?,
+    snackbarHostState: SnackbarHostState,
+    onStart: () -> Unit,
+    onEndTesting: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    var cutoffInput by remember { mutableStateOf("19:00") }
+    var savingCutoff by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        runCatching { repo.api.adminSettings() }.onSuccess {
+            cutoffInput = it.settings.rest_day_catchup_cutoff_time
+        }
+    }
     if (programme == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ExpressiveLoading() }
         return
@@ -918,6 +935,59 @@ private fun ProgrammeTab(programme: AdminProgramme?, onStart: () -> Unit, onEndT
         StatRow("Programme end date", programme.programme_end_date?.take(10) ?: (programme.end_date_preview?.take(10) ?: "2026-12-28"))
         Spacer(Modifier.height(8.dp))
         StatRow("Registration", if (programme.registration_open) "Open" else "Closed")
+        Spacer(Modifier.height(20.dp))
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                Text(
+                    "Rest-Day Catch-Up Cutoff (Africa/Lagos)",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "On Tuesdays and Fridays, members with missed days can catch up until this time (24h HH:MM, default 19:00 for 7pm Bible Study).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = cutoffInput,
+                        onValueChange = { if (it.length <= 5) cutoffInput = it },
+                        label = { Text("Cutoff (HH:MM)") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                savingCutoff = true
+                                runCatching { repo.api.adminUpdateSettings(cutoffInput.trim()) }
+                                    .onSuccess {
+                                        snackbarHostState.showSnackbar("Rest-day cutoff saved (${cutoffInput.trim()} WAT).")
+                                    }
+                                    .onFailure {
+                                        snackbarHostState.showSnackbar(it.message ?: "Invalid cutoff time (use HH:MM, e.g. 19:00)")
+                                    }
+                                savingCutoff = false
+                            }
+                        },
+                        enabled = !savingCutoff && cutoffInput.isNotBlank()
+                    ) {
+                        Text(if (savingCutoff) "Saving..." else "Save")
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(20.dp))
 
         if (!programme.started) {

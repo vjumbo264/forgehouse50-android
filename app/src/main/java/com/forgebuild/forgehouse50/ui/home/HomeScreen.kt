@@ -587,10 +587,73 @@ fun HomeScreen(
                                     Text(
                                         if (next?.assignment != null)
                                             "Next reading day ${next.day_number} (${next.date}): ${next.assignment.summary}"
-                                        else "No reading scheduled today.",
+                                        else "No scheduled reading today.",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
+                                    val pl = plan
+                                    val catchUpInfo = today?.catch_up
+                                    val hasBacklog = (pl?.backlogCount ?: catchUpInfo?.count ?: 0) > 0
+                                    if (hasBacklog) {
+                                        Spacer(Modifier.height(16.dp))
+                                        val isClosed = pl?.restDayCatchupClosed == true ||
+                                            today?.rest_day?.catchup_allowed == false ||
+                                            catchUpInfo?.window_open == false
+                                        val catchupDays = pl?.days?.takeIf { it.isNotEmpty() }
+                                            ?: catchUpInfo?.days?.map { it.day_number }.orEmpty()
+                                        if (!isClosed && catchupDays.isNotEmpty()) {
+                                            Button(
+                                                onClick = { onOpenSession(catchupDays) },
+                                                shape = CircleShape,
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                                modifier = Modifier.fillMaxWidth().height(54.dp),
+                                            ) {
+                                                Row(
+                                                    Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                ) {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Filled.MenuBook, null, Modifier.size(20.dp))
+                                                        Spacer(Modifier.width(10.dp))
+                                                        Text(
+                                                            if (catchupDays.size == 1) "Catch up: day ${catchupDays.first()}"
+                                                            else "Catch up: days ${catchupDays.joinToString(" + ")}",
+                                                            style = MaterialTheme.typography.titleMedium,
+                                                            fontWeight = FontWeight.Bold,
+                                                        )
+                                                    }
+                                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(20.dp))
+                                                }
+                                            }
+                                            val cutoffHint = pl?.restDayMessage
+                                                ?: today?.rest_day?.message
+                                                ?: "Catch-up closes at 7pm today for Bible Study."
+                                            Spacer(Modifier.height(8.dp))
+                                            Text(
+                                                cutoffHint,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.primary,
+                                            )
+                                        } else {
+                                            Surface(
+                                                shape = RoundedCornerShape(14.dp),
+                                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.65f),
+                                                modifier = Modifier.fillMaxWidth(),
+                                            ) {
+                                                Text(
+                                                    text = pl?.restDayMessage
+                                                        ?: today?.rest_day?.message
+                                                        ?: catchUpInfo?.cutoff_message
+                                                        ?: "Catch-up closes at 7pm today for Bible Study, continue tomorrow.",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                    modifier = Modifier.padding(14.dp),
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
