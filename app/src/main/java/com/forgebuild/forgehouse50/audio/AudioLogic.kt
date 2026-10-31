@@ -498,32 +498,31 @@ class RoomAudioIndexStore(private val dao: AudioChapterDao) : AudioIndexStore {
 }
 
 class InMemoryAudioIndexStore : AudioIndexStore {
+    private val lock = Any()
     private val map = linkedMapOf<String, DownloadedAudioChapter>()
 
-    @Synchronized
-    override suspend fun getChapter(key: String): DownloadedAudioChapter? = map[key]
+    override suspend fun getChapter(key: String): DownloadedAudioChapter? =
+        synchronized(lock) { map[key] }
 
-    @Synchronized
     override suspend fun getForVersion(versionCode: String): List<DownloadedAudioChapter> =
-        map.values.filter { it.versionCode.equals(versionCode, ignoreCase = true) }
+        synchronized(lock) { map.values.filter { it.versionCode.equals(versionCode, ignoreCase = true) } }
 
-    @Synchronized
-    override suspend fun getAll(): List<DownloadedAudioChapter> = map.values.toList()
+    override suspend fun getAll(): List<DownloadedAudioChapter> =
+        synchronized(lock) { map.values.toList() }
 
-    @Synchronized
     override suspend fun put(row: DownloadedAudioChapter) {
-        map[row.key] = row
+        synchronized(lock) { map[row.key] = row }
     }
 
-    @Synchronized
     override suspend fun deleteChapter(key: String) {
-        map.remove(key)
+        synchronized(lock) { map.remove(key) }
     }
 
-    @Synchronized
     override suspend fun deleteVersion(versionCode: String) {
-        val toRemove = map.values.filter { it.versionCode.equals(versionCode, ignoreCase = true) }.map { it.key }
-        toRemove.forEach { map.remove(it) }
+        synchronized(lock) {
+            val toRemove = map.values.filter { it.versionCode.equals(versionCode, ignoreCase = true) }.map { it.key }
+            toRemove.forEach { map.remove(it) }
+        }
     }
 }
 
