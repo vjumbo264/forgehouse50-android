@@ -1,56 +1,95 @@
-name: "Publish Bridge Release to Old Repo (DANGER: PUSHES TO ALL USERS)"
+name: "publish-bridge-release"
 
-# CRITICAL SAFETY NOTICE:
-# Installed user phones currently check vjumbo264/forgebuild releases.
-# NEVER run this workflow without explicit confirmation from Victor.
-# When run, this publishes a signed APK to vjumbo264/forgebuild under tag forgehouse50-vN.
+# ==============================================================================
+# DANGER / CRITICAL RELEASE GATE — DO NOT RUN AUTOMATICALLY!
+# ==============================================================================
+# Installed user phones (<= v32) check:
+#   1. https://forgehouse50.pages.dev/api/app-release
+#   2. Legacy ForgeBuild releases in vjumbo264/forgebuild (tag: forgehouse50-vN,
+#      assets: app-forgehouse50-vN.apk, release.json, forgebuild-manifest.json)
+#
+# NEVER trigger this workflow until Victor explicitly instructs to ship the
+# update to ALL church members.
+# Required input: CONFIRM_PUSH_TO_ALL_USERS = "yes"
+# ==============================================================================
 
 on:
   workflow_dispatch:
     inputs:
-      confirm_push:
-        description: 'Type "yes" to confirm pushing update to ALL existing users'
+      CONFIRM_PUSH_TO_ALL_USERS:
+        description: 'Type exact word "yes" to push this update to ALL existing users'
         required: true
         default: 'no'
       tag_name:
-        description: 'Tag from this repo to bridge (e.g. v33)'
+        description: 'Release tag in vjumbo264/forgehouse50-android to bridge (e.g. v34)'
         required: true
 
 jobs:
   bridge:
     runs-on: ubuntu-latest
     steps:
-      - name: Guard check
+      - name: Enforce CONFIRM_PUSH_TO_ALL_USERS=yes guard
         run: |
-          if [ "${{ github.event.inputs.confirm_push }}" != "yes" ]; then
-            echo "ERROR: Confirmation input was not 'yes'. Aborting bridge release."
+          if [ "${{ github.event.inputs.CONFIRM_PUSH_TO_ALL_USERS }}" != "yes" ]; then
+            echo "ABORTED: CONFIRM_PUSH_TO_ALL_USERS must be exactly 'yes'."
             exit 1
           fi
-          echo "Confirmation received. Proceeding with bridge release."
 
-      - name: Download release asset from new repo
+      - name: Download signed release assets from vjumbo264/forgehouse50-android
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.event.inputs.tag_name }}"
-          echo "Downloading assets for $TAG..."
-          gh release download "$TAG" -R vjumbo264/forgehouse50-android
+          mkdir -p bridge_dist
+          gh release download "$TAG" -R vjumbo264/forgehouse50-android -D bridge_dist
 
-      - name: Publish to old repo vjumbo264/forgebuild
+      - name: Format exact ForgeBuild release assets & publish to vjumbo264/forgebuild
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           TAG="${{ github.event.inputs.tag_name }}"
           NUM=$(echo "$TAG" | grep -oP '\d+')
+          if [ -z "$NUM" ]; then
+            echo "Invalid tag_name: $TAG"
+            exit 1
+          fi
           OLD_TAG="forgehouse50-v${NUM}"
-          APK_FILE=$(ls *.apk | head -1)
-          OLD_APK="app-${OLD_TAG}.apk"
-          cp "$APK_FILE" "$OLD_APK"
+          APK_SRC=$(ls bridge_dist/*.apk | head -1)
+          OLD_APK="bridge_dist/app-${OLD_TAG}.apk"
+          cp "$APK_SRC" "$OLD_APK"
 
-          echo "Publishing release $OLD_TAG to vjumbo264/forgebuild..."
+          python3 - "$NUM" "$OLD_TAG" << 'PYEOF'
+          import sys, json
+          num = int(sys.argv[1])
+          old_tag = sys.argv[2]
+          with open("bridge_dist/release.json") as f:
+              rj = json.load(f)
+          rj.pop("releaseHold", None)
+          rj.pop("tag", None)
+          rj["versionCode"] = num
+          with open("bridge_dist/release.json", "w") as f:
+              json.dump(rj, f, indent=2)
+
+          notes = "; ".join(rj.get("changelog") or [f"ForgeHouse 50 update {old_tag}"])
+          manifest = {
+              "app_name": "ForgeHouse 50",
+              "app_slug": "forgehouse50",
+              "package": "com.forgebuild.forgehouse50",
+              "version_tag": old_tag,
+              "version_code": num,
+              "version_name": str(rj.get("versionName", num)),
+              "permissions": "FOREGROUND_SERVICE,FOREGROUND_SERVICE_DATA_SYNC,INTERNET,POST_NOTIFICATIONS,REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,REQUEST_INSTALL_PACKAGES",
+              "version_notes": notes,
+              "built_by": "forgehouse50-android bridge workflow"
+          }
+          with open("bridge_dist/forgebuild-manifest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+          PYEOF
+
           gh release create "$OLD_TAG" \
             -R vjumbo264/forgebuild \
             --title "$OLD_TAG" \
-            --notes "ForgeHouse 50 Update $OLD_TAG (Bridged from forgehouse50-android)" \
-            "$OLD_APK" release.json
-          echo "Bridge release published successfully."
+            --notes "ForgeHouse 50 Update $OLD_TAG (bridged from vjumbo264/forgehouse50-android)" \
+            "$OLD_APK" \
+            "bridge_dist/release.json" \
+            "bridge_dist/forgebuild-manifest.json"

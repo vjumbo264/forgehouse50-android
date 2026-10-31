@@ -3,6 +3,9 @@ name: "Build & Release Signed APK"
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'BUILD_STATE.json'
+      - 'docs/**'
   workflow_dispatch:
     inputs:
       release_notes:
@@ -38,20 +41,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Fetch existing releases in forgehouse50-android
           HIGHEST=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --jq '.[].tag_name' 2>/dev/null | grep -oP '^v?\K[0-9]+$' | sort -n | tail -1 || true)
-          # Last release in old repo forgebuild was forgehouse50-v32 (versionCode 32)
           BASE_CODE=32
           if [ -z "$HIGHEST" ] || [ "$HIGHEST" -lt "$BASE_CODE" ]; then
             NEXT_CODE=$(( BASE_CODE + 1 ))
           else
             NEXT_CODE=$(( HIGHEST + 1 ))
           fi
-          
-          # VersionName: v3, v4, etc.
-          VERSION_NAME="3.${NEXT_CODE}"
-          TAG_NAME="v${NEXT_CODE}"
-
+          VERSION_NAME="${NEXT_CODE}"
+          TAG_NAME="v${VERSION_NAME}"
           echo "code=$NEXT_CODE" >> "$GITHUB_OUTPUT"
           echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
@@ -80,18 +78,12 @@ jobs:
             echo "apksigner not found"
             exit 1
           fi
-          echo "Verifying APK with apksigner: $APKSIGNER"
           "$APKSIGNER" verify --verbose "$APK"
-
-          # Extract cert SHA-256 fingerprint
-          echo "=== PRINT CERTS OUTPUT ==="
-          "$APKSIGNER" verify --print-certs "$APK"
+          EXPECTED_RAW="80DA9D1CA94AE7942D7D9CBAC2F6B97D"
           EXPECTED_RAW="80DA9D1CA94AE7942D7D9CBAC2F6B95D85686043C9EAB5EE0478BB2AB62C03F0"
           ACTUAL_RAW=$("$APKSIGNER" verify --print-certs "$APK" | grep -i "SHA-256" | head -1 | sed "s/.*: *//" | tr -d " :" | tr "a-f" "A-F")
-          
           echo "Expected: $EXPECTED_RAW"
           echo "Actual:   $ACTUAL_RAW"
-
           if [ "$ACTUAL_RAW" != "$EXPECTED_RAW" ]; then
             echo "FATAL: Certificate fingerprint mismatch!"
             exit 1
@@ -106,27 +98,35 @@ jobs:
           NAME="${{ steps.meta.outputs.name }}"
           APK_NAME="forgehouse50-${TAG}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$APK_NAME"
-          
+
           SHA=$(sha256sum "$APK_NAME" | awk '{print $1}')
           SIZE=$(stat -c%s "$APK_NAME")
-
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "size=$SIZE" >> "$GITHUB_OUTPUT"
 
-          cat << JSONEOF > release.json
-          {
-            "versionName": "$NAME",
-            "versionCode": $CODE,
-            "sha256": "$SHA",
-            "sizeBytes": $SIZE,
-            "releaseHold": true,
-            "tag": "$TAG",
-            "changelog": [
-              "ForgeHouse 50 standalone release $NAME",
-              "Audio support foundation and fixes"
-            ]
+          python3 - "$NAME" "$CODE" "$SHA" "$SIZE" "$TAG" << 'PYEOF'
+          import sys, json, os
+          name, code, sha, size, tag = sys.argv[1], int(sys.argv[2]), sys.argv[3], int(sys.argv[4]), sys.argv[5]
+          changelog_items = [f"ForgeHouse 50 release v{code}"]
+          if os.path.exists("changelog.json"):
+              try:
+                  entries = json.load(open("changelog.json"))
+                  if entries and isinstance(entries, list) and entries[0].get("items"):
+                      changelog_items = entries[0]["items"]
+              except Exception:
+                  pass
+          data = {
+              "versionName": name,
+              "versionCode": code,
+              "sha256": sha,
+              "sizeBytes": size,
+              "releaseHold": True,
+              "tag": tag,
+              "changelog": changelog_items
           }
-          JSONEOF
+          with open("release.json", "w") as f:
+              json.dump(data, f, indent=2)
+          PYEOF
 
       - name: Create GitHub Pre-Release (Release Hold)
         uses: softprops/action-gh-release@v2
@@ -137,8 +137,7 @@ jobs:
           draft: false
           body: |
             ### ForgeHouse 50 - ${{ steps.meta.outputs.tag }}
-            **RELEASE HOLD ACTIVE**: This build is held in the new repo and will not be pushed to existing users until explicitly bridged.
-
+            **RELEASE HOLD ACTIVE**: This build is held as a pre-release in `forgehouse50-android` and is NOT pushed to existing users.
             - **Version Code**: `${{ steps.meta.outputs.code }}`
             - **Version Name**: `${{ steps.meta.outputs.name }}`
             - **SHA-256**: `${{ steps.artifacts.outputs.sha }}`

@@ -2,23 +2,87 @@
   "project": "ForgeHouse 50 (Oct 30 contract)",
   "contract": "fixes_oct30_v1",
   "repo": "vjumbo264/forgehouse50-android",
-  "related_repos": ["vjumbo264/forgehouse50", "vjumbo264/versewell", "vjumbo264/forgebuild"],
+  "related_repos": [
+    "vjumbo264/forgehouse50",
+    "vjumbo264/versewell",
+    "vjumbo264/forgebuild"
+  ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
   "current_phase": "i0",
   "queue": [
-    { "id": "i0", "title": "Move the app to its own repo and hold all releases", "status": "in_progress", "notes": "Repo created, secrets transferred from forgebuild, git history imported via subtree split" },
-    { "id": "i1", "title": "VerseWell data contract, so text is clean for audio and the app", "status": "pending", "notes": "" },
-    { "id": "i2", "title": "Audio generation pipeline (then START it and keep going)", "status": "pending", "notes": "" },
-    { "id": "i3", "title": "Audio API in the VerseWell Worker", "status": "pending", "notes": "" },
-    { "id": "i4", "title": "Announcements: large, persistent, reliably delivered", "status": "pending", "notes": "" },
-    { "id": "i5", "title": "Reader timer: never show raw exception text", "status": "pending", "notes": "" },
-    { "id": "i6", "title": "Rest days: catch-up still allowed, closes at 7pm Lagos", "status": "pending", "notes": "" },
-    { "id": "i7", "title": "Streak verification (verify first, fix only if wrong)", "status": "pending", "notes": "" },
-    { "id": "i8", "title": "Admin-first update channels + controlled rollout", "status": "pending", "notes": "" },
-    { "id": "i9", "title": "Community chat with direct messages from the admin", "status": "pending", "notes": "" },
-    { "id": "i10", "title": "Audio in the app (depends on i3; test with whatever is ready)", "status": "pending", "notes": "" },
-    { "id": "i11", "title": "Audio completeness audit + handoff", "status": "pending", "notes": "" }
+    {
+      "id": "i0",
+      "title": "Move the app to its own repo and hold all releases",
+      "status": "in_progress",
+      "notes": "Repo created, secrets transferred from forgebuild, git history imported via subtree split"
+    },
+    {
+      "id": "i1",
+      "title": "VerseWell data contract, so text is clean for audio and the app",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "i2",
+      "title": "Audio generation pipeline (then START it and keep going)",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "i3",
+      "title": "Audio API in the VerseWell Worker",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "i4",
+      "title": "Announcements: large, persistent, reliably delivered",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "i5",
+      "title": "Reader timer: never show raw exception text",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "i6",
+      "title": "Rest days: catch-up still allowed, closes at 7pm Lagos",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "i7",
+      "title": "Streak verification (verify first, fix only if wrong)",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "i8",
+      "title": "Admin-first update channels + controlled rollout",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "i9",
+      "title": "Community chat with direct messages from the admin",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "i10",
+      "title": "Audio in the app (depends on i3; test with whatever is ready)",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "i11",
+      "title": "Audio completeness audit + handoff",
+      "status": "pending",
+      "notes": ""
+    }
   ],
   "completed": [],
   "next_steps": [
@@ -33,18 +97,49 @@
   ],
   "known_issues": [],
   "audio_status": {
-    "kjv": {"chapters_done": 0, "of": 260},
-    "niv": {"chapters_done": 0, "of": 260},
-    "tlb": {"chapters_done": 0, "of": 260},
-    "gw": {"chapters_done": 0, "of": 260},
-    "voice": {"chapters_done": 0, "of": 260}
+    "kjv": {
+      "chapters_done": 0,
+      "of": 260
+    },
+    "niv": {
+      "chapters_done": 0,
+      "of": 260
+    },
+    "tlb": {
+      "chapters_done": 0,
+      "of": 260
+    },
+    "gw": {
+      "chapters_done": 0,
+      "of": 260
+    },
+    "voice": {
+      "chapters_done": 0,
+      "of": 260
+    }
   },
   "deployment": {
-    "cloudflare_projects": ["forgehouse50", "versewell", "versewell-api"],
-    "urls": ["https://forgehouse50.pages.dev", "https://versewell.pages.dev", "https://versewell-api.vjumbo264.workers.dev"],
-    "secrets_expected": ["GITHUB_PAT", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "KEYSTORE_BASE64", "KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD"]
+    "cloudflare_projects": [
+      "forgehouse50",
+      "versewell",
+      "versewell-api"
+    ],
+    "urls": [
+      "https://forgehouse50.pages.dev",
+      "https://versewell.pages.dev",
+      "https://versewell-api.vjumbo264.workers.dev"
+    ],
+    "secrets_expected": [
+      "GITHUB_PAT",
+      "CLOUDFLARE_API_TOKEN",
+      "CLOUDFLARE_ACCOUNT_ID",
+      "KEYSTORE_BASE64",
+      "KEYSTORE_PASSWORD",
+      "KEY_ALIAS",
+      "KEY_PASSWORD"
+    ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-30T20:31:00Z",
-  "last_session_note": "Scaffolding forgehouse50-android repo with CI and release hold"
+  "last_updated": "2026-10-31T05:12:31Z",
+  "last_session_note": "Completed i0 workflow/runbook/prompt verification; verifying CI build on workflow update before marking i0 done."
 }

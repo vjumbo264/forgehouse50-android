@@ -1,23 +1,39 @@
-# ForgeHouse 50 Release Runbook
+# ForgeHouse 50 — Release & Rollout Runbook
 
-## Overview
-- **New App Repo**: `vjumbo264/forgehouse50-android`
-- **Old App Host**: `vjumbo264/forgebuild` (releases held)
+## Repository & Signing Summary
+- **Primary Android Repo**: `vjumbo264/forgehouse50-android`
+- **Legacy ForgeBuild Repo**: `vjumbo264/forgebuild` (frozen for FH50; last legacy tag `forgehouse50-v32`, `versionCode = 32`)
 - **Application ID**: `com.forgebuild.forgehouse50`
-- **Signing Key SHA-256 Fingerprint**: `80:DA:9D:1C:A9:4A:E7:94:2D:7D:9C:BA:C2:F6:B9:5D:85:68:60:43:C9:EA:B5:EE:04:78:BB:2A:B6:2C:03:F0`
+- **Verified APK Signing Certificate (SHA-256)**:
+  `80:DA:9D:1C:A9:4A:E7:94:2D:7D:9C:BA:C2:F6:B9:5D:85:68:60:43:C9:EA:B5:EE:04:78:BB:2A:B6:2C:03:F0`
 
-## Release Hold Policy
-All automated builds in `forgehouse50-android` create **pre-releases** in `forgehouse50-android` only.
-No builds or tags are pushed to `forgebuild`.
-Consequently, no user phone will see or receive an update until Victor explicitly approves.
+## Current Release Hold State (`release_hold: true`)
+1. Every push to `main` touching Android code runs unit tests, builds a signed release APK (`versionCode >= 33`), verifies the SHA-256 signing certificate with `apksigner`, and publishes a **GitHub Pre-Release** in `vjumbo264/forgehouse50-android` only.
+2. Nothing is published to `vjumbo264/forgebuild`.
+3. On the FH50 backend (`forgehouse50.pages.dev/api/app-release`), new builds default to `hold` / `admins_only`. Unauthenticated/member phones on `v32` continue seeing `versionCode: 32` (no update prompt), and website visitors can still download `v32`.
 
-## How to Test New Releases
-Admins can test releases using the admin update channel (configured via `forgehouse50.pages.dev/api/app-release` with admin token or dashboard).
+## Step-by-Step: Testing as Admin First (Before Public Rollout)
+1. Sign into the ForgeHouse 50 app (or web admin) with an Admin account.
+2. Open **Admin Dashboard -> App Releases**.
+3. Locate the target build (e.g., `v35`) and tap **Release to admins** (if currently `hold`).
+4. Admin phones checking for updates will see the update, can test installing it over `v32` (same signing key), or tap **Not now** to dismiss.
+5. If an issue is discovered, tap **Pull back to hold** in the Admin Dashboard immediately.
 
-## How to Roll Out to All Users (The Bridge)
-When Pastor Dave and Victor decide to ship the update to all members:
-1. In `vjumbo264/forgehouse50-android`, navigate to **Actions** -> **Publish Bridge Release to Old Repo**.
-2. Select the validated tag (e.g. `v33`).
-3. Set `confirm_push` to `yes`.
-4. Trigger the workflow.
-This will publish `forgehouse50-v33` to `vjumbo264/forgebuild`, triggering the existing in-app updater on all member devices.
+## Step-by-Step: First Rollout to All Existing Users (The Bridge + Everyone Channel)
+When Pastor Dave and Victor confirm the update is ready for every member:
+
+1. **Promote in Admin Dashboard (Primary Updater Path)**:
+   - Open **Admin Dashboard -> App Releases** in ForgeHouse 50.
+   - Select the verified release tag (e.g., `v35`) and tap **Release to everyone**, then confirm the dialog.
+   - All `v32`+ phones polling `https://forgehouse50.pages.dev/api/app-release` will immediately detect `versionCode > 32` and offer the update, AND the website download button will serve the new APK.
+
+2. **Optional Legacy Repo Bridge (`publish-bridge-release` workflow)**:
+   - If you also want the APK mirrored onto `vjumbo264/forgebuild` releases in legacy `forgehouse50-vN` format (`app-forgehouse50-vN.apk` + `release.json` + `forgebuild-manifest.json`):
+   - Go to `https://github.com/vjumbo264/forgehouse50-android/actions/workflows/publish-bridge-release.yml`
+   - Tap **Run workflow**
+   - Enter `tag_name` (e.g., `v35`)
+   - Enter `CONFIRM_PUSH_TO_ALL_USERS` = `yes`
+   - Run the workflow.
+
+## Subsequent Updates (After Everyone Has >= v34)
+Once members are on the new app version, all updates are controlled 100% from **Admin Dashboard -> App Releases** (`hold` -> `admins_only` -> `everyone`, with instant `Pull back to hold` rollback) without ever touching `vjumbo264/forgebuild` again.
