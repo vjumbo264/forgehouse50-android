@@ -2,7 +2,7 @@ package com.forgebuild.forgehouse50
 
 import com.forgebuild.forgehouse50.data.CatchUpDayItem
 import com.forgebuild.forgehouse50.data.CatchUpInfo
-import com.forgebuild.forgehouse50.data.DayRow
+import com.forgebuild.forgehouse50.data.ProgressDay
 import com.forgebuild.forgehouse50.data.NextReadingDay
 import com.forgebuild.forgehouse50.data.ProgressResponse
 import com.forgebuild.forgehouse50.data.ReadingSession
@@ -20,8 +20,8 @@ class RestDayCatchupLogicTest {
     fun tuesdayBefore7pmAllowsCatchupForSingleMissedDay() {
         val progress = ProgressResponse(
             days = listOf(
-                DayRow(day_number = 1, date = "2026-10-26", completed = false, is_future = false),
-                DayRow(day_number = 2, date = "2026-10-28", completed = false, is_future = true),
+                ProgressDay(day_number = 1, date = "2026-10-26", completed = false, is_future = false),
+                ProgressDay(day_number = 2, date = "2026-10-28", completed = false, is_future = true),
             )
         )
         val today = TodayResponse(
@@ -57,7 +57,7 @@ class RestDayCatchupLogicTest {
     fun tuesdayAfter7pmClosesCatchupAndExposesBibleStudyMessage() {
         val progress = ProgressResponse(
             days = listOf(
-                DayRow(day_number = 1, date = "2026-10-26", completed = false, is_future = false),
+                ProgressDay(day_number = 1, date = "2026-10-26", completed = false, is_future = false),
             )
         )
         val today = TodayResponse(
@@ -91,8 +91,8 @@ class RestDayCatchupLogicTest {
     fun restDayWithZeroBacklogKeepsNormalReadingLocked() {
         val progress = ProgressResponse(
             days = listOf(
-                DayRow(day_number = 1, date = "2026-10-26", completed = true, is_future = false),
-                DayRow(day_number = 2, date = "2026-10-28", completed = false, is_future = true),
+                ProgressDay(day_number = 1, date = "2026-10-26", completed = true, is_future = false),
+                ProgressDay(day_number = 2, date = "2026-10-28", completed = false, is_future = true),
             )
         )
         val today = TodayResponse(
