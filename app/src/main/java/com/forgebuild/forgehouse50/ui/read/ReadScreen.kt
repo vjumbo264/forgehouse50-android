@@ -61,7 +61,23 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.forgebuild.forgehouse50.audio.AudioChapterMeta
+import com.forgebuild.forgehouse50.audio.AudioLogic
+import com.forgebuild.forgehouse50.audio.AudioPlayerController
+import com.forgebuild.forgehouse50.audio.AudioPlayerUiState
+import com.forgebuild.forgehouse50.audio.ChapterAudioDownloadState
+import com.forgebuild.forgehouse50.audio.DownloadedAudioChapter
+import java.util.Locale
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -404,21 +420,59 @@ fun ReadScreen(
     var selectedVerses by remember(currentChapterIdx, activeIdx) { mutableStateOf<Set<Int>>(emptySet()) }
     var openFootnoteVerse by remember(activeDay) { mutableStateOf<Int?>(null) }
 
-    // Sync reading time every 30 seconds
-    LaunchedEffect(activeDay) {
-        var pending = 0
-        var fails = 0
+    // Item i10: Offline chapter audio controller & manifest state (zero coupling to ReadingTimer)
+    val playerController = remember { AudioPlayerController(context.applicationContext) }
+    val playerState by playerController.uiState.collectAsState()
+    val audioManifests by repo.audioManager.manifests.collectAsState()
+    val chapterAudioStates by repo.audioManager.chapterStates.collectAsState()
+    val localAudioByVersion by repo.audioManager.localChaptersByVersion.collectAsState()
+    val activeAudioCode = remember(translation) { AudioLogic.normalizeVersionCode(translation) }
+    val activeAudioManifest = audioManifests[activeAudioCode]
+    val activeLocalAudioRows = localAudioByVersion[activeAudioCode].orEmpty()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, playerController) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> {
+                    playerController.onAppBackgroundedOrLocked()
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    scope.launch { repo.audioManager.refreshLocalIndex() }
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            playerController.release()
+        }
+    }
+
+    LaunchedEffect(activeDay, translation) {
+        playerController.stopAndDismiss()
+        repo.audioManager.refreshLocalIndex()
+        repo.audioManager.loadManifestIfSupported(translation)
+    }
+
+    // Sync ONLY genuine active reading time accrued by ReadingTimer every 30 seconds
+    // (passive audio playback on an untouched screen accrues 0s and syncs 0s).
+    LaunchedEffect(activeDay, timer) {
+        var lastSyncedSeconds = timer.getReadingSeconds()
         while (isActive) {
             delay(30_000)
-            pending += 30
-            try {
-                repo.api.addReadingTime(activeDay, pending)
-                pending = 0
-                fails = 0
-            } catch (ce: CancellationException) {
-                throw ce
-            } catch (_: Exception) {
-                fails++
+            val currentSeconds = timer.getReadingSeconds()
+            val delta = AudioLogic.computeSyncedReadingDelta(currentSeconds, lastSyncedSeconds)
+            if (delta > 0) {
+                try {
+                    repo.api.addReadingTime(activeDay, delta)
+                    lastSyncedSeconds = currentSeconds
+                } catch (ce: CancellationException) {
+                    throw ce
+                } catch (_: Exception) {
+                    // Keep lastSyncedSeconds unchanged so delta retries on next tick
+                }
             }
         }
     }
@@ -427,24 +481,25 @@ fun ReadScreen(
     val hasMinTime = timerTick >= 300
     val canComplete = hasMinTime && finalChapterReached
 
-    // Root layout: full viewport with root pointer input for active timer accrual & idle reset
+    // Root layout: pointerInput lives strictly on LazyColumn (Scripture surface), so bottom-dock
+    // audio playback controls never count as reading interaction.
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        awaitPointerEvent(PointerEventPass.Initial)
-                        timer.onInteraction()
-                        isIdlePaused = false
-                    }
-                }
-            },
+        modifier = Modifier.fillMaxSize(),
     ) {
         // Continuous scrollable content extending to physical bottom edge
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(timer) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent(PointerEventPass.Initial)
+                            timer.onInteraction()
+                            isIdlePaused = false
+                        }
+                    }
+                },
             contentPadding = PaddingValues(top = headerHeightDp + 8.dp, bottom = bottomDockHeightDp + 16.dp, start = 20.dp, end = 20.dp),
         ) {
             if (!dayLoaded) {
@@ -471,6 +526,13 @@ fun ReadScreen(
 
                     // Chapter heading item
                     item(key = "ch_head_${ch.first}_${ch.second}") {
+                        val chAudioKey = AudioLogic.chapterKey(activeAudioCode, ch.first, ch.second)
+                        val localAudioRow = activeLocalAudioRows.firstOrNull {
+                            it.book.equals(ch.first, ignoreCase = true) && it.chapter == ch.second
+                        }
+                        val manifestAudioMeta = AudioLogic.findChapterInManifest(activeAudioManifest, ch.first, ch.second)
+                        val chDownloadState = chapterAudioStates[chAudioKey] ?: ChapterAudioDownloadState.Idle
+
                         Column(Modifier.fillMaxWidth().padding(top = if (cIdx == 0) 8.dp else 36.dp, bottom = 12.dp)) {
                             if (cIdx > 0) {
                                 HorizontalDivider(
@@ -484,6 +546,55 @@ fun ReadScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
+                            if (localAudioRow != null || manifestAudioMeta != null) {
+                                Spacer(Modifier.height(8.dp))
+                                ChapterHeaderAudioRow(
+                                    book = ch.first,
+                                    chapter = ch.second,
+                                    localRow = localAudioRow,
+                                    manifestMeta = manifestAudioMeta,
+                                    downloadState = chDownloadState,
+                                    isActiveChapterInPlayer = playerState.activeChapterKey == chAudioKey,
+                                    isPlaying = playerState.activeChapterKey == chAudioKey && playerState.isPlaying,
+                                    onDownloadClick = {
+                                        if (manifestAudioMeta != null) {
+                                            repo.audioManager.startChapterDownload(activeAudioCode, manifestAudioMeta)
+                                        }
+                                    },
+                                    onCancelDownload = {
+                                        repo.audioManager.cancelChapterDownload(activeAudioCode, ch.first, ch.second)
+                                    },
+                                    onPlayOrPauseClick = {
+                                        scope.launch {
+                                            val file = repo.audioManager.getVerifiedLocalChapterFile(
+                                                translationIdOrCode = activeAudioCode,
+                                                book = ch.first,
+                                                chapter = ch.second,
+                                            )
+                                            if (file != null) {
+                                                val dur = localAudioRow?.durationMs?.takeIf { it > 0L }
+                                                    ?: manifestAudioMeta?.duration_ms
+                                                    ?: 0L
+                                                playerController.playOrToggleLocalChapter(
+                                                    localFile = file,
+                                                    versionCodeOrId = activeAudioCode,
+                                                    book = ch.first,
+                                                    chapter = ch.second,
+                                                    fallbackDurationMs = dur,
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onDeleteClick = {
+                                        scope.launch {
+                                            if (playerState.activeChapterKey == chAudioKey) {
+                                                playerController.stopAndDismiss()
+                                            }
+                                            repo.audioManager.deleteChapterAudio(activeAudioCode, ch.first, ch.second)
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
 
@@ -956,6 +1067,20 @@ fun ReadScreen(
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
+                if (playerState.activeChapterKey != null) {
+                    ReaderAudioPlayerBar(
+                        state = playerState,
+                        onTogglePlayPause = { playerController.togglePlayPause() },
+                        onSeekFraction = { playerController.seekToFraction(it) },
+                        onCycleSpeed = { playerController.cycleSpeed() },
+                        onClose = { playerController.stopAndDismiss() },
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                    )
+                }
+
                 if (selectedVerses.isNotEmpty()) {
                     // Verse Selected State (never overlaps timer: replaces timer inside dock, with timer chip visible)
                     val rangeText = ScriptureReferenceUtils.formatVerseRange(selectedVerses).orEmpty()
@@ -1370,4 +1495,254 @@ fun ReadScreen(
 private fun cleanFootnoteText(raw: String): String {
     val stripped = raw.replace(Regex("^(?:[a-zA-Z]{1,2}[.)\\s]\\s*|\\d{1,2}[.)\\s]\\s*)+"), "")
     return stripped.trim().ifEmpty { raw.trim() }
+}
+
+
+@Composable
+private fun ChapterHeaderAudioRow(
+    book: String,
+    chapter: Int,
+    localRow: DownloadedAudioChapter?,
+    manifestMeta: AudioChapterMeta?,
+    downloadState: ChapterAudioDownloadState,
+    isActiveChapterInPlayer: Boolean,
+    isPlaying: Boolean,
+    onDownloadClick: () -> Unit,
+    onCancelDownload: () -> Unit,
+    onPlayOrPauseClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
+            if (localRow != null) {
+                val durMs = localRow.durationMs.takeIf { it > 0L } ?: (manifestMeta?.duration_ms ?: 0L)
+                val infoParts = buildList {
+                    if (durMs > 0L) add(AudioLogic.formatDurationMs(durMs))
+                    add(AudioLogic.formatAudioBytes(localRow.sizeBytes))
+                    add("Offline")
+                }.joinToString(" · ")
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilledTonalButton(
+                        onClick = onPlayOrPauseClick,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    ) {
+                        Icon(
+                            if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            when {
+                                isPlaying -> "Pause audio"
+                                isActiveChapterInPlayer -> "Resume audio"
+                                else -> "Play audio"
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                    Text(
+                        text = infoParts,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier.size(32.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = "Delete $book $chapter audio",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            } else {
+                when (downloadState) {
+                    is ChapterAudioDownloadState.Connecting -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                "Preparing audio…",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            )
+                            IconButton(onClick = onCancelDownload, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Filled.Close, contentDescription = "Cancel", modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                    is ChapterAudioDownloadState.Downloading -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                "Downloading audio… ${(downloadState.fraction * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (downloadState.totalBytes > 0L) {
+                                Text(
+                                    "${AudioLogic.formatAudioBytes(downloadState.bytesRead)} / ${AudioLogic.formatAudioBytes(downloadState.totalBytes)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.width(4.dp))
+                            }
+                            IconButton(onClick = onCancelDownload, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Filled.Close, contentDescription = "Cancel", modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        ExpressiveLinearProgress(
+                            progress = { downloadState.fraction },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    else -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Headphones,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Text(
+                                text = if ((manifestMeta?.bytes ?: 0L) > 0L) {
+                                    "Audio · ${AudioLogic.formatAudioBytes(manifestMeta?.bytes ?: 0L)}"
+                                } else {
+                                    "Chapter audio available"
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            )
+                            OutlinedButton(
+                                onClick = onDownloadClick,
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            ) {
+                                Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Download audio", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                        if (downloadState is ChapterAudioDownloadState.Failed) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                downloadState.message,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReaderAudioPlayerBar(
+    state: AudioPlayerUiState,
+    onTogglePlayPause: () -> Unit,
+    onSeekFraction: (Float) -> Unit,
+    onCycleSpeed: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            IconButton(
+                onClick = onTogglePlayPause,
+                modifier = Modifier.size(36.dp),
+            ) {
+                Icon(
+                    if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (state.isPlaying) "Pause" else "Play",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${state.book} ${state.chapter} · ${state.versionCode}",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                )
+                Text(
+                    text = "${AudioLogic.formatDurationMs(state.positionMs)} / ${AudioLogic.formatDurationMs(state.durationMs)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Surface(
+                onClick = onCycleSpeed,
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+            ) {
+                val speedText = if (state.speed % 1f == 0f) {
+                    String.format(Locale.US, "%.1fx", state.speed)
+                } else {
+                    "${state.speed}x"
+                }
+                Text(
+                    text = speedText,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                )
+            }
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier.size(32.dp),
+            ) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Close audio player",
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+        Slider(
+            value = state.progressFraction,
+            onValueChange = onSeekFraction,
+            valueRange = 0f..1f,
+            modifier = Modifier.fillMaxWidth().height(28.dp),
+        )
+        if (!state.error.isNullOrBlank()) {
+            Text(
+                text = state.error.orEmpty(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
 }

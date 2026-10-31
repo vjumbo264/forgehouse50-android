@@ -1,6 +1,7 @@
 package com.forgebuild.forgehouse50.data
 
 import android.content.Context
+import com.forgebuild.forgehouse50.audio.AudioDownloadManager
 import com.forgebuild.forgehouse50.data.local.AppDatabase
 import com.forgebuild.forgehouse50.data.local.DownloadedTranslation
 import com.forgebuild.forgehouse50.data.local.ScriptureChapter
@@ -33,6 +34,7 @@ class Repository(
     private val db = AppDatabase.get(appContext)
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
     val downloadManager: TranslationDownloadManager by lazy { TranslationDownloadManager(this) }
+    val audioManager: AudioDownloadManager by lazy { AudioDownloadManager(appContext) }
 
     fun normalizeTranslation(id: String): String =
         if (id.startsWith("versewell-")) id.lowercase() else "versewell-${id.lowercase()}"

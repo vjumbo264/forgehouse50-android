@@ -1,5 +1,15 @@
 [
   {
+    "version": "v38",
+    "date": "2026-10-31",
+    "items": [
+      "Offline Scripture Audio: Manually download and listen to chapter or full New Testament audio for KJV, NIV, TLB, GW, and The Voice with speed control (0.75x to 1.5x)",
+      "Community Chat & Direct Threads: Connect with fellow readers in the group chat and reply to private messages from church leadership",
+      "Persistent Announcements & Archive: Important programme announcements stay visible at the top of Today with full text and a past announcements archive",
+      "Rest-Day Catch-Up Window: Catch up on missed readings on Tuesdays and Fridays until 7:00 PM WAT before Bible Study"
+    ]
+  },
+  {
     "version": "v32",
     "date": "2026-10-17",
     "items": [
