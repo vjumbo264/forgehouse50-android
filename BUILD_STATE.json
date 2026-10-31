@@ -8,8 +8,8 @@
     "vjumbo264/forgebuild"
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
-  "status": "in_progress",
-  "current_phase": "i11",
+  "status": "complete",
+  "current_phase": "complete",
   "queue": [
     {
       "id": "i0",
@@ -80,8 +80,8 @@
     {
       "id": "i11",
       "title": "Audio completeness audit + handoff",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Audited all 5 VerseWell audio releases (audio-kjv, audio-niv, audio-tlb, audio-gw, audio-voice): each has 260/260 .m4a chapters + manifest.json (261 assets each, 1,300 chapters total, 0 missing, 0 invalid hashes/sizes). Executed live listen-free spot-checks across 60 random chapters (12 per translation) plus HTTP Range 206 checks against https://versewell-api.vjumbo264.workers.dev: 60/60 passed exact byte length, SHA-256 hash, ffprobe container duration (within <2s of manifest, 161-185 avg WPM), ffmpeg volumedetect non-silence (-17.6 to -16.9 dB avg mean volume), and silencedetect (0 interior silences >=10s). Verified final handoff checklist: all queue items i0-i11 done; release_hold=true (live /api/app-release returns update_available=false for members/anon; v39 held as pre-release); publish-bridge-release workflow runs = 0; vjumbo264/forgebuild untouched at forgehouse50-v32; docs/RELEASE_RUNBOOK.md, docs/BUILD_PROMPT.md, docs/AUDIO.md, and docs/DATA_CONTRACT.md present; zero secrets in repo."
     }
   ],
   "completed": [
@@ -95,10 +95,11 @@
     "i7",
     "i8",
     "i9",
-    "i10"
+    "i10",
+    "i11"
   ],
   "next_steps": [
-    "Complete & verify i11 (Audio completeness audit across all 5 translations 260/260 + >=10 random live chapter spot-checks per translation with ffprobe/volumedetect/sha256 + final handoff checklist)"
+    "Contract fixes_oct30_v1 complete and held at v39. Awaiting Victor & Pastor Dave approval to test via Admin Dashboard -> App Releases ('Release to admins') and then promote ('Release to everyone' / optional publish-bridge-release workflow) per docs/RELEASE_RUNBOOK.md."
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
@@ -116,23 +117,38 @@
   "audio_status": {
     "kjv": {
       "chapters_done": 260,
-      "of": 260
+      "of": 260,
+      "total_bytes": 375085200,
+      "voice": "en-US-ChristopherNeural",
+      "spot_checked": "12/12 passed (avg -17.2 dB, 171.2 WPM)"
     },
     "niv": {
       "chapters_done": 260,
-      "of": 260
+      "of": 260,
+      "total_bytes": 352218292,
+      "voice": "en-US-JennyNeural",
+      "spot_checked": "12/12 passed (avg -17.2 dB, 175.2 WPM)"
     },
     "tlb": {
       "chapters_done": 260,
-      "of": 260
+      "of": 260,
+      "total_bytes": 377076706,
+      "voice": "en-US-GuyNeural",
+      "spot_checked": "12/12 passed (avg -16.9 dB, 184.9 WPM)"
     },
     "gw": {
       "chapters_done": 260,
-      "of": 260
+      "of": 260,
+      "total_bytes": 383860042,
+      "voice": "en-US-AriaNeural",
+      "spot_checked": "12/12 passed (avg -17.6 dB, 161.1 WPM)"
     },
     "voice": {
       "chapters_done": 260,
-      "of": 260
+      "of": 260,
+      "total_bytes": 549853720,
+      "voice": "en-US-EricNeural",
+      "spot_checked": "12/12 passed (avg -16.9 dB, 161.3 WPM)"
     }
   },
   "deployment": {
@@ -157,8 +173,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T08:24:42Z",
-  "last_session_note": "i10 Audio in the Android app completed & verified green (CI 41184010806, pre-release v39 held); running i11 full audio & handoff audit.",
+  "last_updated": "2026-10-31T08:27:26Z",
+  "last_session_note": "All contract items i0-i11 completed and verified green. Latest signed APK v39 (versionCode 39) is held; 1,300/1,300 NT audio chapters live and 60/60 spot-checked.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,
@@ -186,5 +202,20 @@
       "verses": 7557,
       "note": "Thought-for-thought paraphrase combining multi-verse spans into anchored rows"
     }
+  },
+  "final_checklist": {
+    "all_items_verified": true,
+    "release_hold": true,
+    "latest_held_release": "v39",
+    "latest_version_code": 39,
+    "bridge_workflow_runs": 0,
+    "forgebuild_latest_fh50_tag": "forgehouse50-v32",
+    "live_member_update_exposed": false,
+    "docs_verified": [
+      "vjumbo264/forgehouse50-android:docs/RELEASE_RUNBOOK.md",
+      "vjumbo264/forgehouse50-android:docs/BUILD_PROMPT.md",
+      "vjumbo264/versewell:docs/AUDIO.md",
+      "vjumbo264/versewell:docs/DATA_CONTRACT.md"
+    ]
   }
 }

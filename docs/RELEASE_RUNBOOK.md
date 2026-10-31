@@ -15,7 +15,7 @@
 ## Step-by-Step: Testing as Admin First (Before Public Rollout)
 1. Sign into the ForgeHouse 50 app (or web admin) with an Admin account.
 2. Open **Admin Dashboard -> App Releases**.
-3. Locate the target build (e.g., `v35`) and tap **Release to admins** (if currently `hold`).
+3. Locate the target build (currently `v39`, `versionCode = 39`) and tap **Release to admins** (if currently `hold`).
 4. Admin phones checking for updates will see the update, can test installing it over `v32` (same signing key), or tap **Not now** to dismiss.
 5. If an issue is discovered, tap **Pull back to hold** in the Admin Dashboard immediately.
 
@@ -24,14 +24,14 @@ When Pastor Dave and Victor confirm the update is ready for every member:
 
 1. **Promote in Admin Dashboard (Primary Updater Path)**:
    - Open **Admin Dashboard -> App Releases** in ForgeHouse 50.
-   - Select the verified release tag (e.g., `v35`) and tap **Release to everyone**, then confirm the dialog.
+   - Select the verified release tag (currently `v39`, `versionCode = 39`) and tap **Release to everyone**, then confirm the dialog.
    - All `v32`+ phones polling `https://forgehouse50.pages.dev/api/app-release` will immediately detect `versionCode > 32` and offer the update, AND the website download button will serve the new APK.
 
 2. **Optional Legacy Repo Bridge (`publish-bridge-release` workflow)**:
    - If you also want the APK mirrored onto `vjumbo264/forgebuild` releases in legacy `forgehouse50-vN` format (`app-forgehouse50-vN.apk` + `release.json` + `forgebuild-manifest.json`):
    - Go to `https://github.com/vjumbo264/forgehouse50-android/actions/workflows/publish-bridge-release.yml`
    - Tap **Run workflow**
-   - Enter `tag_name` (e.g., `v35`)
+   - Enter `tag_name` (currently `v39`, `versionCode = 39`)
    - Enter `CONFIRM_PUSH_TO_ALL_USERS` = `yes`
    - Run the workflow.
 
