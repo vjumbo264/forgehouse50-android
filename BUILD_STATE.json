@@ -9,7 +9,7 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i1",
+  "current_phase": "i2",
   "queue": [
     {
       "id": "i0",
@@ -20,13 +20,13 @@
     {
       "id": "i1",
       "title": "VerseWell data contract, so text is clean for audio and the app",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Verified & strengthened VerseWell data contract (docs/DATA_CONTRACT.md, scripts/validate_data_contract.py, CI run 41172448904 green). Fixed real Worker bug where GET /api/v1/versions/:v/books stripped `testament` and `slug`, which had caused incomplete versions (TPT, MSG) to lump NT books under OT on versewell.pages.dev. Verified live homepage, static-data/index.json (all 12 versions), CEV (66 intros) & VOICE (44 intros), NIV heading_before & footnotes [{'marker','text'}], and BundledFootnoteListSerializer in Android tolerating both string and object footnote shapes. Verified all 5 audio translations have 260/260 NT chapters: KJV (7,957 verses), NIV (7,941 verses), GW (7,943 verses), VOICE (7,755 verse rows + 5 NT intros), TLB (7,557 combined-range verse rows)."
     },
     {
       "id": "i2",
       "title": "Audio generation pipeline (then START it and keep going)",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     },
     {
@@ -85,17 +85,19 @@
     }
   ],
   "completed": [
-    "i0"
+    "i0",
+    "i1"
   ],
   "next_steps": [
-    "Audit and verify every requirement of i1 (VerseWell data contract, intros/headings/footnotes separation, book testaments, live homepage & API verification, 5 audio translations verse/chapter counts)",
-    "Fix TLB and VOICE failures + Piper fallback + cron resume in i2 audio pipeline and relaunch"
+    "Complete i2: fix VOICE bracketed-verse wiping bug, add bounded-concurrency synthesis + ordered Edge-TTS fallback voice + offline Piper neural TTS fallback, fix self-chaining token (AUDIO_RESUME_TOKEN), verify failure test + pilot, cancel broken old audio run 41171542029, and launch clean resumable run for remaining TLB & VOICE chapters",
+    "Verify & complete i3 (VerseWell Worker Audio API Range streaming, manifest caching, /versions metadata)"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
     "Installed APK certificate SHA-256 verified as 80:DA:9D:1C:A9:4A:E7:94:2D:7D:9C:BA:C2:F6:B9:5D:85:68:60:43:C9:EA:B5:EE:04:78:BB:2A:B6:2C:03:F0. All new releases must match this fingerprint.",
     "Signing secrets copied securely via temporary workflow in forgebuild directly to forgehouse50-android and all temporary workflows and logs deleted immediately.",
-    "Starting next release at versionCode 33 (v32 was last in forgebuild)."
+    "Starting next release at versionCode 33 (v32 was last in forgebuild).",
+    "i1 NT verse counts verified across all 5 audio translations (260/260 chapters each): differences vs KJV's 7,957 verses in NIV (7,941), GW (7,943), VOICE (7,755), and TLB (7,557) are genuine critical-text footnotes or paraphrase combined-verse spans in the source SQLite Bibles, not missing chapters or importer loss."
   ],
   "known_issues": [],
   "audio_status": {
@@ -142,6 +144,34 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T05:16:31Z",
-  "last_session_note": "i0 verified done (CI run 41171667195 green, v34 held pre-release); auditing i1."
+  "last_updated": "2026-10-31T05:24:59Z",
+  "last_session_note": "i1 verified done (CI run 41172448904 green, live Worker TPT/MSG testament bug fixed); starting i2 audio pipeline fixes.",
+  "nt_scripture_counts": {
+    "KJV": {
+      "chapters": 260,
+      "verses": 7957,
+      "note": "Textus Receptus baseline"
+    },
+    "NIV": {
+      "chapters": 260,
+      "verses": 7941,
+      "note": "16 standard critical-text footnoted omissions vs KJV"
+    },
+    "GW": {
+      "chapters": 260,
+      "verses": 7943,
+      "note": "Standard critical-text omissions + 3 John 1:15"
+    },
+    "VOICE": {
+      "chapters": 260,
+      "verses": 7755,
+      "nt_intros": 5,
+      "note": "Poetic/dialogue verse pairs combined into anchored rows; 15 textual-bracket verses preserved for TTS"
+    },
+    "TLB": {
+      "chapters": 260,
+      "verses": 7557,
+      "note": "Thought-for-thought paraphrase combining multi-verse spans into anchored rows"
+    }
+  }
 }
