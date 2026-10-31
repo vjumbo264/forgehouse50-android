@@ -346,6 +346,11 @@ class ApiClient(private val session: SessionStore) {
     }
     suspend fun adminStats(): AdminStats = get("/admin/stats")
     suspend fun adminProgramme(): AdminProgramme = get("/admin/programme")
+    suspend fun adminSettings(): AdminSettingsResponse = get("/admin/settings")
+    suspend fun adminUpdateSettings(restDayCutoffTime: String): GenericOk =
+        put("/admin/settings", buildJsonObject {
+            put("rest_day_catchup_cutoff_time", restDayCutoffTime)
+        })
 
     suspend fun adminAssignment(day: Int, book: String, cs: Int, ce: Int): GenericOk =
         post("/admin/manage", buildJsonObject {

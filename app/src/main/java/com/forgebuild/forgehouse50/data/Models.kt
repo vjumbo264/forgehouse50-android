@@ -199,6 +199,44 @@ data class NextReadingDay(
 )
 
 @Serializable
+data class CatchUpDayItem(
+    val day_number: Int,
+    val date: String = "",
+    val assignment: DayAssignment? = null,
+)
+
+@Serializable
+data class CatchUpInfo(
+    val count: Int = 0,
+    val is_catch_up: Boolean = false,
+    val days: List<CatchUpDayItem> = emptyList(),
+    val window_open: Boolean = true,
+    val cutoff_message: String? = null,
+)
+
+@Serializable
+data class RestDayInfo(
+    val is_rest_day: Boolean = false,
+    val weekday: String = "",
+    val catchup_allowed: Boolean = true,
+    val cutoff_time: String = "19:00",
+    val cutoff_display: String = "7pm",
+    val timezone: String = "Africa/Lagos",
+    val message: String? = null,
+)
+
+@Serializable
+data class AdminSettingsPayload(
+    val rest_day_catchup_cutoff_time: String = "19:00",
+)
+
+@Serializable
+data class AdminSettingsResponse(
+    val ok: Boolean = true,
+    val settings: AdminSettingsPayload = AdminSettingsPayload(),
+)
+
+@Serializable
 data class TodayResponse(
     val date: String = "",
     val start_date: String? = null,
@@ -207,6 +245,8 @@ data class TodayResponse(
     val is_reading_day: Boolean = false,
     val today: TodayBlock? = null,
     val next_reading_day: NextReadingDay? = null,
+    val catch_up: CatchUpInfo? = null,
+    val rest_day: RestDayInfo? = null,
     val stats: UserStats = UserStats(),
     val programme: ProgrammeTotals = ProgrammeTotals(),
 )
