@@ -9,7 +9,7 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i8",
+  "current_phase": "i9",
   "queue": [
     {
       "id": "i0",
@@ -62,13 +62,13 @@
     {
       "id": "i8",
       "title": "Admin-first update channels + controlled rollout",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Backend (forgehouse50 commit b34b921, CI 41177530915 green) + Android (forgehouse50-android commit 117d885, CI 41177822319 green): Implemented controlled update channels ('hold' | 'admins_only' | 'everyone') on /api/app-release and /api/admin/releases with throttled GitHub sync defaulting all new builds to 'hold', confirmation guard ('RELEASE_TO_EVERYONE') on church-wide release, and server-side admin_audit trail (actor + timestamp). Upgraded Android UpdateChecker/UpdateLogic/UpdateManager/AppNavHost to pass Authorization Bearer token, scope cached release JSON by role, show filtered changelog without any admin mention, allow 'Not now' dismiss, preserve downloaded APK across permission grant, and added AdminReleasesTab ('Release to admins', 'Release to everyone' with confirmation dialog, 'Pull back to hold'). Verified with SQLite D1 role/state matrix suite (test/update_rollout_test.mjs), Android JUnit suite (UpdateLogicTest.kt), and live HTTP endpoint checks (anon/member received false while admin received v36 on admins_only, then pulled back to hold)."
     },
     {
       "id": "i9",
       "title": "Community chat with direct messages from the admin",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     },
     {
@@ -92,11 +92,12 @@
     "i4",
     "i5",
     "i6",
-    "i7"
+    "i7",
+    "i8"
   ],
   "next_steps": [
-    "Complete & verify i8 (Admin-first update channels + controlled rollout across FH50 backend, Android updater, and Admin dashboard)",
-    "Complete & verify i9 (Community chat with group chat, admin-to-member private threads, moderation, and polling)"
+    "Complete & verify i9 (Community chat with group chat, admin-to-member private threads, moderation, and efficient polling)",
+    "Complete & verify i10 (Audio in the Android app: manual download, sha256 verification, Media3 offline playback, zero reading-timer credit)"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
@@ -105,7 +106,8 @@
     "Starting next release at versionCode 33 (v32 was last in forgebuild).",
     "i1 NT verse counts verified across all 5 audio translations (260/260 chapters each): differences vs KJV's 7,957 verses in NIV (7,941), GW (7,943), VOICE (7,755), and TLB (7,557) are genuine critical-text footnotes or paraphrase combined-verse spans in the source SQLite Bibles, not missing chapters or importer loss.",
     "FOR PASTOR CONFIRMATION (i6): Rest-day (Tuesday/Friday) catch-up reading is open until 19:00 Africa/Lagos (7pm WAT, before Bible Study) and configurable by admin in Programme settings; normal/read-ahead reading remains locked on rest days.",
-    "i7 Streak audit outcome: Confirmed AND fixed a genuine server-side bug (no app update needed) where checking highestCompleted < elapsedDays(today) reset every faithful daily reader's current streak to 0 every reading morning until they completed today's reading, and catch-up days could inflate longest streak. Fixed server-side in forgehouse50 (commit 04d9fb4): streak stays alive until a scheduled reading day strictly passes (r.date < today) uncompleted; catch-up days never add to current or longest; Tue/Fri rest days neither break nor add; screenshot user (Day 13, 7/50 done, 6 outstanding) confirmed genuinely Streak 0."
+    "i7 Streak audit outcome: Confirmed AND fixed a genuine server-side bug (no app update needed) where checking highestCompleted < elapsedDays(today) reset every faithful daily reader's current streak to 0 every reading morning until they completed today's reading, and catch-up days could inflate longest streak. Fixed server-side in forgehouse50 (commit 04d9fb4): streak stays alive until a scheduled reading day strictly passes (r.date < today) uncompleted; catch-up days never add to current or longest; Tue/Fri rest days neither break nor add; screenshot user (Day 13, 7/50 done, 6 outstanding) confirmed genuinely Streak 0.",
+    "i8 Controlled rollout policy: All newly built GitHub releases sync into app_releases with rollout_state='hold' by default (never 'everyone'); admins can test via 'Release to admins' with 'Not now' dismiss, pull back to hold at any time, or promote to everyone after confirmation."
   ],
   "known_issues": [],
   "audio_status": {
@@ -126,7 +128,7 @@
       "of": 260
     },
     "voice": {
-      "chapters_done": 223,
+      "chapters_done": 260,
       "of": 260
     }
   },
@@ -152,8 +154,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T06:33:18Z",
-  "last_session_note": "i7 Streak verification & server-side fix deployed and verified live; starting i8 Admin-first update channels + controlled rollout.",
+  "last_updated": "2026-10-31T06:50:00Z",
+  "last_session_note": "i8 Controlled update channels completed & verified live + green Android signed build; starting i9 Community chat.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,
