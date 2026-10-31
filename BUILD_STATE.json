@@ -1,6 +1,6 @@
 {
   "project": "ForgeHouse 50 (Oct 30 contract)",
-  "contract": "fixes_oct30_v1",
+  "contract": "fixes_oct31_v1",
   "repo": "vjumbo264/forgehouse50-android",
   "related_repos": [
     "vjumbo264/forgehouse50",
@@ -8,8 +8,8 @@
     "vjumbo264/forgebuild"
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
-  "status": "complete",
-  "current_phase": "complete",
+  "status": "in_progress",
+  "current_phase": "functional_fixes_and_bridge",
   "queue": [
     {
       "id": "i0",
@@ -82,6 +82,72 @@
       "title": "Audio completeness audit + handoff",
       "status": "done",
       "notes": "Audited all 5 VerseWell audio releases (audio-kjv, audio-niv, audio-tlb, audio-gw, audio-voice): each has 260/260 .m4a chapters + manifest.json (261 assets each, 1,300 chapters total, 0 missing, 0 invalid hashes/sizes). Executed live listen-free spot-checks across 60 random chapters (12 per translation) plus HTTP Range 206 checks against https://versewell-api.vjumbo264.workers.dev: 60/60 passed exact byte length, SHA-256 hash, ffprobe container duration (within <2s of manifest, 161-185 avg WPM), ffmpeg volumedetect non-silence (-17.6 to -16.9 dB avg mean volume), and silencedetect (0 interior silences >=10s). Verified final handoff checklist: all queue items i0-i11 done; release_hold=true (live /api/app-release returns update_available=false for members/anon; v39 held as pre-release); publish-bridge-release workflow runs = 0; vjumbo264/forgebuild untouched at forgehouse50-v32; docs/RELEASE_RUNBOOK.md, docs/BUILD_PROMPT.md, docs/AUDIO.md, and docs/DATA_CONTRACT.md present; zero secrets in repo."
+    },
+    {
+      "id": "j0",
+      "title": "Make sure the APK is easy to find (Victor could not see v39)",
+      "status": "in_progress",
+      "notes": ""
+    },
+    {
+      "id": "j1",
+      "title": "Audio download control must appear fast",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "j2",
+      "title": "Mark complete stays locked until scrolled to the end, even after 5 minutes",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "j3",
+      "title": "Intros: verse-level intros must be shown as intros, not as part of the verse",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "j3b",
+      "title": "Audio audit for intros (follow-up of j3)",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "j4",
+      "title": "Make users persuaded: benefit-led update messaging",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "j5",
+      "title": "Chat: tapping a reply jumps to original message and highlights it",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "j6",
+      "title": "Direct messages: fix glitchy loading",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "j7",
+      "title": "Floating audio control with progress ring",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "j8",
+      "title": "First release to everyone also sends update to ForgeBuild (automated bridge, dry-run only)",
+      "status": "pending",
+      "notes": ""
+    },
+    {
+      "id": "j9",
+      "title": "Website download button must download latest released APK",
+      "status": "pending",
+      "notes": ""
     }
   ],
   "completed": [
@@ -173,8 +239,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T08:27:26Z",
-  "last_session_note": "All contract items i0-i11 completed and verified green. Latest signed APK v39 (versionCode 39) is held; 1,300/1,300 NT audio chapters live and 60/60 spot-checked.",
+  "last_updated": "2026-10-31T13:33:01.455Z",
+  "last_session_note": "Starting fixes_oct31_v1 contract: j0-j9 queue initialized.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,
