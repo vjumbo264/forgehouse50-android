@@ -800,6 +800,9 @@ data class Announcement(
 @Serializable
 data class AnnouncementLatestResponse(
     val ok: Boolean = true,
+    val total_active: Int = 0,
+    val total_archived: Int = 0,
+    val total_all: Int = 0,
     val announcement: Announcement? = null,
 )
 

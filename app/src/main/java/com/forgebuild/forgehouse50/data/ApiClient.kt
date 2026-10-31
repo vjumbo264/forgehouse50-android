@@ -239,17 +239,42 @@ class ApiClient(private val session: SessionStore) {
         }
 
     // ── Announcements ──────────────────────────────────────────────────────
-    suspend fun announcementLatest(): AnnouncementLatestResponse = get("/announcements/latest")
-    suspend fun announcements(cursor: String? = null): AnnouncementsResponse =
+    suspend fun announcementLatest(): AnnouncementLatestResponse =
+        get("/announcements/latest") {
+            header(HttpHeaders.CacheControl, "no-cache")
+            parameter("_t", System.currentTimeMillis())
+        }
+
+    suspend fun announcements(cursor: String? = null, status: String = "all"): AnnouncementsResponse =
         get("/announcements") {
+            header(HttpHeaders.CacheControl, "no-cache")
+            parameter("_t", System.currentTimeMillis())
+            parameter("status", status)
             if (!cursor.isNullOrBlank()) parameter("cursor", cursor)
         }
-    suspend fun adminAnnouncements(): AnnouncementsResponse = get("/admin/announcements")
-    suspend fun adminCreateAnnouncement(title: String, body: String): GenericOk =
-        post("/admin/announcements", buildJsonObject { put("title", title); put("body", body) })
+
+    suspend fun adminAnnouncements(): AnnouncementsResponse =
+        get("/admin/announcements") {
+            header(HttpHeaders.CacheControl, "no-cache")
+            parameter("_t", System.currentTimeMillis())
+        }
+
+    suspend fun adminCreateAnnouncement(title: String, body: String, status: String = "active"): GenericOk =
+        post("/admin/announcements", buildJsonObject {
+            put("title", title)
+            put("body", body)
+            put("status", status)
+        })
+
     suspend fun adminUpdateAnnouncement(id: String, title: String, body: String, status: String = "active"): GenericOk =
-        put("/admin/announcements/", buildJsonObject { put("title", title); put("body", body); put("status", status) })
-    suspend fun adminDeleteAnnouncement(id: String): GenericOk = del("/admin/announcements/")
+        put("/admin/announcements/$id", buildJsonObject {
+            put("title", title)
+            put("body", body)
+            put("status", status)
+        })
+
+    suspend fun adminDeleteAnnouncement(id: String): GenericOk =
+        del("/admin/announcements/$id")
 
     // ── Admin Inbox ────────────────────────────────────────────────────────
     suspend fun adminInbox(
@@ -265,10 +290,10 @@ class ApiClient(private val session: SessionStore) {
         if (!type.isNullOrBlank()) params.add("type=" + java.net.URLEncoder.encode(type, "UTF-8"))
         if (!userId.isNullOrBlank()) params.add("userId=" + java.net.URLEncoder.encode(userId, "UTF-8"))
         if (!q.isNullOrBlank()) params.add("q=" + java.net.URLEncoder.encode(q, "UTF-8"))
-        params.add("page=")
-        params.add("limit=")
+        params.add("page=$page")
+        params.add("limit=$limit")
         val queryStr = "?" + params.joinToString("&")
-        return get("/admin/inbox")
+        return get("/admin/inbox$queryStr")
     }
 
     suspend fun adminInboxReply(inboxId: String, text: String): GenericOk =

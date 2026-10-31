@@ -72,7 +72,15 @@ import com.forgebuild.forgehouse50.ui.ExpressiveLinearProgress
 import com.forgebuild.forgehouse50.ui.JoinWhatsAppGroupButton
 import com.forgebuild.forgehouse50.ui.SupportPlayStoreCard
 import com.forgebuild.forgehouse50.ui.SupportWhatsAppButton
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.forgebuild.forgehouse50.ui.announcements.PastAnnouncementsLinkCard
+import com.forgebuild.forgehouse50.ui.announcements.TodayAnnouncementCard
 import com.forgebuild.forgehouse50.ui.announcements.formatAnnouncementDate
+import kotlinx.coroutines.launch
 import com.forgebuild.forgehouse50.update.UpdateChecker
 import com.forgebuild.forgehouse50.update.UpdateManager
 import com.forgebuild.forgehouse50.update.UpdateUiState
@@ -150,8 +158,30 @@ fun HomeScreen(
             else null
         )
     }
+    val scope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
     var latestCommunityPost by remember { mutableStateOf<CommunityPost?>(null) }
-    var latestAnnouncement by remember { mutableStateOf<Announcement?>(null) }
+    var latestAnnouncementResp by remember { mutableStateOf(AppCache.getLatestAnnouncement(context)) }
+    val latestAnnouncement = latestAnnouncementResp?.announcement
+    val totalAnnouncementsCount = latestAnnouncementResp?.total_all ?: 0
+
+    suspend fun refreshLatestAnnouncement() {
+        runCatching { repo.api.announcementLatest() }.onSuccess { fresh ->
+            latestAnnouncementResp = fresh
+            AppCache.saveLatestAnnouncement(context, fresh)
+        }
+    }
+
+    // Re-fetch latest announcement immediately on every ON_RESUME (zero stale cache delay)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch { refreshLatestAnnouncement() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val block = today?.today
     var quizDone by remember(block?.day_number) {
@@ -160,8 +190,14 @@ fun HomeScreen(
     }
     var refreshing by remember { mutableStateOf(false) }
 
-    // Background refresh & reconcile
+    // Background refresh & reconcile — announcement launches immediately in parallel!
     LaunchedEffect(reloadTick) {
+        launch { refreshLatestAnnouncement() }
+        launch {
+            runCatching { repo.api.communityLatest() }.onSuccess {
+                latestCommunityPost = it.post
+            }
+        }
         refreshing = (today == null)
         runCatching { repo.api.today() }.onSuccess { fresh ->
             today = fresh
@@ -191,13 +227,6 @@ fun HomeScreen(
             }
         }
         refreshing = false
-
-        runCatching { repo.api.communityLatest() }.onSuccess {
-            latestCommunityPost = it.post
-        }
-        runCatching { repo.api.announcementLatest() }.onSuccess {
-            latestAnnouncement = it.announcement
-        }
 
         // Update home widget with latest snapshot
         WidgetRefreshWorker.refreshWidgetState(context, repo)
@@ -391,71 +420,40 @@ fun HomeScreen(
             }
         }
 
-        // Priority 2: Announcement card (Item 5 & Item 9)
+        // Priority 2: Prominent, persistent, non-truncated Announcement card (i4 — shown to all roles including admins)
         item(key = "announcement_card") {
             AnimatedVisibility(
-                visible = latestAnnouncement != null,
+                visible = latestAnnouncement != null || totalAnnouncementsCount > 0,
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut(),
                 modifier = Modifier.animateItem()
             ) {
-                if (latestAnnouncement != null) {
-                    val ann = latestAnnouncement!!
-                    val seenKey = "seen_announcement_" + ann.id
-                    var isUnread by remember(ann.id) {
-                        mutableStateOf(!context.getSharedPreferences("fh50_announcements", Context.MODE_PRIVATE).getBoolean(seenKey, false))
+                val ann = latestAnnouncement
+                if (ann != null) {
+                    val seenKey = "seen_announcement_" + ann.id + "_" + ann.updated_at
+                    var isUnread by remember(ann.id, ann.updated_at) {
+                        mutableStateOf(
+                            !context.getSharedPreferences("fh50_announcements", Context.MODE_PRIVATE)
+                                .getBoolean(seenKey, false)
+                        )
                     }
-                    Card(
-                        onClick = {
-                            context.getSharedPreferences("fh50_announcements", Context.MODE_PRIVATE).edit().putBoolean(seenKey, true).apply()
+                    TodayAnnouncementCard(
+                        ann = ann,
+                        isUnread = isUnread,
+                        totalCount = totalAnnouncementsCount,
+                        showArchiveAction = true,
+                        onMarkSeen = {
+                            context.getSharedPreferences("fh50_announcements", Context.MODE_PRIVATE)
+                                .edit().putBoolean(seenKey, true).apply()
                             isUnread = false
-                            onOpenAnnouncements()
                         },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                        modifier = Modifier.fillMaxWidth().animateContentSize()
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                Icon(Icons.Filled.Campaign, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    "Announcement",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                if (isUnread) {
-                                    Spacer(Modifier.width(6.dp))
-                                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(6.dp)) {}
-                                }
-                                Spacer(Modifier.weight(1f))
-                                Text(
-                                    formatAnnouncementDate(ann.created_at),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                ann.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                ann.body,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 2,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                        onOpenArchive = onOpenAnnouncements,
+                    )
+                } else if (totalAnnouncementsCount > 0) {
+                    PastAnnouncementsLinkCard(
+                        totalCount = totalAnnouncementsCount,
+                        onOpenArchive = onOpenAnnouncements,
+                    )
                 }
             }
         }

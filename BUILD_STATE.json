@@ -9,7 +9,7 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i4",
+  "current_phase": "i5",
   "queue": [
     {
       "id": "i0",
@@ -38,13 +38,13 @@
     {
       "id": "i4",
       "title": "Announcements: large, persistent, reliably delivered",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Backend (forgehouse50 commit c395d00, CI 41173815665 green): /api/announcements/latest & /api/announcements serve strict no-store headers, raise limits to 120/4000 chars, retain retired (status='archived') announcements in archive while removing from Today active card, support both Cookie and Bearer 64-hex auth, and provide in-memory schedule fallback for dedicated admin_credentials accounts on /api/today. Fixed broken URL interpolations in Android ApiClient.kt (/admin/announcements/$id, /admin/inbox$queryStr). Upgraded HomeScreen + AnnouncementsScreen + AdminAnnouncementsTab: synchronous AppCache first-frame render, immediate parallel fetch on open + ON_RESUME, prominent persistent TodayAnnouncementCard showing full body without 2-line truncation for all roles (members & admins), Past Announcements archive link, Retire/Republish controls, and verbatim Member View Preview. Verified with test/announcements_test.mjs + AnnouncementsLogicTest.kt + live endpoint check."
     },
     {
       "id": "i5",
       "title": "Reader timer: never show raw exception text",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     },
     {
@@ -88,11 +88,12 @@
     "i0",
     "i1",
     "i2",
-    "i3"
+    "i3",
+    "i4"
   ],
   "next_steps": [
-    "Complete & verify i4 (Announcements: backend + Android Today screen large non-truncated persistent card for all roles including admins/pastor, archive access, instant no-stale-cache refresh, admin post/edit/retire + member preview)",
-    "Complete i5 (Reader timer: never show raw CancellationException text)"
+    "Complete & verify i5 (Reader timer: never show raw CancellationException or exception text in pause banner)",
+    "Complete & verify i6 (Rest days: catch-up allowed until 7pm Africa/Lagos, server + Android + admin setting)"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
@@ -146,8 +147,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T05:32:31Z",
-  "last_session_note": "i3 verified done with live HTTP 206 Range, ETag 304, HEAD, and 404 checks; starting i4 Announcements.",
+  "last_updated": "2026-10-31T05:49:10Z",
+  "last_session_note": "i4 Announcements completed and verified on backend + Android; starting i5 Reader timer exception fix.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,

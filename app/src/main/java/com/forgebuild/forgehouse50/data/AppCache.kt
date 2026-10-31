@@ -117,6 +117,27 @@ object AppCache {
         prefs(context).edit().putString("admin_programme", json).apply()
     }
 
+    fun getLatestAnnouncement(context: Context): AnnouncementLatestResponse? =
+        prefs(context).getString("latest_announcement_v2", null)?.let {
+            runCatching { AppJson.decodeFromString<AnnouncementLatestResponse>(it) }.getOrNull()
+        }
+
+    fun saveLatestAnnouncement(context: Context, data: AnnouncementLatestResponse) {
+        val json = runCatching { AppJson.encodeToString(AnnouncementLatestResponse.serializer(), data) }.getOrNull() ?: return
+        prefs(context).edit().putString("latest_announcement_v2", json).apply()
+    }
+
+    fun getAnnouncements(context: Context): List<Announcement> =
+        prefs(context).getString("announcements_archive_v2", null)?.let {
+            runCatching { AppJson.decodeFromString<AnnouncementsResponse>(it).announcements }.getOrNull()
+        } ?: emptyList()
+
+    fun saveAnnouncements(context: Context, items: List<Announcement>) {
+        val resp = AnnouncementsResponse(ok = true, announcements = items)
+        val json = runCatching { AppJson.encodeToString(AnnouncementsResponse.serializer(), resp) }.getOrNull() ?: return
+        prefs(context).edit().putString("announcements_archive_v2", json).apply()
+    }
+
     fun clear(context: Context) {
         prefs(context).edit().clear().apply()
     }
