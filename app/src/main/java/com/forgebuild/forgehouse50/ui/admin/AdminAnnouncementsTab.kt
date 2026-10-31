@@ -264,7 +264,7 @@ fun AdminAnnouncementsTab(
             onDismissRequest = { deletingItem = null },
             title = { Text("Delete permanently?") },
             text = {
-                Text("This permanently deletes "${target.title}" from both Today and the Past Announcements archive. To remove it from Today while keeping it in the archive, use Retire instead.")
+                Text("This permanently deletes \"${target.title}\" from both Today and the Past Announcements archive. To remove it from Today while keeping it in the archive, use Retire instead.")
             },
             confirmButton = {
                 Button(
