@@ -9,7 +9,7 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i10",
+  "current_phase": "i11",
   "queue": [
     {
       "id": "i0",
@@ -74,13 +74,13 @@
     {
       "id": "i10",
       "title": "Audio in the app (depends on i3; test with whatever is ready)",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Android (forgehouse50-android commits 97a665f, df0cd93, ce9ced5; CI run 41184010806 green, signed pre-release v39 held): Added Media3 1.4.1 offline local-file playback (AudioPlayerController: play/pause, seek slider, 0.75x-1.5x speed, REPEAT_MODE_OFF stopping at chapter end with zero auto-advance, foreground-only default behind AudioConfig.ALLOW_BACKGROUND_PLAYBACK = false), dedicated Room AudioDatabase (preserving existing Scripture text translations), and manual per-translation & per-chapter downloader (AudioDownloadEngine + AudioDownloadManager: pre-download data-size estimate + Wi-Fi recommendation dialog, live byte/chapter progress, pause/resume/cancel, HTTP Range .part resume, cryptographic SHA-256 skip-if-valid and tamper rejection, on-device storage display, and audio deletion). Audio controls appear exclusively for the 5 audio translations (KJV, NIV, TLB, GW, VOICE) and chapters present in the VerseWell manifest. Confirmed in code and JUnit suite (AudioFeatureTest.kt) that audio never auto-scrolls, bottom-dock player controls never trigger ReadingTimer.onInteraction(), and /api/read/time syncs strictly active ReadingTimer deltas (0s during untouched playback)."
     },
     {
       "id": "i11",
       "title": "Audio completeness audit + handoff",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     }
   ],
@@ -94,11 +94,11 @@
     "i6",
     "i7",
     "i8",
-    "i9"
+    "i9",
+    "i10"
   ],
   "next_steps": [
-    "Complete & verify i10 (Audio in the Android app: manual per-translation & per-chapter download, sha256 verification, Media3 offline playback 0.75x-1.5x, no auto-advance/auto-scroll, zero reading-timer credit, foreground-only default behind config flag)",
-    "Complete & verify i11 (Audio completeness audit across all 5 translations 260/260 + 50 live spot-checks + final handoff checklist)"
+    "Complete & verify i11 (Audio completeness audit across all 5 translations 260/260 + >=10 random live chapter spot-checks per translation with ffprobe/volumedetect/sha256 + final handoff checklist)"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
@@ -109,7 +109,8 @@
     "FOR PASTOR CONFIRMATION (i6): Rest-day (Tuesday/Friday) catch-up reading is open until 19:00 Africa/Lagos (7pm WAT, before Bible Study) and configurable by admin in Programme settings; normal/read-ahead reading remains locked on rest days.",
     "i7 Streak audit outcome: Confirmed AND fixed a genuine server-side bug (no app update needed) where checking highestCompleted < elapsedDays(today) reset every faithful daily reader's current streak to 0 every reading morning until they completed today's reading, and catch-up days could inflate longest streak. Fixed server-side in forgehouse50 (commit 04d9fb4): streak stays alive until a scheduled reading day strictly passes (r.date < today) uncompleted; catch-up days never add to current or longest; Tue/Fri rest days neither break nor add; screenshot user (Day 13, 7/50 done, 6 outstanding) confirmed genuinely Streak 0.",
     "i8 Controlled rollout policy: All newly built GitHub releases sync into app_releases with rollout_state='hold' by default (never 'everyone'); admins can test via 'Release to admins' with 'Not now' dismiss, pull back to hold at any time, or promote to everyone after confirmation.",
-    "FOR PASTOR CONFIRMATION (i9): Private chat is strictly 1:1 between leadership (admins) and an individual member (no member-to-member private messaging). Admins can start a private thread with any verified member; members can reply in their own thread once an admin has initiated it."
+    "FOR PASTOR CONFIRMATION (i9): Private chat is strictly 1:1 between leadership (admins) and an individual member (no member-to-member private messaging). Admins can start a private thread with any verified member; members can reply in their own thread once an admin has initiated it.",
+    "FOR PASTOR CONFIRMATION (i10): Audio playback defaults to foreground-only (AudioConfig.ALLOW_BACKGROUND_PLAYBACK = false in AudioLogic.kt), pausing immediately when the app goes to the background or the screen locks. Audio never auto-advances chapters, never auto-scrolls verses, and never counts towards the 5-minute reading timer or day completion."
   ],
   "known_issues": [],
   "audio_status": {
@@ -156,8 +157,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T07:17:00Z",
-  "last_session_note": "i9 Community Chat completed & verified green (backend 5536a8f, Android 10ea6ed CI 41179640073); starting i10 Audio in the Android app.",
+  "last_updated": "2026-10-31T08:24:42Z",
+  "last_session_note": "i10 Audio in the Android app completed & verified green (CI 41184010806, pre-release v39 held); running i11 full audio & handoff audit.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,
