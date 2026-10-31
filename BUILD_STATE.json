@@ -9,7 +9,7 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i2",
+  "current_phase": "i3",
   "queue": [
     {
       "id": "i0",
@@ -26,13 +26,13 @@
     {
       "id": "i2",
       "title": "Audio generation pipeline (then START it and keep going)",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Upgraded audio pipeline (scripts/generate_audio.py, .github/workflows/generate-audio.yml, docs/AUDIO.md): fixed VOICE bracketed-verse wiping bug, added bounded concurrency (Semaphore=5), ordered Edge neural fallback + local CPU Piper neural TTS fallback, strict ffprobe WPM + volumedetect + silencedetect verification, release-asset manifest reconciliation, AUDIO_RESUME_TOKEN self-chaining + 2h cron. Deliberate failure test verified RED with nothing published (run 41172762485). 5-voice pilot including VOICE Matt 17 verified GREEN (run 41172766726). Full resumable 5-translation production run launched (run 41172882185)."
     },
     {
       "id": "i3",
       "title": "Audio API in the VerseWell Worker",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     },
     {
@@ -86,11 +86,12 @@
   ],
   "completed": [
     "i0",
-    "i1"
+    "i1",
+    "i2"
   ],
   "next_steps": [
-    "Complete i2: fix VOICE bracketed-verse wiping bug, add bounded-concurrency synthesis + ordered Edge-TTS fallback voice + offline Piper neural TTS fallback, fix self-chaining token (AUDIO_RESUME_TOKEN), verify failure test + pilot, cancel broken old audio run 41171542029, and launch clean resumable run for remaining TLB & VOICE chapters",
-    "Verify & complete i3 (VerseWell Worker Audio API Range streaming, manifest caching, /versions metadata)"
+    "Upgrade and verify i3 (VerseWell Worker Audio API: Cache API sha-keyed caching, book OSIS/name/slug resolution, Range 206 streaming, 404 on missing chapters, /versions audio metadata)",
+    "Proceed to i4 (Announcements backend + Android Today screen + Admin controls)"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
@@ -110,7 +111,7 @@
       "of": 260
     },
     "tlb": {
-      "chapters_done": 9,
+      "chapters_done": 29,
       "of": 260
     },
     "gw": {
@@ -144,8 +145,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T05:24:59Z",
-  "last_session_note": "i1 verified done (CI run 41172448904 green, live Worker TPT/MSG testament bug fixed); starting i2 audio pipeline fixes.",
+  "last_updated": "2026-10-31T05:31:14Z",
+  "last_session_note": "i2 verified done and full audio production run 41172882185 launched; completing i3 Audio Worker API.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,
