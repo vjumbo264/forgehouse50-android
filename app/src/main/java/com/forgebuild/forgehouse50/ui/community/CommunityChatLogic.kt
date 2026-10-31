@@ -90,6 +90,6 @@ object CommunityChatLogic {
 
     fun sanitizeChatError(error: Throwable, fallback: String = "Could not complete chat action. Please try again."): String {
         if (error is CancellationException) throw error
-        return ReaderErrorSanitizer.sanitize(error, fallback)
+        return ReaderErrorSanitizer.toUserMessage(error, fallback) ?: fallback
     }
 }
