@@ -59,6 +59,7 @@ data class NavItem(
     val label: String,
     val selectedIcon: ImageVector,
     val icon: ImageVector,
+    val badgeCount: Int = 0,
 )
 
 /**
@@ -265,6 +266,15 @@ private fun DynamicFloatingNavBarContent(
                                         ),
                                         modifier = Modifier.size(24.dp),
                                     )
+                                    if (item.badgeCount > 0) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .size(8.dp),
+                                        ) {}
+                                    }
                                 }
 
                                 if (isSelected) {

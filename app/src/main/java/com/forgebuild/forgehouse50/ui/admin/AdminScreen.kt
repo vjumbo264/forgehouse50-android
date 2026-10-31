@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
@@ -104,7 +105,7 @@ enum class ParticipantSortOption(val label: String) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminScreen(repo: Repository, onBack: () -> Unit) {
+fun AdminScreen(repo: Repository, onBack: () -> Unit, onOpenCommunity: () -> Unit = {}) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -174,6 +175,11 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    if (!selectionMode) {
+                        IconButton(onClick = onOpenCommunity) {
+                            Icon(Icons.Filled.Chat, contentDescription = "Community chat")
+                        }
+                    }
                     if (tab == 1 && !selectionMode) {
                         TextButton(onClick = { selectionMode = true }) {
                             Text("Select")

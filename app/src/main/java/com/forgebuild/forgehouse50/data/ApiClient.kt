@@ -56,7 +56,10 @@ class ApiClient(private val session: SessionStore) {
     }
 
     private fun HttpRequestBuilder.auth() {
-        session.sessionToken?.let { header(HttpHeaders.Cookie, "fh50_session=$it") }
+        session.sessionToken?.let {
+            header(HttpHeaders.Cookie, "fh50_session=$it")
+            header(HttpHeaders.Authorization, "Bearer $it")
+        }
         header(HttpHeaders.Accept, "application/json")
     }
 
@@ -111,7 +114,7 @@ class ApiClient(private val session: SessionStore) {
         val friendlyMessage = when (res.status.value) {
             400 -> msg ?: "Invalid request details. Please check your input."
             401 -> "Session expired. Please sign in again."
-            403 -> "You do not have permission to perform this action."
+            403 -> msg ?: "You do not have permission to perform this action."
             404 -> msg ?: "The requested item could not be found."
             405 -> "Could not save your note. Please try again."
             429 -> "Rate limit reached. Please wait a moment and try again."
@@ -459,6 +462,60 @@ class ApiClient(private val session: SessionStore) {
         if (confirm != null) put("confirm", confirm)
         if (mandatory != null) put("mandatory", mandatory)
     })
+
+
+    // ── Item i9: Community Chat & Admin Direct Messages ─────────────────────
+
+    suspend fun chatGroupMessages(
+        since: String? = null,
+        before: String? = null,
+        limit: Int = 50,
+    ): ChatMessagesResponse = get("/community/chat/messages") {
+        parameter("limit", limit)
+        if (!since.isNullOrBlank()) parameter("since", since)
+        if (!before.isNullOrBlank()) parameter("before", before)
+    }
+
+    suspend fun sendGroupMessage(
+        text: String,
+        replyToId: String? = null,
+    ): ChatSendResponse = post("/community/chat/messages", buildJsonObject {
+        put("text", text)
+        if (!replyToId.isNullOrBlank()) put("reply_to_id", replyToId)
+    })
+
+    suspend fun chatDirectMessages(
+        threadId: String? = null,
+        since: String? = null,
+        before: String? = null,
+        limit: Int = 50,
+    ): ChatMessagesResponse = get("/community/chat/direct") {
+        parameter("limit", limit)
+        if (!threadId.isNullOrBlank()) parameter("thread_id", threadId)
+        if (!since.isNullOrBlank()) parameter("since", since)
+        if (!before.isNullOrBlank()) parameter("before", before)
+    }
+
+    suspend fun sendDirectMessage(
+        text: String,
+        targetUserId: String? = null,
+        replyToId: String? = null,
+    ): ChatSendResponse = post("/community/chat/direct", buildJsonObject {
+        put("text", text)
+        if (!targetUserId.isNullOrBlank()) put("target_user_id", targetUserId)
+        if (!replyToId.isNullOrBlank()) put("reply_to_id", replyToId)
+    })
+
+    suspend fun chatThreads(): ChatThreadsResponse = get("/community/chat/threads")
+
+    suspend fun adminDeleteChatMessage(messageId: String): GenericOk =
+        del("/admin/community/chat/messages/$messageId")
+
+    suspend fun adminSetChatMute(userId: String, mute: Boolean): ChatMuteResponse =
+        post("/admin/community/chat/mute", buildJsonObject {
+            put("user_id", userId)
+            put("action", if (mute) "mute" else "unmute")
+        })
 
     companion object {
         const val BASE = "https://forgehouse50.pages.dev/api"

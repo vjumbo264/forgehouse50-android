@@ -371,7 +371,7 @@ fun AppNavHost(
                     onBack = { nav.popBackStack() },
                 )
             }
-            composable(Routes.ADMIN) { AdminScreen(repo, onBack = { nav.popBackStack() }) }
+            composable(Routes.ADMIN) { AdminScreen(repo, onBack = { nav.popBackStack() }, onOpenCommunity = { nav.navigate(Routes.COMMUNITY) }) }
             composable(Routes.COMMUNITY) { CommunityScreen(repo = repo, onBack = { nav.popBackStack() }) }
             composable(Routes.ANNOUNCEMENTS) { AnnouncementsScreen(repo = repo, onBack = { nav.popBackStack() }) }
         }

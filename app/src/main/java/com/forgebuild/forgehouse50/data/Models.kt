@@ -247,6 +247,7 @@ data class TodayResponse(
     val next_reading_day: NextReadingDay? = null,
     val catch_up: CatchUpInfo? = null,
     val rest_day: RestDayInfo? = null,
+    val chat_unread: ChatUnreadSummary = ChatUnreadSummary(),
     val stats: UserStats = UserStats(),
     val programme: ProgrammeTotals = ProgrammeTotals(),
 )
@@ -898,4 +899,97 @@ data class AdminReleaseUpdateResponse(
     val mandatory: Boolean = false,
     val updated_by: String? = null,
     val updated_at: String = "",
+)
+
+
+// ── Item i9: Community Chat & Admin Direct Messages ─────────────────────
+
+@Serializable
+data class ChatUnreadSummary(
+    val group_unread: Int = 0,
+    val direct_unread: Int = 0,
+    val total_unread: Int = 0,
+)
+
+@Serializable
+data class ChatReplyPreviewDto(
+    val id: String = "",
+    val author_name: String = "",
+    val author_role: String = "member",
+    val text: String = "",
+)
+
+@Serializable
+data class ChatMessageDto(
+    val id: String = "",
+    val channel_type: String = "group",
+    val thread_id: String? = null,
+    val sender_id: String = "",
+    val is_me: Boolean = false,
+    val author_name: String = "",
+    val author_role: String = "member",
+    val avatar_id: String? = null,
+    val picture_version: Int? = null,
+    val text: String = "",
+    val reply_to: ChatReplyPreviewDto? = null,
+    val created_at: String = "",
+)
+
+@Serializable
+data class ChatMessagesResponse(
+    val ok: Boolean = true,
+    val thread_id: String? = null,
+    val thread_title: String? = null,
+    val thread_started_by_admin: Boolean = false,
+    val is_muted: Boolean = false,
+    val messages: List<ChatMessageDto> = emptyList(),
+    val deleted_ids: List<String> = emptyList(),
+    val has_older: Boolean = false,
+    val oldest_timestamp: String? = null,
+    val last_timestamp: String? = null,
+)
+
+@Serializable
+data class ChatSendResponse(
+    val ok: Boolean = true,
+    val message: ChatMessageDto? = null,
+)
+
+@Serializable
+data class ChatThreadDto(
+    val thread_id: String = "",
+    val user_id: String = "",
+    val title: String = "",
+    val subtitle: String = "",
+    val avatar_id: String? = null,
+    val picture_version: Int? = null,
+    val is_muted: Boolean = false,
+    val unread_count: Int = 0,
+    val latest_message: String? = null,
+    val latest_timestamp: String? = null,
+)
+
+@Serializable
+data class ChatDirectoryMemberDto(
+    val user_id: String = "",
+    val title: String = "",
+    val avatar_id: String? = null,
+    val picture_version: Int? = null,
+    val is_muted: Boolean = false,
+)
+
+@Serializable
+data class ChatThreadsResponse(
+    val ok: Boolean = true,
+    val is_muted: Boolean = false,
+    val unread: ChatUnreadSummary = ChatUnreadSummary(),
+    val threads: List<ChatThreadDto> = emptyList(),
+    val directory: List<ChatDirectoryMemberDto> = emptyList(),
+)
+
+@Serializable
+data class ChatMuteResponse(
+    val ok: Boolean = true,
+    val user_id: String = "",
+    val is_muted: Boolean = false,
 )

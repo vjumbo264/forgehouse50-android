@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.data.Announcement
 import com.forgebuild.forgehouse50.data.AppCache
 import com.forgebuild.forgehouse50.data.CommunityPost
+import com.forgebuild.forgehouse50.ui.community.CommunityChatLogic
 import com.forgebuild.forgehouse50.data.ReadingSession
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.data.WatTimeFormatter
@@ -271,6 +272,41 @@ fun HomeScreen(
                 }
                 if (refreshing) {
                     ExpressiveButtonLoader()
+                }
+                val headerUnread = today?.chat_unread?.total_unread ?: 0
+                Surface(
+                    onClick = onOpenCommunity,
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Filled.Chat,
+                            contentDescription = "Community chat",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        val badgeLabel = CommunityChatLogic.formatUnreadBadge(headerUnread)
+                        if (badgeLabel != null) {
+                            Spacer(Modifier.width(6.dp))
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                            ) {
+                                Text(
+                                    text = badgeLabel,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -784,6 +820,27 @@ fun HomeScreen(
             }
         }
 
+        // Priority 5b: Action row - Community chat & direct messages (i9)
+        item(key = "community_chat_action") {
+            val unread = today?.chat_unread
+            val directUnread = unread?.direct_unread ?: 0
+            val totalUnread = unread?.total_unread ?: 0
+            val badgeText = when {
+                directUnread > 0 -> "$directUnread direct"
+                totalUnread > 0 -> "${CommunityChatLogic.formatUnreadBadge(totalUnread)} new"
+                else -> null
+            }
+            Box(Modifier.animateItem()) {
+                ActionPillRow(
+                    icon = Icons.Filled.Chat,
+                    iconTint = MaterialTheme.colorScheme.secondary,
+                    iconContainerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
+                    label = "Community chat",
+                    badgeText = badgeText,
+                    onClick = onOpenCommunity,
+                )
+            }
+        }
         // Priority 6: Action row - My notes
         item(key = "notes_action") {
             val cachedNotesCount = AppCache.getNotes(context)?.notes?.size ?: 0
