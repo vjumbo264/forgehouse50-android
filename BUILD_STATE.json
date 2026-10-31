@@ -9,18 +9,18 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i0",
+  "current_phase": "i1",
   "queue": [
     {
       "id": "i0",
       "title": "Move the app to its own repo and hold all releases",
-      "status": "in_progress",
-      "notes": "Repo created, secrets transferred from forgebuild, git history imported via subtree split"
+      "status": "done",
+      "notes": "Verified standalone repo vjumbo264/forgehouse50-android builds green (CI run 41171667195 -> pre-release v34), unit tests pass, X.509 signing certificate SHA-256 matches v32 byte-for-byte (80:DA:9D:1C:A9:4A:E7:94:2D:7D:9C:BA:C2:F6:B9:5D:85:68:60:43:C9:EA:B5:EE:04:78:BB:2A:B6:2C:03:F0), no releases pushed to forgebuild, publish-bridge-release gated by CONFIRM_PUSH_TO_ALL_USERS=yes (never run), docs/BUILD_PROMPT.md and docs/RELEASE_RUNBOOK.md committed."
     },
     {
       "id": "i1",
       "title": "VerseWell data contract, so text is clean for audio and the app",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     },
     {
@@ -84,10 +84,12 @@
       "notes": ""
     }
   ],
-  "completed": [],
+  "completed": [
+    "i0"
+  ],
   "next_steps": [
-    "Verify CI release build in forgehouse50-android",
-    "Proceed to i1 (VerseWell data contract) and i2 (Audio generation pipeline)"
+    "Audit and verify every requirement of i1 (VerseWell data contract, intros/headings/footnotes separation, book testaments, live homepage & API verification, 5 audio translations verse/chapter counts)",
+    "Fix TLB and VOICE failures + Piper fallback + cron resume in i2 audio pipeline and relaunch"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
@@ -98,23 +100,23 @@
   "known_issues": [],
   "audio_status": {
     "kjv": {
-      "chapters_done": 0,
+      "chapters_done": 260,
       "of": 260
     },
     "niv": {
-      "chapters_done": 0,
+      "chapters_done": 260,
       "of": 260
     },
     "tlb": {
-      "chapters_done": 0,
+      "chapters_done": 9,
       "of": 260
     },
     "gw": {
-      "chapters_done": 0,
+      "chapters_done": 260,
       "of": 260
     },
     "voice": {
-      "chapters_done": 0,
+      "chapters_done": 16,
       "of": 260
     }
   },
@@ -140,6 +142,6 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T05:12:31Z",
-  "last_session_note": "Completed i0 workflow/runbook/prompt verification; verifying CI build on workflow update before marking i0 done."
+  "last_updated": "2026-10-31T05:16:31Z",
+  "last_session_note": "i0 verified done (CI run 41171667195 green, v34 held pre-release); auditing i1."
 }
