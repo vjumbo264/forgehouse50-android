@@ -444,6 +444,22 @@ class ApiClient(private val session: SessionStore) {
     suspend fun adminRemoveProfilePicture(userId: String): GenericOk =
         post("/admin/users/$userId/remove-picture", buildJsonObject {})
 
+    /** Admin (i8): List all app releases and rollout audit entries. */
+    suspend fun adminReleases(): AdminReleasesResponse = get("/admin/releases")
+
+    /** Admin (i8): Set rollout channel ('hold' | 'admins_only' | 'everyone') for a release. */
+    suspend fun adminUpdateRelease(
+        versionCode: Int,
+        action: String,
+        confirm: String? = null,
+        mandatory: Boolean? = null,
+    ): AdminReleaseUpdateResponse = post("/admin/releases", buildJsonObject {
+        put("version_code", versionCode)
+        put("action", action)
+        if (confirm != null) put("confirm", confirm)
+        if (mandatory != null) put("mandatory", mandatory)
+    })
+
     companion object {
         const val BASE = "https://forgehouse50.pages.dev/api"
     }

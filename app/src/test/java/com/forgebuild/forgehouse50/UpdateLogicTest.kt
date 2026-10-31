@@ -440,5 +440,59 @@ class UpdateLogicTest {
         // 5. PermissionRequired -> Prominent home card shows "Grant permission to install"!
         assertTrue(shouldShowHomeCard(UpdateUiState.PermissionRequired(dummyUpdate, dummyFile)))
     }
-}
 
+
+    // --- Controlled Rollout Channels & Role Matrix Tests (i8) ---
+
+    @Test
+    fun testRolloutRoleStateMatrix() {
+        // 'hold' -> hidden from both members and admins
+        assertFalse(UpdateLogic.isReleaseVisibleForRole("hold", isAdmin = false, updateAvailable = true))
+        assertFalse(UpdateLogic.isReleaseVisibleForRole("hold", isAdmin = true, updateAvailable = true))
+
+        // 'admins_only' -> hidden from non-admins, visible to admins
+        assertFalse(UpdateLogic.isReleaseVisibleForRole("admins_only", isAdmin = false, updateAvailable = true))
+        assertTrue(UpdateLogic.isReleaseVisibleForRole("admins_only", isAdmin = true, updateAvailable = true))
+
+        // 'everyone' -> visible to both members and admins
+        assertTrue(UpdateLogic.isReleaseVisibleForRole("everyone", isAdmin = false, updateAvailable = true))
+        assertTrue(UpdateLogic.isReleaseVisibleForRole("everyone", isAdmin = true, updateAvailable = true))
+
+        // Server says update_available = false -> never visible
+        assertFalse(UpdateLogic.isReleaseVisibleForRole("everyone", isAdmin = true, updateAvailable = false))
+    }
+
+    @Test
+    fun testRoleSwitchInvalidatesCachedChannelManifest() {
+        assertEquals("anon", UpdateLogic.roleKey(isLoggedIn = false, isAdmin = false))
+        assertEquals("member", UpdateLogic.roleKey(isLoggedIn = true, isAdmin = false))
+        assertEquals("admin", UpdateLogic.roleKey(isLoggedIn = true, isAdmin = true))
+
+        assertTrue(UpdateLogic.shouldInvalidateCachedReleaseForRole("admin", "member"))
+        assertTrue(UpdateLogic.shouldInvalidateCachedReleaseForRole("member", "admin"))
+        assertTrue(UpdateLogic.shouldInvalidateCachedReleaseForRole(null, "admin"))
+        assertFalse(UpdateLogic.shouldInvalidateCachedReleaseForRole("member", "member"))
+    }
+
+    @Test
+    fun testAdminCanAlwaysDismissUpdateWithNotNow() {
+        assertTrue(UpdateLogic.canDismissUpdate(mandatory = false, isAdmin = false))
+        assertFalse(UpdateLogic.canDismissUpdate(mandatory = true, isAdmin = false))
+        assertTrue(UpdateLogic.canDismissUpdate(mandatory = false, isAdmin = true))
+        assertTrue(UpdateLogic.canDismissUpdate(mandatory = true, isAdmin = true))
+    }
+
+    @Test
+    fun testPulledBackHoldReleaseResolvesBackToUpToDate() {
+        val dummyFile = tempFolder.newFile("pulled_back.apk")
+        dummyFile.writeBytes("APK".toByteArray())
+        val resolved = UpdateLogic.resolveInitialState(
+            currentVersionCode = 32,
+            remoteUpdate = null, // server returned update_available = false after pull-back to hold
+            cachedFile = dummyFile,
+            cachedVersionCode = 35,
+            cachedSha256 = null,
+        )
+        assertTrue(resolved is UpdateUiState.UpToDate)
+    }
+}

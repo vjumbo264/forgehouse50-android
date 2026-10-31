@@ -228,6 +228,8 @@ object UpdateManager {
                 }
 
                 _uiState.value = completedState
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = UpdateUiState.Error(
                     update = update,

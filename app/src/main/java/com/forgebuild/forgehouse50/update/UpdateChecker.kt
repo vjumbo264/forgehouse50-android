@@ -27,7 +27,9 @@ import java.net.URL
 
 @Serializable
 data class AppReleaseDto(
+    val update_available: Boolean = true,
     val version: Int = 0,
+    val versionName: String? = null,
     val tag: String = "",
     val apkUrl: String = "",
     val sizeBytes: Long = 0L,
@@ -35,6 +37,10 @@ data class AppReleaseDto(
     val versionCode: Int? = null,
     val sha256: String? = null,
     val changelog: List<String>? = null,
+    val changelogText: String? = null,
+    val rollout_state: String? = null,
+    val rolloutState: String? = null,
+    val mandatory: Boolean = false,
 )
 
 typealias PendingUpdate = UpdateInfo
@@ -72,25 +78,37 @@ object UpdateChecker {
             }
         }
 
-        var releaseDto: AppReleaseDto? = null
+        val currentRole = UpdateLogic.roleKey(session.isLoggedIn, session.isAdmin)
+        val roleSwitched = UpdateLogic.shouldInvalidateCachedReleaseForRole(session.cachedReleaseRole, currentRole)
+        if (roleSwitched) {
+            session.cachedReleaseJson = null
+            session.cachedReleaseRole = currentRole
+            session.lastUpdateCheckAt = 0L
+        }
 
-        val shouldFetchNetwork = force || UpdateLogic.shouldCheckNetwork(session.lastUpdateCheckAt, now)
+        var releaseDto: AppReleaseDto? = null
+        val shouldFetchNetwork = force || roleSwitched || UpdateLogic.shouldCheckNetwork(session.lastUpdateCheckAt, now)
         if (shouldFetchNetwork && isOnline(context)) {
             runCatching {
                 val conn = URL(API_URL).openConnection() as HttpURLConnection
                 conn.connectTimeout = 10000
                 conn.readTimeout = 10000
                 conn.setRequestProperty("User-Agent", "ForgeHouse50-Android/${BuildConfig.VERSION_NAME}")
+                val token = session.sessionToken
+                if (!token.isNullOrBlank()) {
+                    conn.setRequestProperty("Authorization", "Bearer $token")
+                }
                 val text = conn.inputStream.bufferedReader().use { it.readText() }
                 conn.disconnect()
                 val parsed = json.decodeFromString<AppReleaseDto>(text)
                 session.cachedReleaseJson = text
+                session.cachedReleaseRole = currentRole
                 session.lastUpdateCheckAt = now
                 releaseDto = parsed
             }
         }
 
-        if (releaseDto == null) {
+        if (releaseDto == null && session.cachedReleaseRole == currentRole) {
             val cached = session.cachedReleaseJson
             if (!cached.isNullOrBlank()) {
                 releaseDto = runCatching { json.decodeFromString<AppReleaseDto>(cached) }.getOrNull()
@@ -98,6 +116,10 @@ object UpdateChecker {
         }
 
         val release = releaseDto ?: return@withContext null
+        val effectiveRollout = release.rolloutState ?: release.rollout_state
+        if (!UpdateLogic.isReleaseVisibleForRole(effectiveRollout, session.isAdmin, release.update_available)) {
+            return@withContext null
+        }
 
         val effectiveCode = release.versionCode ?: release.version
         if (!UpdateLogic.isUpdateAvailable(BuildConfig.VERSION_CODE, release.versionCode, release.version)) {
@@ -108,7 +130,9 @@ object UpdateChecker {
 
         if (release.apkUrl.isBlank()) return@withContext null
 
-        val versionName = if (release.tag.isNotBlank()) release.tag.removePrefix("forgehouse50-") else "v${effectiveCode}"
+        val versionName = release.versionName?.takeIf { it.isNotBlank() }
+            ?: if (release.tag.isNotBlank()) release.tag.removePrefix("forgehouse50-") else "v${effectiveCode}"
+        val cleanChangelog = UpdateLogic.filterChangelogItems(release.changelog ?: emptyList())
         PendingUpdate(
             versionName = versionName,
             versionCode = effectiveCode,
@@ -116,6 +140,10 @@ object UpdateChecker {
             apkUrl = release.apkUrl,
             sizeBytes = release.sizeBytes,
             sha256 = release.sha256,
+            changelog = cleanChangelog,
+            changelogText = cleanChangelog.joinToString("\n"),
+            mandatory = release.mandatory,
+            rolloutState = effectiveRollout ?: "everyone",
         )
     }
 
@@ -178,6 +206,8 @@ object UpdateChecker {
             }
 
             DownloadResult.Success(destFile)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             DownloadResult.Failure(
                 e.localizedMessage ?: "Failed to download update package.",

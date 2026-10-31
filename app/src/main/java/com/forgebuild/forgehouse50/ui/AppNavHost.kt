@@ -174,7 +174,7 @@ fun AppNavHost(
     LaunchedEffect(loggedIn, authenticatedTick) {
         UpdateManager.init(context, repo.session)
         if (loggedIn) {
-            UpdateManager.check(context, repo.session)
+            UpdateManager.check(context, repo.session, force = true)
             while (isActive) {
                 delay(15 * 60 * 1000L)
                 UpdateManager.check(context, repo.session, isInUseCheck = true)
@@ -408,10 +408,19 @@ fun AppNavHost(
                             " · %.1f MB".format(mb)
                         } else ""
                     }
+                    val canDismiss = com.forgebuild.forgehouse50.update.UpdateLogic.canDismissUpdate(
+                        mandatory = update.mandatory,
+                        isAdmin = repo.session.isAdmin,
+                    )
+                    val notesToShow = remember(update.changelog) {
+                        com.forgebuild.forgehouse50.update.UpdateLogic.filterChangelogItems(update.changelog).take(5)
+                    }
                     AlertDialog(
                         onDismissRequest = {
-                            repo.session.updateLaterDismissedAt = System.currentTimeMillis()
-                            updateLaterDismissed = true
+                            if (canDismiss) {
+                                repo.session.updateLaterDismissedAt = System.currentTimeMillis()
+                                updateLaterDismissed = true
+                            }
                         },
                         title = { Text("Update available") },
                         text = {
@@ -420,6 +429,16 @@ fun AppNavHost(
                                     "Version ${update.versionName} is ready to install$formattedSize. Choose how you would like to get this update:",
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
+                                if (notesToShow.isNotEmpty()) {
+                                    Spacer(Modifier.height(10.dp))
+                                    notesToShow.forEach { line ->
+                                        Text(
+                                            "• $line",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
                                 Spacer(Modifier.height(16.dp))
                                 Button(
                                     onClick = {
@@ -444,10 +463,12 @@ fun AppNavHost(
                         },
                         confirmButton = {},
                         dismissButton = {
-                            TextButton(onClick = {
-                                repo.session.updateLaterDismissedAt = System.currentTimeMillis()
-                                updateLaterDismissed = true
-                            }) { Text("Later") }
+                            if (canDismiss) {
+                                TextButton(onClick = {
+                                    repo.session.updateLaterDismissedAt = System.currentTimeMillis()
+                                    updateLaterDismissed = true
+                                }) { Text("Not now") }
+                            }
                         },
                     )
                 }

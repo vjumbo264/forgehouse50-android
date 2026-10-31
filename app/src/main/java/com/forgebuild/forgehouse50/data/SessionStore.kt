@@ -85,6 +85,11 @@ class SessionStore(context: Context) {
         get() = prefs.getString(KEY_CACHED_RELEASE_JSON, null)
         set(value) = prefs.edit().putString(KEY_CACHED_RELEASE_JSON, value).apply()
 
+    /** Role ('admin' | 'member' | 'anon') under which cachedReleaseJson was fetched. */
+    var cachedReleaseRole: String?
+        get() = prefs.getString(KEY_CACHED_RELEASE_ROLE, null)
+        set(value) = prefs.edit().putString(KEY_CACHED_RELEASE_ROLE, value).apply()
+
     var keepAliveExplained: Boolean
         get() = prefs.getBoolean(KEY_KEEPALIVE_EXPLAINED, false)
         set(value) = prefs.edit().putBoolean(KEY_KEEPALIVE_EXPLAINED, value).apply()
@@ -148,6 +153,7 @@ class SessionStore(context: Context) {
         const val KEY_LAST_UPDATE_NOTIF_AT = "last_update_notif_at"
         const val KEY_UPDATE_LATER_DISMISSED_AT = "update_later_dismissed_at"
         const val KEY_CACHED_RELEASE_JSON = "cached_release_json"
+        const val KEY_CACHED_RELEASE_ROLE = "cached_release_role"
         const val KEY_DOWNLOADED_UPDATE_VC = "downloaded_update_vc"
         const val KEY_DOWNLOADED_UPDATE_PATH = "downloaded_update_path"
         const val KEY_DOWNLOADED_UPDATE_SHA256 = "downloaded_update_sha256"

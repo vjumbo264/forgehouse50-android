@@ -10,6 +10,10 @@ data class UpdateInfo(
     val apkUrl: String,
     val sizeBytes: Long,
     val sha256: String?,
+    val changelog: List<String> = emptyList(),
+    val changelogText: String = "",
+    val mandatory: Boolean = false,
+    val rolloutState: String = "everyone",
 )
 
 sealed interface UpdateUiState {
@@ -33,6 +37,44 @@ object UpdateLogic {
     fun isUpdateAvailable(currentVersionCode: Int, remoteVersionCode: Int?, remoteVersion: Int?): Boolean {
         val effectiveRemote = remoteVersionCode ?: remoteVersion ?: return false
         return effectiveRemote > currentVersionCode
+    }
+
+    /**
+     * Role/state visibility matrix (i8):
+     * - 'hold': never visible to anyone
+     * - 'admins_only': visible only when isAdmin == true
+     * - 'everyone' (or legacy null/blank when updateAvailable == true): visible to all roles
+     */
+    fun isReleaseVisibleForRole(
+        rolloutState: String?,
+        isAdmin: Boolean,
+        updateAvailable: Boolean = true,
+    ): Boolean {
+        if (!updateAvailable) return false
+        return when (rolloutState?.trim()?.lowercase()) {
+            null, "", "everyone" -> true
+            "admins_only" -> isAdmin
+            "hold" -> false
+            else -> false
+        }
+    }
+
+    fun roleKey(isLoggedIn: Boolean, isAdmin: Boolean): String = when {
+        isAdmin -> "admin"
+        isLoggedIn -> "member"
+        else -> "anon"
+    }
+
+    fun shouldInvalidateCachedReleaseForRole(cachedRole: String?, currentRole: String?): Boolean {
+        return (cachedRole ?: "anon") != (currentRole ?: "anon")
+    }
+
+    /**
+     * Admins can always dismiss/cancel ("Not now") even on mandatory flags while testing;
+     * members can dismiss unless mandatory == true.
+     */
+    fun canDismissUpdate(mandatory: Boolean, isAdmin: Boolean): Boolean {
+        return isAdmin || !mandatory
     }
 
     /**

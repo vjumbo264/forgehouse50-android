@@ -854,3 +854,48 @@ data class AnnouncementsResponse(
     val next_cursor: String? = null,
     val has_more: Boolean = false,
 )
+
+
+@Serializable
+data class AdminReleaseItem(
+    val version_code: Int = 0,
+    val version_name: String = "",
+    val tag: String = "",
+    val apk_url: String = "",
+    val size_bytes: Long = 0L,
+    val sha256: String? = null,
+    val changelog: List<String> = emptyList(),
+    val changelog_text: String = "",
+    val rollout_state: String = "hold",
+    val mandatory: Boolean = false,
+    val updated_by: String? = null,
+    val updated_at: String = "",
+    val created_at: String = "",
+)
+
+@Serializable
+data class AdminReleaseAuditEntry(
+    val id: String = "",
+    val admin_id: String = "",
+    val action: String = "",
+    val version_code: String? = null,
+    val summary: String? = null,
+    val created_at: String = "",
+)
+
+@Serializable
+data class AdminReleasesResponse(
+    val ok: Boolean = true,
+    val releases: List<AdminReleaseItem> = emptyList(),
+    val audit_log: List<AdminReleaseAuditEntry> = emptyList(),
+)
+
+@Serializable
+data class AdminReleaseUpdateResponse(
+    val ok: Boolean = true,
+    val version_code: Int = 0,
+    val rollout_state: String = "hold",
+    val mandatory: Boolean = false,
+    val updated_by: String? = null,
+    val updated_at: String = "",
+)
