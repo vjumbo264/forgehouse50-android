@@ -9,7 +9,7 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i9",
+  "current_phase": "i10",
   "queue": [
     {
       "id": "i0",
@@ -68,13 +68,13 @@
     {
       "id": "i9",
       "title": "Community chat with direct messages from the admin",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Backend (forgehouse50 commit 5536a8f, CI 41178978564 green) + Android (forgehouse50-android commit 10ea6ed, CI 41179640073 green): Migrated D1 to community_chat_v2 (supporting dedicated admin_credentials actors without profiles FK crashes + per-thread community_chat_thread_reads + composite polling indexes). Implemented church-wide group chat (reply-to quotes, ?before= older pagination, ?since= incremental cursor + deleted_ids, soft-delete, member mute/unmute, 10 msgs/60s rate limit, 'Given S.' / 'Pastor Dave' privacy formatting with zero email/phone/surname/username leakage, and zero-write idle polls) plus confidential 1:1 admin<->member direct threads (admin initiates with any verified member; member strictly restricted to own thread after admin initiation). Added CommunityScreen Group/Direct/Reflections tabs, 4s foreground-only polling, HomeScreen & Nav unread badges, SQLite D1 suite (test/community_chat_test.mjs), Android JUnit suite (CommunityChatLogicTest.kt), and live production verification."
     },
     {
       "id": "i10",
       "title": "Audio in the app (depends on i3; test with whatever is ready)",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     },
     {
@@ -93,11 +93,12 @@
     "i5",
     "i6",
     "i7",
-    "i8"
+    "i8",
+    "i9"
   ],
   "next_steps": [
-    "Complete & verify i9 (Community chat with group chat, admin-to-member private threads, moderation, and efficient polling)",
-    "Complete & verify i10 (Audio in the Android app: manual download, sha256 verification, Media3 offline playback, zero reading-timer credit)"
+    "Complete & verify i10 (Audio in the Android app: manual per-translation & per-chapter download, sha256 verification, Media3 offline playback 0.75x-1.5x, no auto-advance/auto-scroll, zero reading-timer credit, foreground-only default behind config flag)",
+    "Complete & verify i11 (Audio completeness audit across all 5 translations 260/260 + 50 live spot-checks + final handoff checklist)"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
@@ -155,8 +156,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T07:10:00Z",
-  "last_session_note": "i9 backend deployed & verified live on forgehouse50.pages.dev (commit 5536a8f); pushed Android i9 Community Chat + Direct Messages + JUnit suite, awaiting GitHub Actions CI verification.",
+  "last_updated": "2026-10-31T07:17:00Z",
+  "last_session_note": "i9 Community Chat completed & verified green (backend 5536a8f, Android 10ea6ed CI 41179640073); starting i10 Audio in the Android app.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,
