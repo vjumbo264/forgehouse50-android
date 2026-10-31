@@ -86,8 +86,8 @@
     {
       "id": "j0",
       "title": "Make sure the APK is easy to find (Victor could not see v39)",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Verified via GitHub API that release v39 has asset forgehouse50-v39.apk (10.7MB). Verified direct URL resolves with HTTP 302 to storage asset for both authenticated and anonymous callers. Documented in docs/RELEASE_RUNBOOK.md why GitHub hides pre-releases from the repo front page Releases box and added mobile navigation steps and direct download links."
     },
     {
       "id": "j1",
@@ -162,7 +162,8 @@
     "i8",
     "i9",
     "i10",
-    "i11"
+    "i11",
+    "j0"
   ],
   "next_steps": [
     "Contract fixes_oct30_v1 complete and held at v39. Awaiting Victor & Pastor Dave approval to test via Admin Dashboard -> App Releases ('Release to admins') and then promote ('Release to everyone' / optional publish-bridge-release workflow) per docs/RELEASE_RUNBOOK.md."
@@ -239,7 +240,7 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T13:33:01.455Z",
+  "last_updated": "2026-10-31T13:37:25.105Z",
   "last_session_note": "Starting fixes_oct31_v1 contract: j0-j9 queue initialized.",
   "nt_scripture_counts": {
     "KJV": {
