@@ -92,8 +92,8 @@
     {
       "id": "j1",
       "title": "Audio download control must appear fast",
-      "status": "pending",
-      "notes": ""
+      "status": "done",
+      "notes": "Preloaded disk-cached manifests synchronously and default versions catalog so audio rows appear immediately without network blocking on cold start. Added ChapterAudioDownloadState.Connecting instant transition and offline detection."
     },
     {
       "id": "j2",
