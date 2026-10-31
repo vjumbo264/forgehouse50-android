@@ -81,7 +81,9 @@ import com.forgebuild.forgehouse50.ui.ExpressiveButton
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 import com.forgebuild.forgehouse50.ui.NOTE_TYPES
 import com.forgebuild.forgehouse50.ui.noteTypeLabel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import com.forgebuild.forgehouse50.data.ReaderErrorSanitizer
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 
@@ -1068,8 +1070,9 @@ fun NoteEditScreen(
                                 busy = false
                             }
                         }.onFailure {
+                            if (it is CancellationException) throw it
                             sendFeedbackState = SendFeedbackState.Error
-                            error = it.message ?: "Could not save your note. Please try again."
+                            error = ReaderErrorSanitizer.toUserMessage(it, "Could not save your note. Please try again.")
                             busy = false
                         }
                     }

@@ -61,6 +61,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.forgebuild.forgehouse50.data.Repository
 import java.net.UnknownHostException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import com.forgebuild.forgehouse50.ui.ExpressiveButtonLoader
 import androidx.compose.foundation.BorderStroke
@@ -148,6 +149,7 @@ private fun AuthScaffold(subtitle: String, content: @Composable () -> Unit) {
  * exception text the operator screenshotted at registration.
  */
 private fun friendlyNetError(e: Throwable, fallback: String): String {
+    if (e is CancellationException) throw e
     val chain = generateSequence<Throwable>(e) { it.cause }
     val net = chain.any {
         it is UnknownHostException ||

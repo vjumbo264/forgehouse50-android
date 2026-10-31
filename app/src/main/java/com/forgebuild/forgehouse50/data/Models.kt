@@ -237,6 +237,7 @@ data class Verse(
     val chapter: Int,
     val verse: Int,
     val text: String,
+    @Serializable(with = BundledFootnoteListSerializer::class)
     val footnotes: List<String> = emptyList(),
     val heading_before: String? = null,
 )

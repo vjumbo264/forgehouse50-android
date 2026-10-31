@@ -90,7 +90,9 @@ import com.forgebuild.forgehouse50.data.PendingCompletion
 import com.forgebuild.forgehouse50.data.PrefsReaderPositionStorage
 import com.forgebuild.forgehouse50.data.PrefsTimerStorage
 import com.forgebuild.forgehouse50.data.ReaderEncouragement
+import com.forgebuild.forgehouse50.data.ReaderErrorSanitizer
 import com.forgebuild.forgehouse50.data.ReadingTimer
+import com.forgebuild.forgehouse50.data.runSuspendCatching
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.data.SavedReaderPosition
 import com.forgebuild.forgehouse50.data.ScriptureReferenceUtils
@@ -98,6 +100,7 @@ import com.forgebuild.forgehouse50.data.Verse
 import com.forgebuild.forgehouse50.ui.ExpressiveButton
 import com.forgebuild.forgehouse50.ui.ExpressiveLinearProgress
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
@@ -179,11 +182,20 @@ fun ReadScreen(
         translation = resolved
         repo.session.translationId = resolved
 
-        runCatching { repo.api.day(activeDay) }.onSuccess {
+        error = null
+        runSuspendCatching { repo.api.day(activeDay) }.onSuccess {
             dayData = it
+            error = null
             if (it.progress.completed) completedDays = completedDays + activeDay
             AppCache.saveDay(context, activeDay, it)
-        }.onFailure { error = it.message }
+        }.onFailure { t ->
+            if (dayData == null) {
+                error = ReaderErrorSanitizer.toUserMessage(
+                    t,
+                    fallback = "Could not load today's reading plan. Check your connection and try again."
+                )
+            }
+        }
         dayLoaded = true
     }
 
@@ -238,13 +250,17 @@ fun ReadScreen(
             if (!chapterPassages.containsKey(ch)) {
                 scope.launch {
                     chapterLoading[ch] = true
-                    runCatching { repo.getPassage(ch.first, ch.second, ch.second, translation) }
+                    runSuspendCatching { repo.getPassage(ch.first, ch.second, ch.second, translation) }
                         .onSuccess {
                             chapterPassages[ch] = it
+                            chapterErrors.remove(ch)
                             chapterLoading[ch] = false
                         }
-                        .onFailure {
-                            chapterErrors[ch] = it.message ?: "Could not load ${ch.first} ${ch.second}"
+                        .onFailure { t ->
+                            chapterErrors[ch] = ReaderErrorSanitizer.toUserMessage(
+                                t,
+                                fallback = "Could not load ${ch.first} ${ch.second}. Check your connection and tap retry."
+                            ) ?: "Could not load ${ch.first} ${ch.second}."
                             chapterLoading[ch] = false
                         }
                 }
@@ -399,7 +415,9 @@ fun ReadScreen(
                 repo.api.addReadingTime(activeDay, pending)
                 pending = 0
                 fails = 0
-            } catch (e: Exception) {
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (_: Exception) {
                 fails++
             }
         }
@@ -1068,7 +1086,7 @@ fun ReadScreen(
                                     )
                                     Spacer(Modifier.width(6.dp))
                                     Text(
-                                        "Paused. Touch screen to resume",
+                                        ReaderErrorSanitizer.pauseBannerText(),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.tertiary,
                                     )
@@ -1138,7 +1156,7 @@ fun ReadScreen(
                                     error = null
                                     val sec = timer.getReadingSeconds()
                                     val firstOpened = timer.getFirstOpenedAt()
-                                    val res = runCatching {
+                                    val res = runSuspendCatching {
                                         repo.api.completeDay(
                                             n = activeDay,
                                             readingSeconds = sec,
@@ -1159,15 +1177,24 @@ fun ReadScreen(
                                         com.forgebuild.forgehouse50.widget.ForgeHouseWidgetProvider.updateAll(context)
                                     } else {
                                         val ex = res.exceptionOrNull()
-                                        val msg = ex?.message.orEmpty()
-                                        if (msg.contains("reading_time_too_short")) {
-                                            error = "Minimum 5 minutes of reading required. Please keep reading."
-                                        } else {
-                                            OfflineCompletionQueue(context).enqueue(
-                                                uid,
-                                                PendingCompletion(activeDay, sec, firstOpened, true),
-                                            )
-                                            error = "Completion saved offline. Will sync when reconnected."
+                                        val msg = ex?.message.orEmpty().lowercase()
+                                        when {
+                                            msg.contains("reading_time_too_short") -> {
+                                                error = "Minimum 5 minutes of reading required. Please keep reading."
+                                            }
+                                            msg.contains("catch-up closes at 7pm") || msg.contains("rest_day_catchup_closed") -> {
+                                                error = "Catch-up closes at 7pm today for Bible Study, continue tomorrow."
+                                            }
+                                            msg.contains("normal_reading_locked_on_rest_day") -> {
+                                                error = "Today is a rest day. Scheduled reading resumes tomorrow."
+                                            }
+                                            else -> {
+                                                OfflineCompletionQueue(context).enqueue(
+                                                    uid,
+                                                    PendingCompletion(activeDay, sec, firstOpened, true),
+                                                )
+                                                error = "Completion saved offline. Will sync when reconnected."
+                                            }
                                         }
                                     }
                                     completeBusy = false

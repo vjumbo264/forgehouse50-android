@@ -9,7 +9,7 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i5",
+  "current_phase": "i6",
   "queue": [
     {
       "id": "i0",
@@ -44,13 +44,13 @@
     {
       "id": "i5",
       "title": "Reader timer: never show raw exception text",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Root-caused raw 'The coroutine was canceled because it left the composition' leak in ReadScreen.kt: Kotlin runCatching blocks on day(activeDay), getPassage(), and completeDay() caught CancellationException and assigned it.message directly to UI error state rendered right beneath 'Paused. Touch screen to resume', and addReadingTime caught generic Exception without rethrowing CancellationException. Added runSuspendCatching (always rethrows CancellationException) + ReaderErrorSanitizer (strips any coroutine/network/JVM exception markers and enforces clean pauseBannerText) in ReadingTimerEngine.kt, audited and hardened ReadScreen, QuizScreen, TranslationsScreen, NotesScreens, and AuthScreens, added BundledFootnoteListSerializer on Verse.footnotes, and added testCoroutineCancellationNeverEmitsRawExceptionText in ReadingTimerEngineTest.kt."
     },
     {
       "id": "i6",
       "title": "Rest days: catch-up still allowed, closes at 7pm Lagos",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     },
     {
@@ -89,11 +89,12 @@
     "i1",
     "i2",
     "i3",
-    "i4"
+    "i4",
+    "i5"
   ],
   "next_steps": [
-    "Complete & verify i5 (Reader timer: never show raw CancellationException or exception text in pause banner)",
-    "Complete & verify i6 (Rest days: catch-up allowed until 7pm Africa/Lagos, server + Android + admin setting)"
+    "Complete & verify i6 (Rest days: catch-up allowed until 7pm Africa/Lagos, server + Android + admin setting)",
+    "Complete & verify i7 (Streak verification & unit tests on server logic)"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
@@ -147,8 +148,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T05:49:10Z",
-  "last_session_note": "i4 Announcements completed and verified on backend + Android; starting i5 Reader timer exception fix.",
+  "last_updated": "2026-10-31T05:52:17Z",
+  "last_session_note": "i5 Reader timer CancellationException leak fixed & unit tested; starting i6 Rest day 7pm Lagos catch-up window.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,

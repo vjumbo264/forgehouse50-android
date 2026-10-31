@@ -20,7 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.forgebuild.forgehouse50.data.ReaderErrorSanitizer
 import com.forgebuild.forgehouse50.data.Repository
+import com.forgebuild.forgehouse50.data.runSuspendCatching
 import com.forgebuild.forgehouse50.data.Translation
 import com.forgebuild.forgehouse50.data.TranslationDownloadState
 import com.forgebuild.forgehouse50.data.local.DownloadedTranslation
@@ -63,12 +65,12 @@ fun TranslationsScreen(repo: Repository, onBack: () -> Unit) {
     LaunchedEffect(Unit) {
         runCatching { repo.ensureBundledKjvImported() }
         refreshData()
-        runCatching { repo.api.translations() }
+        runSuspendCatching { repo.api.translations() }
             .onSuccess { res ->
                 availableList = res.translations.filter { t -> t.versewell && t.id != Repository.KJV_ID }
             }
             .onFailure { t ->
-                globalError = t.message ?: "Could not load translations from server."
+                globalError = ReaderErrorSanitizer.toUserMessage(t, "Could not load translations from server.")
             }
         loadingAvailable = false
     }

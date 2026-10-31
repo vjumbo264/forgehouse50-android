@@ -4,7 +4,13 @@ import com.forgebuild.forgehouse50.data.InMemoryReaderPositionStorage
 import com.forgebuild.forgehouse50.data.InMemoryTimerStorage
 import com.forgebuild.forgehouse50.data.MonotonicClock
 import com.forgebuild.forgehouse50.data.ReaderEncouragement
+import com.forgebuild.forgehouse50.data.ReaderErrorSanitizer
 import com.forgebuild.forgehouse50.data.ReadingTimer
+import com.forgebuild.forgehouse50.data.runSuspendCatching
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import com.forgebuild.forgehouse50.data.SavedReaderPosition
 import com.forgebuild.forgehouse50.data.WallClock
 import org.junit.Assert.assertEquals
@@ -228,5 +234,39 @@ class ReadingTimerEngineTest {
         // Clear when day completed
         storage.clear("user1", 3)
         assertNull(storage.getPosition("user1", 3, "versewell-kjv"))
+    }
+
+    @Test
+    fun testCoroutineCancellationNeverEmitsRawExceptionText() = runBlocking {
+        var leakedUiError: String? = null
+        val job = launch {
+            runSuspendCatching {
+                delay(10_000L)
+                "ok"
+            }.onFailure { t ->
+                // Must NEVER execute on CancellationException!
+                leakedUiError = t.message ?: "unexpected"
+            }
+        }
+        delay(20L)
+        job.cancel(CancellationException("The coroutine was canceled because it left the composition"))
+        job.join()
+
+        assertNull("CancellationException must be rethrown and never stored in UI error state", leakedUiError)
+        assertNull(
+            ReaderErrorSanitizer.toUserMessage(
+                CancellationException("The coroutine was canceled because it left the composition"),
+                fallback = "Fallback"
+            )
+        )
+        // Even if wrapped inside a generic RuntimeException, raw coroutine text must never reach UI
+        assertEquals(
+            "Could not load today's reading plan.",
+            ReaderErrorSanitizer.toUserMessage(
+                RuntimeException("The coroutine was canceled because it left the composition"),
+                fallback = "Could not load today's reading plan."
+            )
+        )
+        assertEquals("Paused. Touch screen to resume", ReaderErrorSanitizer.pauseBannerText())
     }
 }

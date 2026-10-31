@@ -46,7 +46,9 @@ import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.data.QuizResponse
 import com.forgebuild.engine.security.ScreenSecurity
 import com.forgebuild.forgehouse50.data.QuizSubmitResponse
+import com.forgebuild.forgehouse50.data.ReaderErrorSanitizer
 import com.forgebuild.forgehouse50.data.Repository
+import com.forgebuild.forgehouse50.data.runSuspendCatching
 import com.forgebuild.forgehouse50.ui.ConfettiOverlay
 import kotlinx.coroutines.launch
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
@@ -88,13 +90,13 @@ fun QuizScreen(
 
     LaunchedEffect(day) {
         runCatching { repo.api.day(day) }.onSuccess { readingCompleted = it.progress.completed }
-        runCatching { repo.api.quiz(day) }
+        runSuspendCatching { repo.api.quiz(day) }
             .onSuccess {
                 quiz = it
                 com.forgebuild.forgehouse50.data.AppCache.saveQuiz(context, day, it)
                 if (it.attempt != null) com.forgebuild.forgehouse50.data.AppCache.setQuizDone(context, day, true)
             }
-            .onFailure { error = it.message }
+            .onFailure { error = ReaderErrorSanitizer.toUserMessage(it, "Could not load quiz. Check your connection and retry.") }
         loading = false
     }
 
@@ -166,12 +168,12 @@ fun QuizScreen(
                                 scope.launch {
                                     busy = true
                                     val ordered = quiz!!.questions.map { answers[it.index] ?: -1 }
-                                    runCatching { repo.api.submitQuiz(day, ordered) }
+                                    runSuspendCatching { repo.api.submitQuiz(day, ordered) }
                                         .onSuccess { res ->
                                             result = res
                                             if (res.ok && readingCompleted) showConfetti = true
                                         }
-                                        .onFailure { error = it.message }
+                                        .onFailure { error = ReaderErrorSanitizer.toUserMessage(it, "Could not submit quiz. Check your connection and retry.") }
                                     busy = false
                                 }
                             },

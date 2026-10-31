@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.SystemClock
 import java.time.Instant
+import kotlinx.coroutines.CancellationException
 
 /**
  * ReadingTimerEngine — measures active reading time per (user, day) using the
@@ -294,5 +295,73 @@ class InMemoryReaderPositionStorage : ReaderPositionStorage {
     override fun clear(userId: String, day: Int) {
         val prefix = "${userId}_${day}_"
         map.keys.filter { it.startsWith(prefix) }.toList().forEach { map.remove(it) }
+    }
+}
+
+
+/**
+ * Coroutine-safe Result wrapper: ALWAYS rethrows [CancellationException] so composition
+ * teardown ("The coroutine was canceled because it left the composition") never leaks
+ * into UI error state or offline queues.
+ */
+inline fun <T> runSuspendCatching(block: () -> T): Result<T> {
+    return try {
+        Result.success(block())
+    } catch (ce: CancellationException) {
+        throw ce
+    } catch (t: Throwable) {
+        Result.failure(t)
+    }
+}
+
+object ReaderErrorSanitizer {
+    const val PAUSE_BANNER_TEXT = "Paused. Touch screen to resume"
+
+    private val RAW_EXCEPTION_MARKERS = listOf(
+        "coroutine",
+        "canceled",
+        "cancelled",
+        "left the composition",
+        "jobcancellation",
+        "standalonecoroutine",
+        "exception",
+        "java.",
+        "kotlin.",
+        "io.ktor",
+        "okhttp",
+        "unable to resolve host",
+        "no address associated",
+        "sockettimeout",
+        "connectexception",
+        "sslhandshake",
+        "eofexception",
+    )
+
+    fun pauseBannerText(): String = PAUSE_BANNER_TEXT
+
+    /**
+     * Converts any [Throwable] into a clean, user-safe message — or `null` if it is a
+     * coroutine cancellation or silent background condition. Raw exception messages are
+     * NEVER returned to the UI.
+     */
+    fun toUserMessage(t: Throwable?, fallback: String? = null): String? {
+        if (t == null || t is CancellationException) return null
+        val raw = t.message?.trim().orEmpty()
+        if (raw.isEmpty()) return fallback
+        val lower = raw.lowercase()
+
+        if (lower.contains("reading_time_too_short") || lower.contains("minimum 5 minutes")) {
+            return "Minimum 5 minutes of reading required. Please keep reading."
+        }
+        if (lower.contains("catch-up closes at 7pm") || lower.contains("rest_day_catchup_closed")) {
+            return "Catch-up closes at 7pm today for Bible Study, continue tomorrow."
+        }
+        if (lower.contains("normal_reading_locked_on_rest_day")) {
+            return "Today is a rest day. Scheduled reading resumes tomorrow."
+        }
+        if (RAW_EXCEPTION_MARKERS.any { lower.contains(it) }) {
+            return fallback
+        }
+        return raw.take(160)
     }
 }
