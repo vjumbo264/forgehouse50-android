@@ -546,7 +546,13 @@ fun ReadScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
-                            if (localAudioRow != null || manifestAudioMeta != null) {
+                            val isAudioSupported = AudioLogic.isTranslationAudioAvailable(
+                                translationIdOrCode = activeAudioCode,
+                                versionsCatalog = repo.audioManager.versionsCatalog.value,
+                                cachedManifest = activeAudioManifest,
+                                localVerifiedChaptersCount = activeLocalAudioRows.size,
+                            )
+                            if (isAudioSupported) {
                                 Spacer(Modifier.height(8.dp))
                                 ChapterHeaderAudioRow(
                                     book = ch.first,
@@ -557,9 +563,7 @@ fun ReadScreen(
                                     isActiveChapterInPlayer = playerState.activeChapterKey == chAudioKey,
                                     isPlaying = playerState.activeChapterKey == chAudioKey && playerState.isPlaying,
                                     onDownloadClick = {
-                                        if (manifestAudioMeta != null) {
-                                            repo.audioManager.startChapterDownload(activeAudioCode, manifestAudioMeta)
-                                        }
+                                        repo.audioManager.startChapterDownload(activeAudioCode, ch.first, ch.second)
                                     },
                                     onCancelDownload = {
                                         repo.audioManager.cancelChapterDownload(activeAudioCode, ch.first, ch.second)

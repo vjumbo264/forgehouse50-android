@@ -28,6 +28,36 @@ class AudioFeatureTest {
         MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
     @Test
+    fun testInstantAudioAvailabilityWithDefaultCatalogAndOfflineFallback() {
+        val defaultCatalog = AudioLogic.defaultVersionsCatalog()
+        assertEquals(5, defaultCatalog.size)
+        assertTrue(defaultCatalog.containsKey("KJV"))
+        assertTrue(defaultCatalog.containsKey("NIV"))
+        assertTrue(defaultCatalog.containsKey("TLB"))
+        assertTrue(defaultCatalog.containsKey("GW"))
+        assertTrue(defaultCatalog.containsKey("VOICE"))
+        assertEquals(260, defaultCatalog["KJV"]?.chapters)
+
+        // Instant availability on cold launch with zero network calls and empty catalog
+        assertTrue(AudioLogic.isTranslationAudioAvailable("KJV", emptyMap()))
+        assertTrue(AudioLogic.isTranslationAudioAvailable("versewell-niv", emptyMap()))
+        assertTrue(AudioLogic.isTranslationAudioAvailable("TLB", emptyMap()))
+        assertTrue(AudioLogic.isTranslationAudioAvailable("gw", emptyMap()))
+        assertTrue(AudioLogic.isTranslationAudioAvailable("VOICE", emptyMap()))
+
+        // Non-supported translations must remain false
+        assertFalse(AudioLogic.isTranslationAudioAvailable("AMP", emptyMap()))
+        assertFalse(AudioLogic.isTranslationAudioAvailable("versewell-nlt", emptyMap()))
+        assertFalse(AudioLogic.isTranslationAudioAvailable("MSG", emptyMap()))
+
+        // Chapter synthesis fallback for instant download queuing
+        val synthMeta = AudioLogic.synthesizeChapterMeta("KJV", "1 Corinthians", 13)
+        assertEquals("1-corinthians-013.m4a", synthMeta.file)
+        assertEquals("1 Corinthians", synthMeta.book)
+        assertEquals(13, synthMeta.chapter)
+    }
+
+    @Test
     fun testVersionsCatalogAndFiveSupportedTranslationsOnly() {
         val raw = """
             {

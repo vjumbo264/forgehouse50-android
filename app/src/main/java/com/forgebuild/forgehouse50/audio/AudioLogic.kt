@@ -205,15 +205,57 @@ object AudioLogic {
         json.decodeFromString<AudioManifest>(rawJson)
 
     /**
+     * Default built-in catalog metadata for the 5 supported translations so audio
+     * controls appear immediately without blocking on network catalog fetches.
+     */
+    fun defaultVersionsCatalog(): Map<String, VerseWellVersionAudio> =
+        AudioConfig.SUPPORTED_TRANSLATION_CODES.associateWith { code ->
+            VerseWellVersionAudio(
+                available = true,
+                chapters = 260,
+                voice = when (code) {
+                    "KJV" -> "David Cochran Heath"
+                    "NIV" -> "Max McLean"
+                    "TLB" -> "Dean Gallagher"
+                    "GW" -> "Christopher Glyn"
+                    "VOICE" -> "Eclectic / Full Cast"
+                    else -> ""
+                }
+            )
+        }
+
+    /**
+     * Synthesizes fallback chapter metadata when manifest is loading in background.
+     */
+    fun synthesizeChapterMeta(
+        versionCodeOrId: String,
+        book: String,
+        chapter: Int,
+    ): AudioChapterMeta {
+        val canonBook = ScriptureReferenceUtils.canonicalBook(book) ?: book.trim()
+        val slug = toBookSlug(canonBook)
+        val fileName = String.format(Locale.US, "%s-%03d.m4a", slug, chapter)
+        return AudioChapterMeta(
+            file = fileName,
+            book = canonBook,
+            book_slug = slug,
+            chapter = chapter,
+            bytes = 0L,
+            sha256 = "",
+            duration_ms = 0L,
+        )
+    }
+
+    /**
      * Audio is supported for a translation ONLY if:
      * 1. Its code is one of KJV, NIV, TLB, GW, VOICE; AND
      * 2. Either the live/cached versions catalog reports `available == true`,
-     *    a non-empty manifest is present, or verified local chapters already exist on device
-     *    (unless the catalog explicitly reports `available == false` with zero local files).
+     *    a non-empty manifest is present, or verified local chapters already exist on device.
+     *    Defaults to true for the 5 supported translations so UI displays immediately.
      */
     fun isTranslationAudioAvailable(
         translationIdOrCode: String,
-        versionsCatalog: Map<String, VerseWellVersionAudio>,
+        versionsCatalog: Map<String, VerseWellVersionAudio> = emptyMap(),
         cachedManifest: AudioManifest? = null,
         localVerifiedChaptersCount: Int = 0,
     ): Boolean {
@@ -222,7 +264,11 @@ object AudioLogic {
         if (localVerifiedChaptersCount > 0) return true
         if (cachedManifest != null && cachedManifest.chapters.isNotEmpty()) return true
         val catalogEntry = versionsCatalog[code]
-        return catalogEntry?.available == true && catalogEntry.chapters > 0
+        if (catalogEntry != null) {
+            return catalogEntry.available
+        }
+        // Supported translations default to true so download controls appear instantly
+        return true
     }
 
     /**

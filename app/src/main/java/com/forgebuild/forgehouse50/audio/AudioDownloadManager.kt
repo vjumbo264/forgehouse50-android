@@ -37,10 +37,25 @@ class AudioDownloadManager(
         transport = transport,
     )
 
-    private val _versionsCatalog = MutableStateFlow<Map<String, VerseWellVersionAudio>>(loadCachedCatalog())
+    private fun loadAllCachedManifestsFromDisk(): Map<String, AudioManifest> {
+        val result = mutableMapOf<String, AudioManifest>()
+        for (code in AudioConfig.SUPPORTED_TRANSLATION_CODES) {
+            val f = File(engine.versionDir(code), "manifest.json")
+            if (f.exists()) {
+                runCatching { AudioLogic.parseManifest(f.readText()) }.getOrNull()?.let {
+                    result[code] = it
+                }
+            }
+        }
+        return result
+    }
+
+    private val _versionsCatalog = MutableStateFlow<Map<String, VerseWellVersionAudio>>(
+        loadCachedCatalog().ifEmpty { AudioLogic.defaultVersionsCatalog() }
+    )
     val versionsCatalog: StateFlow<Map<String, VerseWellVersionAudio>> = _versionsCatalog.asStateFlow()
 
-    private val _manifests = MutableStateFlow<Map<String, AudioManifest>>(emptyMap())
+    private val _manifests = MutableStateFlow<Map<String, AudioManifest>>(loadAllCachedManifestsFromDisk())
     val manifests: StateFlow<Map<String, AudioManifest>> = _manifests.asStateFlow()
 
     private val _translationStates = MutableStateFlow<Map<String, TranslationAudioUiState>>(emptyMap())
@@ -164,6 +179,11 @@ class AudioDownloadManager(
         pausedVersions.remove(code)
         setTranslationState(code, TranslationAudioUiState.Connecting)
 
+        if (!com.forgebuild.forgehouse50.update.UpdateChecker.isOnline(appContext)) {
+            setTranslationState(code, TranslationAudioUiState.Failed("You are offline. Connect to download audio."))
+            return
+        }
+
         val job = scope.launch {
             var latestProgress: BulkDownloadProgress? = null
             try {
@@ -222,6 +242,44 @@ class AudioDownloadManager(
         }
     }
 
+    fun startChapterDownload(translationIdOrCode: String, book: String, chapter: Int) {
+        val code = AudioLogic.normalizeVersionCode(translationIdOrCode)
+        if (code !in AudioConfig.SUPPORTED_TRANSLATION_CODES) return
+        val key = AudioLogic.chapterKey(code, book, chapter)
+        val cur = _chapterStates.value[key]
+        if (cur is ChapterAudioDownloadState.Connecting || cur is ChapterAudioDownloadState.Downloading) return
+        setChapterState(key, ChapterAudioDownloadState.Connecting)
+
+        if (!com.forgebuild.forgehouse50.update.UpdateChecker.isOnline(appContext)) {
+            setChapterState(key, ChapterAudioDownloadState.Failed("You are offline. Connect to download audio."))
+            return
+        }
+
+        val job = scope.launch {
+            try {
+                val manifest = loadManifestIfSupported(code, forceNetwork = false)
+                val meta = AudioLogic.findChapterInManifest(manifest, book, chapter)
+                    ?: AudioLogic.synthesizeChapterMeta(code, book, chapter)
+                engine.downloadChapter(code, meta) { read, total ->
+                    setChapterState(key, ChapterAudioDownloadState.Downloading(read, total))
+                }
+                refreshLocalIndex()
+                setChapterState(key, ChapterAudioDownloadState.Downloaded)
+            } catch (ce: CancellationException) {
+                setChapterState(key, ChapterAudioDownloadState.Idle)
+            } catch (t: Throwable) {
+                val msg = ReaderErrorSanitizer.toUserMessage(
+                    t,
+                    fallback = "Could not download chapter audio. Check your connection and retry."
+                ) ?: "Could not download chapter audio."
+                setChapterState(key, ChapterAudioDownloadState.Failed(msg))
+            } finally {
+                chapterJobs.remove(key)
+            }
+        }
+        chapterJobs[key] = job
+    }
+
     fun startChapterDownload(translationIdOrCode: String, meta: AudioChapterMeta) {
         val code = AudioLogic.normalizeVersionCode(translationIdOrCode)
         if (code !in AudioConfig.SUPPORTED_TRANSLATION_CODES) return
@@ -230,6 +288,11 @@ class AudioDownloadManager(
         if (cur is ChapterAudioDownloadState.Connecting || cur is ChapterAudioDownloadState.Downloading) return
 
         setChapterState(key, ChapterAudioDownloadState.Connecting)
+
+        if (!com.forgebuild.forgehouse50.update.UpdateChecker.isOnline(appContext)) {
+            setChapterState(key, ChapterAudioDownloadState.Failed("You are offline. Connect to download audio."))
+            return
+        }
         val job = scope.launch {
             try {
                 engine.downloadChapter(code, meta) { read, total ->
