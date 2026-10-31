@@ -251,6 +251,8 @@ data class SavedReaderPosition(
 interface ReaderPositionStorage {
     fun getPosition(userId: String, day: Int, translation: String): SavedReaderPosition?
     fun setPosition(userId: String, day: Int, translation: String, position: SavedReaderPosition)
+    fun hasReachedEnd(userId: String, day: Int): Boolean = false
+    fun setReachedEnd(userId: String, day: Int, reached: Boolean) {}
     fun clear(userId: String, day: Int)
 }
 
@@ -274,16 +276,25 @@ class PrefsReaderPositionStorage(context: Context) : ReaderPositionStorage {
         prefs.edit().putString("pos_${userId}_${day}_$translation", raw).apply()
     }
 
+    override fun hasReachedEnd(userId: String, day: Int): Boolean =
+        prefs.getBoolean("end_reached_${userId}_$day", false)
+
+    override fun setReachedEnd(userId: String, day: Int, reached: Boolean) {
+        prefs.edit().putBoolean("end_reached_${userId}_$day", reached).apply()
+    }
+
     override fun clear(userId: String, day: Int) {
         val editor = prefs.edit()
         val prefix = "pos_${userId}_${day}_"
         prefs.all.keys.filter { it.startsWith(prefix) }.forEach { editor.remove(it) }
+        editor.remove("end_reached_${userId}_$day")
         editor.apply()
     }
 }
 
 class InMemoryReaderPositionStorage : ReaderPositionStorage {
     private val map = mutableMapOf<String, SavedReaderPosition>()
+    private val endReachedMap = mutableMapOf<String, Boolean>()
 
     override fun getPosition(userId: String, day: Int, translation: String): SavedReaderPosition? =
         map["${userId}_${day}_$translation"]
@@ -292,9 +303,17 @@ class InMemoryReaderPositionStorage : ReaderPositionStorage {
         map["${userId}_${day}_$translation"] = position
     }
 
+    override fun hasReachedEnd(userId: String, day: Int): Boolean =
+        endReachedMap["${userId}_$day"] ?: false
+
+    override fun setReachedEnd(userId: String, day: Int, reached: Boolean) {
+        endReachedMap["${userId}_$day"] = reached
+    }
+
     override fun clear(userId: String, day: Int) {
         val prefix = "${userId}_${day}_"
         map.keys.filter { it.startsWith(prefix) }.toList().forEach { map.remove(it) }
+        endReachedMap.remove("${userId}_$day")
     }
 }
 

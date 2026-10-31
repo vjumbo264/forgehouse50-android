@@ -77,6 +77,7 @@ import com.forgebuild.forgehouse50.audio.AudioPlayerController
 import com.forgebuild.forgehouse50.audio.AudioPlayerUiState
 import com.forgebuild.forgehouse50.audio.ChapterAudioDownloadState
 import com.forgebuild.forgehouse50.audio.DownloadedAudioChapter
+import com.forgebuild.forgehouse50.data.ReadingCompletionLogic
 import java.util.Locale
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -358,19 +359,27 @@ fun ReadScreen(
         }
     }
 
-    var finalChapterReached by remember(activeDay) { mutableStateOf(false) }
-    LaunchedEffect(currentChapterIdx, chapters.size) {
-        if (chapters.isNotEmpty() && currentChapterIdx >= chapters.lastIndex) {
-            finalChapterReached = true
-        }
+    val sentinelKey = remember(activeDay) { ReadingCompletionLogic.dayEndSentinelKey(activeDay) }
+    var hasReachedEnd by remember(activeDay) {
+        mutableStateOf(posStorage.hasReachedEnd(uid, activeDay))
+    }
+    val lastChapterTitle = remember(chapters) {
+        chapters.lastOrNull()?.let { "${it.first} ${it.second}" }.orEmpty()
     }
 
-    // Check if the last chapter heading is visible
-    val visibleItems = listState.layoutInfo.visibleItemsInfo
-    if (chapterBoundsList.isNotEmpty()) {
-        val lastStart = chapterBoundsList.last().startIndex
-        if (visibleItems.any { it.index >= lastStart }) {
-            finalChapterReached = true
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset, listState.isScrollInProgress) {
+        if (!hasReachedEnd && dayLoaded && chapters.isNotEmpty()) {
+            val isSentinelVisible = listState.layoutInfo.visibleItemsInfo.any { it.key == sentinelKey }
+            if (ReadingCompletionLogic.shouldMarkEndReached(
+                    isSentinelVisible = isSentinelVisible,
+                    isScrollInProgress = listState.isScrollInProgress,
+                    dayLoaded = dayLoaded,
+                    alreadyReached = hasReachedEnd,
+                )
+            ) {
+                hasReachedEnd = true
+                posStorage.setReachedEnd(uid, activeDay, true)
+            }
         }
     }
 
@@ -478,8 +487,8 @@ fun ReadScreen(
     }
 
     val isCurrentDone = completedDays.contains(activeDay)
-    val hasMinTime = timerTick >= 300
-    val canComplete = hasMinTime && finalChapterReached
+    val hasMinTime = timerTick >= ReadingCompletionLogic.MINIMUM_READING_SECONDS
+    val canComplete = ReadingCompletionLogic.canMarkComplete(timerTick, hasReachedEnd)
 
     // Root layout: pointerInput lives strictly on LazyColumn (Scripture surface), so bottom-dock
     // audio playback controls never count as reading interaction.
@@ -814,6 +823,11 @@ fun ReadScreen(
                             )
                         }
                     }
+                }
+            }
+            if (dayLoaded && chapters.isNotEmpty()) {
+                item(key = sentinelKey) {
+                    Spacer(Modifier.height(24.dp))
                 }
             }
         }
@@ -1249,14 +1263,11 @@ fun ReadScreen(
 
                         // Helper text when day completion is disabled
                         if (!canComplete) {
-                            val helper = when {
-                                !hasMinTime -> {
-                                    val rem = (300 - timerTick).coerceAtLeast(0)
-                                    "Read for ${rem / 60}:${String.format("%02d", rem % 60)} more to complete"
-                                }
-                                !finalChapterReached -> "Reach the final chapter (${chapters.lastOrNull()?.let { "${it.first} ${it.second}" } ?: "end"}) to complete"
-                                else -> ""
-                            }
+                            val helper = ReadingCompletionLogic.completionHelperText(
+                                readingSeconds = timerTick,
+                                hasReachedEnd = hasReachedEnd,
+                                lastChapterTitle = lastChapterTitle,
+                            )
                             if (helper.isNotBlank()) {
                                 Text(
                                     helper,
