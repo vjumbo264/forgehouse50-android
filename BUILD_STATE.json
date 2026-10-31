@@ -9,7 +9,7 @@
   ],
   "goal": "Audio NT 5 translations + Android repo migration with release hold + pastor requests (announcements, timer fix, rest day catch-up, streaks, admin rollout, community chat)",
   "status": "in_progress",
-  "current_phase": "i3",
+  "current_phase": "i4",
   "queue": [
     {
       "id": "i0",
@@ -32,13 +32,13 @@
     {
       "id": "i3",
       "title": "Audio API in the VerseWell Worker",
-      "status": "in_progress",
-      "notes": ""
+      "status": "done",
+      "notes": "Verified live VerseWell Worker Audio API (https://versewell-api.vjumbo264.workers.dev): GET /api/v1/versions exposes audio metadata (available:true for KJV/NIV/TLB/GW/VOICE, available:false for all 7 others); GET /api/v1/audio/{version}/manifest serves live partial/complete manifests; GET & HEAD /api/v1/audio/{version}/{book}/{chapter} verified with Range: bytes=0-1023 -> HTTP 206, Content-Type: audio/mp4, Accept-Ranges: bytes, Cache API sha-keyed caching, immutable Cache-Control + ETag (304 verified), OSIS/human/slug book resolution (1Cor -> 1-corinthians), and 404 for missing/unbuilt chapters."
     },
     {
       "id": "i4",
       "title": "Announcements: large, persistent, reliably delivered",
-      "status": "pending",
+      "status": "in_progress",
       "notes": ""
     },
     {
@@ -87,11 +87,12 @@
   "completed": [
     "i0",
     "i1",
-    "i2"
+    "i2",
+    "i3"
   ],
   "next_steps": [
-    "Upgrade and verify i3 (VerseWell Worker Audio API: Cache API sha-keyed caching, book OSIS/name/slug resolution, Range 206 streaming, 404 on missing chapters, /versions audio metadata)",
-    "Proceed to i4 (Announcements backend + Android Today screen + Admin controls)"
+    "Complete & verify i4 (Announcements: backend + Android Today screen large non-truncated persistent card for all roles including admins/pastor, archive access, instant no-stale-cache refresh, admin post/edit/retire + member preview)",
+    "Complete i5 (Reader timer: never show raw CancellationException text)"
   ],
   "decisions": [
     "Android repo vjumbo264/forgehouse50-android created as public to avoid exhausting limited Actions minutes on private repo during matrix builds.",
@@ -145,8 +146,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T05:31:14Z",
-  "last_session_note": "i2 verified done and full audio production run 41172882185 launched; completing i3 Audio Worker API.",
+  "last_updated": "2026-10-31T05:32:31Z",
+  "last_session_note": "i3 verified done with live HTTP 206 Range, ETag 304, HEAD, and 404 checks; starting i4 Announcements.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,
