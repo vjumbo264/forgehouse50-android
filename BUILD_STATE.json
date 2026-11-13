@@ -347,8 +347,8 @@
       {
         "id": "k9",
         "title": "Forgot password",
-        "status": "pending",
-        "notes": "Not started."
+        "status": "done",
+        "notes": "Backend /api/auth/forgot_password & /api/auth/reset_password (53f8bd0 + c3a0518 preserving user.role on reset, Brevo failure rollback, 30s cooldown, session revocation, auth_reset_test.mjs); Android ForgotPasswordForm + ResetPasswordForm in AuthScreens.kt with AuthResetLogic validation, 30s resend countdown, 429 message passthrough, LoginResponse.id persistence, and AuthResetLogicTest."
       },
       {
         "id": "k10",
@@ -431,7 +431,7 @@
     "next_steps": [
       "Diagnose and fix k1 (chat latency + free-tier budget doc) and k2 (DM send failure + member-to-admin infinite load loop)."
     ],
-    "last_updated": "2026-11-13T13:36:00.204Z",
-    "last_session_note": "Completed k7 and k8 refinements; moving to k9 Forgot password."
+    "last_updated": "2026-11-13T13:37:09.650Z",
+    "last_session_note": "Completed k9 Forgot password (backend role fix + Android validation/cooldown/tests); moving to k10 profile picture prompt."
   }
 }

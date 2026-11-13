@@ -117,7 +117,7 @@ class ApiClient(private val session: SessionStore) {
             403 -> msg ?: "You do not have permission to perform this action."
             404 -> msg ?: "The requested item could not be found."
             405 -> "Could not save your note. Please try again."
-            429 -> "Rate limit reached. Please wait a moment and try again."
+            429 -> msg ?: "Rate limit reached. Please wait a moment and try again."
             500, 502, 503, 504 -> "Something went wrong on the server. Please try again."
             else -> msg ?: "Request failed. Please try again."
         }

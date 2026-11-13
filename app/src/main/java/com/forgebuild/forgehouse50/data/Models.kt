@@ -111,6 +111,7 @@ data class AdminLoginResponse(
 @Serializable
 data class LoginResponse(
     val ok: Boolean = false,
+    val id: String? = null,
     val name: String? = null,
     val surname: String? = null,
     val role: String? = null,

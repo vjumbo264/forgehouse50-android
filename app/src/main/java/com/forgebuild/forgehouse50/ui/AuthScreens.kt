@@ -239,7 +239,7 @@ private fun LoginForm(
         Spacer(Modifier.height(24.dp))
         ExpressiveButton(
             onClick = {
-                if (!email.contains("@")) {
+                if (!AuthResetLogic.isValidEmail(email)) {
                     error = "Email address must contain '@'. If you are an administrator, use Admin sign in."
                     return@ExpressiveButton
                 }
@@ -248,6 +248,7 @@ private fun LoginForm(
                     try {
                         val res = repo.api.login(email.trim(), password)
                         if (res.ok) {
+                            res.id?.let { repo.session.userId = it }
                             repo.session.userName = res.name
                             repo.session.userRole = res.role
                             onAuthenticated()
@@ -563,6 +564,34 @@ private fun AdminLoginForm(
 }
 
 
+object AuthResetLogic {
+    const val RESEND_COOLDOWN_SECONDS = 30
+
+    fun isValidEmail(raw: String): Boolean {
+        val email = raw.trim()
+        if (email.isEmpty() || email.contains(" ")) return false
+        val at = email.indexOf('@')
+        if (at <= 0 || at != email.lastIndexOf('@')) return false
+        val domain = email.substring(at + 1)
+        val dot = domain.lastIndexOf('.')
+        return dot > 0 && dot < domain.length - 1
+    }
+
+    fun validateResetInput(code: String, newPassword: String, confirmPassword: String): String? {
+        val c = code.trim()
+        if (c.length != 6 || !c.all(Char::isDigit)) return "Enter the 6-digit code from your email"
+        if (newPassword.length < 8) return "Password must be at least 8 characters"
+        if (newPassword != confirmPassword) return "Passwords do not match"
+        return null
+    }
+
+    fun resendRemainingSeconds(lastSentAtMs: Long, nowMs: Long): Int {
+        if (lastSentAtMs <= 0L) return 0
+        val elapsedSec = ((nowMs - lastSentAtMs) / 1000L).toInt().coerceAtLeast(0)
+        return (RESEND_COOLDOWN_SECONDS - elapsedSec).coerceAtLeast(0)
+    }
+}
+
 @Composable
 private fun ForgotPasswordForm(
     repo: Repository,
@@ -652,6 +681,17 @@ private fun ResetPasswordForm(
     var resendBusy by remember { mutableStateOf(false) }
     var infoMessage by remember { mutableStateOf<String?>("Code sent to $email") }
     var error by remember { mutableStateOf<String?>(null) }
+    var lastSentAtMs by remember { mutableStateOf(System.currentTimeMillis()) }
+    var cooldownSec by remember { mutableStateOf(AuthResetLogic.RESEND_COOLDOWN_SECONDS) }
+
+    LaunchedEffect(lastSentAtMs) {
+        while (true) {
+            val rem = AuthResetLogic.resendRemainingSeconds(lastSentAtMs, System.currentTimeMillis())
+            cooldownSec = rem
+            if (rem <= 0) break
+            kotlinx.coroutines.delay(1000L)
+        }
+    }
 
     AuthScaffold("Choose a new password") {
         infoMessage?.let {
@@ -709,16 +749,9 @@ private fun ResetPasswordForm(
         Spacer(Modifier.height(24.dp))
         ExpressiveButton(
             onClick = {
-                if (code.length != 6) {
-                    error = "Enter the 6-digit code from your email"
-                    return@ExpressiveButton
-                }
-                if (newPassword.length < 8) {
-                    error = "Password must be at least 8 characters"
-                    return@ExpressiveButton
-                }
-                if (newPassword != confirmPassword) {
-                    error = "Passwords do not match"
+                val validationErr = AuthResetLogic.validateResetInput(code, newPassword, confirmPassword)
+                if (validationErr != null) {
+                    error = validationErr
                     return@ExpressiveButton
                 }
                 scope.launch {
@@ -760,6 +793,8 @@ private fun ResetPasswordForm(
                         try {
                             val res = repo.api.forgotPassword(email)
                             if (res.ok) {
+                                lastSentAtMs = System.currentTimeMillis()
+                                cooldownSec = AuthResetLogic.RESEND_COOLDOWN_SECONDS
                                 infoMessage = "A fresh 6-digit code was sent to $email"
                             } else {
                                 error = res.error ?: "Unable to resend code"
@@ -771,9 +806,13 @@ private fun ResetPasswordForm(
                         }
                     }
                 },
-                enabled = !resendBusy
+                enabled = !resendBusy && cooldownSec == 0
             ) {
-                Text(if (resendBusy) "Sending..." else "Resend code")
+                Text(when {
+                    resendBusy -> "Sending..."
+                    cooldownSec > 0 -> "Resend (${cooldownSec}s)"
+                    else -> "Resend code"
+                })
             }
             TextButton(onClick = onBack) {
                 Text("Back to sign in")
