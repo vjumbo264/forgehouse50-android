@@ -137,6 +137,55 @@ class SessionStore(context: Context) {
         prefs.edit().putBoolean("notes_notice_v2_ack_$id", true).apply()
     }
 
+    /** Offline/retry queue JSON for optimistic chat messages (k3/k7). */
+    var pendingChatQueueJson: String?
+        get() = prefs.getString(KEY_PENDING_CHAT_JSON, null)
+        set(value) = prefs.edit().apply {
+            if (value == null) remove(KEY_PENDING_CHAT_JSON) else putString(KEY_PENDING_CHAT_JSON, value)
+        }.apply()
+
+    /** Background notification sync cursors (k7), cleared on logout. */
+    var bgChatGroupCursor: String?
+        get() = prefs.getString(KEY_BG_CHAT_GROUP_CURSOR, null)
+        set(value) = prefs.edit().apply {
+            if (value == null) remove(KEY_BG_CHAT_GROUP_CURSOR) else putString(KEY_BG_CHAT_GROUP_CURSOR, value)
+        }.apply()
+
+    var bgChatDirectCursor: String?
+        get() = prefs.getString(KEY_BG_CHAT_DIRECT_CURSOR, null)
+        set(value) = prefs.edit().apply {
+            if (value == null) remove(KEY_BG_CHAT_DIRECT_CURSOR) else putString(KEY_BG_CHAT_DIRECT_CURSOR, value)
+        }.apply()
+
+    /** Epoch millis until which KeepAliveService uses 30s active-burst polling (k7). */
+    var bgChatBurstUntilMs: Long
+        get() = prefs.getLong(KEY_BG_CHAT_BURST_UNTIL, 0L)
+        set(value) = prefs.edit().putLong(KEY_BG_CHAT_BURST_UNTIL, value).apply()
+
+    /** Mute group chat notifications (private messages from leaders always notify, k7). */
+    var muteGroupChatNotifications: Boolean
+        get() = prefs.getBoolean(KEY_MUTE_GROUP_NOTIFS, false)
+        set(value) = prefs.edit().putBoolean(KEY_MUTE_GROUP_NOTIFS, value).apply()
+
+    /** Hourly spiritual quotes opt-in (default true, k8). */
+    var hourlyQuotesEnabled: Boolean
+        get() = prefs.getBoolean(KEY_HOURLY_QUOTES_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_HOURLY_QUOTES_ENABLED, value).apply()
+
+    var lastQuoteIndex: Int
+        get() = prefs.getInt(KEY_LAST_QUOTE_INDEX, -1)
+        set(value) = prefs.edit().putInt(KEY_LAST_QUOTE_INDEX, value).apply()
+
+    /** One-time OEM background-activity tip dismissed flag (k7). */
+    var oemBackgroundTipDismissed: Boolean
+        get() = prefs.getBoolean(KEY_OEM_BG_TIP_DISMISSED, false)
+        set(value) = prefs.edit().putBoolean(KEY_OEM_BG_TIP_DISMISSED, value).apply()
+
+    /** Dismissed profile picture reminder timestamp (k10). */
+    var profilePhotoPromptDismissedAt: Long
+        get() = prefs.getLong(KEY_PHOTO_PROMPT_DISMISSED_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_PHOTO_PROMPT_DISMISSED_AT, value).apply()
+
     fun clear() = prefs.edit().clear().apply()
 
     private companion object {
@@ -159,5 +208,14 @@ class SessionStore(context: Context) {
         const val KEY_DOWNLOADED_UPDATE_SHA256 = "downloaded_update_sha256"
         const val KEY_PREFERRED_UPDATE_MODE = "preferred_update_mode"
         const val KEY_DOWNLOADED_UPDATE_VN = "downloaded_update_vn"
+        const val KEY_PENDING_CHAT_JSON = "pending_chat_queue_json"
+        const val KEY_BG_CHAT_GROUP_CURSOR = "bg_chat_group_cursor"
+        const val KEY_BG_CHAT_DIRECT_CURSOR = "bg_chat_direct_cursor"
+        const val KEY_BG_CHAT_BURST_UNTIL = "bg_chat_burst_until"
+        const val KEY_MUTE_GROUP_NOTIFS = "mute_group_chat_notifications"
+        const val KEY_HOURLY_QUOTES_ENABLED = "hourly_quotes_enabled"
+        const val KEY_LAST_QUOTE_INDEX = "last_quote_index"
+        const val KEY_OEM_BG_TIP_DISMISSED = "oem_bg_tip_dismissed"
+        const val KEY_PHOTO_PROMPT_DISMISSED_AT = "photo_prompt_dismissed_at"
     }
 }

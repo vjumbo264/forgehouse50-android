@@ -1,7 +1,11 @@
 package com.forgebuild.forgehouse50.ui.community
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,8 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,12 +32,15 @@ import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
@@ -68,18 +74,26 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.forgebuild.forgehouse50.data.ChatDeliveryState
 import com.forgebuild.forgehouse50.data.ChatDirectoryMemberDto
 import com.forgebuild.forgehouse50.data.ChatMessageDto
 import com.forgebuild.forgehouse50.data.ChatThreadDto
@@ -94,19 +108,37 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.UUID
+import kotlin.math.roundToInt
+
+/**
+ * Tracks which chat conversation is currently visible in the foreground so
+ * background notifications (k7) can suppress alerts for the active thread.
+ */
+object ActiveChatForegroundTracker {
+    @Volatile var activeChannel: String? = null // "group" | "direct" | null
+    @Volatile var activeThreadId: String? = null
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommunityScreen(
     repo: Repository,
     onBack: () -> Unit,
+    initialTab: Int = 0,
+    initialThreadId: String? = null,
 ) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val isAdmin = repo.session.isAdmin
     val sessionToken = repo.session.sessionToken
+    val selfUserId = repo.session.userId.orEmpty()
+    val selfName = repo.session.userName?.takeIf { it.isNotBlank() } ?: "You"
+    val selfRole = if (isAdmin) "admin" else "member"
 
-    var selectedTab by remember { mutableIntStateOf(0) } // 0 = Group Chat, 1 = Direct, 2 = Reflections
+    var selectedTab by remember { mutableIntStateOf(initialTab.coerceIn(0, 2)) }
+    var lastActivityAtMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var highlightedMessageId by remember { mutableStateOf<String?>(null) }
 
     // Shared chat metadata
     var isMuted by remember { mutableStateOf(false) }
@@ -117,37 +149,44 @@ fun CommunityScreen(
     var groupHasOlder by remember { mutableStateOf(false) }
     var groupOldestTs by remember { mutableStateOf<String?>(null) }
     var groupLastTs by remember { mutableStateOf<String?>(null) }
-    var groupLoading by remember { mutableStateOf(true) }
+    var groupLoadState by remember { mutableStateOf(CommunityChatLogic.ThreadLoadState(isLoading = true)) }
     var groupLoadingOlder by remember { mutableStateOf(false) }
     var groupDraft by remember { mutableStateOf("") }
     var groupReplyTarget by remember { mutableStateOf<ChatMessageDto?>(null) }
-    var groupSending by remember { mutableStateOf(false) }
     val groupListState = rememberLazyListState()
 
-    // Direct chat state
+    // Direct chat state (k2 + k6 shared leadership inbox)
     var threads by remember { mutableStateOf<List<ChatThreadDto>>(emptyList()) }
     var memberDirectory by remember { mutableStateOf<List<ChatDirectoryMemberDto>>(emptyList()) }
-    var threadsLoading by remember { mutableStateOf(true) }
-    var activeDirectThreadId by remember { mutableStateOf<String?>(if (isAdmin) null else repo.session.userId) }
-    var activeDirectTitle by remember { mutableStateOf("Pastor Dave") }
-    var directStartedByAdmin by remember { mutableStateOf(false) }
+    var threadsLoadState by remember { mutableStateOf(CommunityChatLogic.ThreadLoadState(isLoading = true)) }
+    var activeDirectThreadId by remember {
+        mutableStateOf<String?>(
+            if (isAdmin) initialThreadId?.takeIf { it.isNotBlank() }
+            else repo.session.userId
+        )
+    }
+    var activeDirectTitle by remember {
+        mutableStateOf(if (isAdmin) "Direct Message" else CommunityChatLogic.memberDirectHeaderTitle())
+    }
+    var activeDirectSubtitle by remember {
+        mutableStateOf(if (isAdmin) "Visible only to leadership and this member" else "Private chat with pastors & leaders")
+    }
     var directMessages by remember { mutableStateOf<List<ChatMessageDto>>(emptyList()) }
     var directHasOlder by remember { mutableStateOf(false) }
     var directOldestTs by remember { mutableStateOf<String?>(null) }
     var directLastTs by remember { mutableStateOf<String?>(null) }
-    var directLoading by remember { mutableStateOf(false) }
+    var directLoadState by remember { mutableStateOf(CommunityChatLogic.ThreadLoadState(isLoading = false)) }
     var directLoadingOlder by remember { mutableStateOf(false) }
     var directDraft by remember { mutableStateOf("") }
     var directReplyTarget by remember { mutableStateOf<ChatMessageDto?>(null) }
-    var directSending by remember { mutableStateOf(false) }
     var showMemberPicker by remember { mutableStateOf(false) }
     val directListState = rememberLazyListState()
 
-    // Moderation state
+    // Moderation & delete state (k5)
     var deleteConfirmTarget by remember { mutableStateOf<ChatMessageDto?>(null) }
     var mutedUserIds by remember { mutableStateOf<Set<String>>(emptySet()) }
 
-    // Reflections feed state (preserved)
+    // Reflections feed state
     var posts by remember { mutableStateOf<List<CommunityPost>>(emptyList()) }
     var nextCursor by remember { mutableStateOf<String?>(null) }
     var hasMorePosts by remember { mutableStateOf(false) }
@@ -155,13 +194,28 @@ fun CommunityScreen(
     var postsLoadingMore by remember { mutableStateOf(false) }
     val postsListState = rememberLazyListState()
 
-    // Track foreground lifecycle so polling runs ONLY while screen is visible & resumed
+    // Lifecycle tracking
     val lifecycleOwner = LocalLifecycleOwner.current
     var isResumed by remember {
         mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
     }
 
-    suspend fun refreshThreadsMetadata() {
+    fun restorePendingMessagesFor(channelType: String, threadId: String?): List<ChatMessageDto> {
+        val pending = PendingChatStore.loadAll(repo.session)
+        return pending.filter {
+            it.channel_type == channelType &&
+                (channelType == "group" || it.thread_id == threadId || (!isAdmin && it.thread_id == null))
+        }.map { CommunityChatLogic.fromPendingOutgoing(it, selfUserId) }
+    }
+
+    suspend fun refreshThreadsMetadata(userInitiated: Boolean = false) {
+        if (!userInitiated && threadsLoadState.attemptCount >= CommunityChatLogic.MAX_AUTO_LOAD_RETRIES && threadsLoadState.errorMessage != null) {
+            return
+        }
+        threadsLoadState = threadsLoadState.copy(
+            isLoading = true,
+            attemptCount = if (userInitiated) 0 else threadsLoadState.attemptCount,
+        )
         try {
             val res = repo.api.chatThreads()
             isMuted = res.is_muted
@@ -174,61 +228,170 @@ fun CommunityScreen(
                 val own = res.threads.firstOrNull()
                 if (own != null) {
                     activeDirectThreadId = own.thread_id
-                    activeDirectTitle = own.title
+                }
+                activeDirectTitle = CommunityChatLogic.memberDirectHeaderTitle()
+                activeDirectSubtitle = CommunityChatLogic.memberLeadershipSubtitle(res.threads)
+            } else if (!activeDirectThreadId.isNullOrBlank()) {
+                val matched = res.threads.firstOrNull { it.thread_id == activeDirectThreadId }
+                    ?: res.directory.firstOrNull { it.user_id == activeDirectThreadId }?.let {
+                        ChatThreadDto(thread_id = it.user_id, user_id = it.user_id, title = it.title)
+                    }
+                if (matched != null && matched.title.isNotBlank()) {
+                    activeDirectTitle = matched.title
                 }
             }
+            threadsLoadState = CommunityChatLogic.onLoadSuccess(threadsLoadState)
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
-        } finally {
-            threadsLoading = false
+            val msg = CommunityChatLogic.sanitizeChatError(e, "Could not load direct threads.")
+            threadsLoadState = CommunityChatLogic.onLoadFailure(threadsLoadState, msg, System.currentTimeMillis())
         }
     }
 
-    suspend fun loadGroupInitial(scrollToBottom: Boolean = true) {
+    suspend fun loadGroupInitial(scrollToBottom: Boolean = true, userInitiated: Boolean = false) {
+        groupLoadState = groupLoadState.copy(
+            isLoading = true,
+            errorMessage = if (userInitiated) null else groupLoadState.errorMessage,
+            attemptCount = if (userInitiated) 0 else groupLoadState.attemptCount,
+        )
         try {
             val res = repo.api.chatGroupMessages(limit = 50)
-            groupMessages = res.messages
+            val pending = restorePendingMessagesFor("group", null)
+            groupMessages = CommunityChatLogic.applyIncrementalDelta(pending, res.messages)
             groupHasOlder = res.has_older
             groupOldestTs = res.oldest_timestamp
-            groupLastTs = res.last_timestamp
+            groupLastTs = CommunityChatLogic.normalizeCursor(res.last_timestamp)
             isMuted = res.is_muted
-            if (scrollToBottom && res.messages.isNotEmpty()) {
-                groupListState.scrollToItem(res.messages.lastIndex)
+            groupLoadState = CommunityChatLogic.onLoadSuccess(groupLoadState)
+            lastActivityAtMs = System.currentTimeMillis()
+            if (scrollToBottom && groupMessages.isNotEmpty()) {
+                groupListState.scrollToItem(groupMessages.lastIndex)
             }
-        } catch (e: Throwable) {
-            val msg = CommunityChatLogic.sanitizeChatError(e, "Could not load group chat.")
-            snackbarHostState.showSnackbar(msg)
-        } finally {
-            groupLoading = false
-        }
-    }
-
-    suspend fun pollGroupSince() {
-        val cursor = groupLastTs
-        if (cursor.isNullOrBlank()) {
-            loadGroupInitial(scrollToBottom = groupMessages.isEmpty())
-            return
-        }
-        try {
-            val nearBottom = groupMessages.isEmpty() ||
-                (groupListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= (groupMessages.lastIndex - 2)
-            val res = repo.api.chatGroupMessages(since = cursor, limit = 50)
-            isMuted = res.is_muted
-            if (res.messages.isNotEmpty() || res.deleted_ids.isNotEmpty()) {
-                groupMessages = CommunityChatLogic.applyIncrementalDelta(
-                    existing = groupMessages,
-                    incoming = res.messages,
-                    deletedIds = res.deleted_ids,
-                )
-                if (!res.last_timestamp.isNullOrBlank()) {
-                    groupLastTs = res.last_timestamp
-                }
-                if (nearBottom && res.messages.isNotEmpty() && groupMessages.isNotEmpty()) {
-                    groupListState.animateScrollToItem(groupMessages.lastIndex)
-                }
+            val latestTs = res.messages.lastOrNull()?.created_at
+            if (!latestTs.isNullOrBlank() && selectedTab == 0) {
+                runCatching { repo.api.markChatRead("group", timestamp = latestTs) }
             }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
+            val msg = CommunityChatLogic.sanitizeChatError(e, "Could not load group chat.")
+            groupLoadState = CommunityChatLogic.onLoadFailure(groupLoadState, msg, System.currentTimeMillis())
+        }
+    }
+
+    suspend fun loadDirectInitial(
+        threadId: String?,
+        scrollToBottom: Boolean = true,
+        userInitiated: Boolean = false,
+    ) {
+        if (isAdmin && threadId.isNullOrBlank()) return
+        directLoadState = directLoadState.copy(
+            isLoading = true,
+            errorMessage = if (userInitiated) null else directLoadState.errorMessage,
+            attemptCount = if (userInitiated) 0 else directLoadState.attemptCount,
+        )
+        try {
+            val res = repo.api.chatDirectMessages(threadId = if (isAdmin) threadId else null, limit = 50)
+            val effectiveThreadId = res.thread_id ?: threadId ?: selfUserId
+            val pending = restorePendingMessagesFor("direct", effectiveThreadId)
+            directMessages = CommunityChatLogic.applyIncrementalDelta(pending, res.messages)
+            directHasOlder = res.has_older
+            directOldestTs = res.oldest_timestamp
+            directLastTs = CommunityChatLogic.normalizeCursor(res.last_timestamp)
+            isMuted = res.is_muted
+            if (!isAdmin) {
+                activeDirectTitle = CommunityChatLogic.memberDirectHeaderTitle()
+            } else if (!res.thread_title.isNullOrBlank()) {
+                activeDirectTitle = res.thread_title
+            }
+            directLoadState = CommunityChatLogic.onLoadSuccess(directLoadState)
+            lastActivityAtMs = System.currentTimeMillis()
+            if (scrollToBottom && directMessages.isNotEmpty()) {
+                directListState.scrollToItem(directMessages.lastIndex)
+            }
+            val latestTs = res.messages.lastOrNull()?.created_at
+            if (!latestTs.isNullOrBlank() && selectedTab == 1) {
+                runCatching { repo.api.markChatRead("direct", threadId = effectiveThreadId, timestamp = latestTs) }
+            }
+            refreshThreadsMetadata()
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            val msg = CommunityChatLogic.sanitizeChatError(e, "Could not load private messages.")
+            directLoadState = CommunityChatLogic.onLoadFailure(directLoadState, msg, System.currentTimeMillis())
+        }
+    }
+
+    suspend fun syncForegroundTick() {
+        val nowMs = System.currentTimeMillis()
+        if (selectedTab == 0) {
+            val gCursor = groupLastTs
+            if (gCursor.isNullOrBlank()) {
+                if (CommunityChatLogic.shouldAttemptInitialOnPoll(gCursor, groupLoadState, nowMs)) {
+                    loadGroupInitial(scrollToBottom = groupMessages.isEmpty())
+                }
+                return
+            }
+            try {
+                val nearBottom = groupMessages.isEmpty() ||
+                    (groupListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= (groupMessages.lastIndex - 2)
+                val sync = repo.api.chatSync(groupSince = gCursor)
+                isMuted = sync.is_muted
+                unreadSummary = sync.unread
+                groupLastTs = CommunityChatLogic.normalizeCursor(sync.group_last_ts, gCursor)
+                if (sync.group_messages.isNotEmpty()) {
+                    val prevCount = groupMessages.size
+                    groupMessages = CommunityChatLogic.applyIncrementalDelta(groupMessages, sync.group_messages)
+                    lastActivityAtMs = nowMs
+                    if (nearBottom && groupMessages.isNotEmpty() && groupMessages.size >= prevCount) {
+                        groupListState.animateScrollToItem(groupMessages.lastIndex)
+                    }
+                    val newestTs = sync.group_messages.lastOrNull { !it.is_me }?.created_at
+                    if (!newestTs.isNullOrBlank()) {
+                        runCatching { repo.api.markChatRead("group", timestamp = newestTs) }
+                    }
+                }
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+            }
+        } else if (selectedTab == 1) {
+            if (isAdmin && activeDirectThreadId.isNullOrBlank()) {
+                if (CommunityChatLogic.shouldAttemptInitialOnPoll(null, threadsLoadState, nowMs) || threadsLoadState.errorMessage == null) {
+                    refreshThreadsMetadata()
+                }
+                return
+            }
+            val dCursor = directLastTs
+            if (dCursor.isNullOrBlank()) {
+                if (CommunityChatLogic.shouldAttemptInitialOnPoll(dCursor, directLoadState, nowMs)) {
+                    loadDirectInitial(activeDirectThreadId, scrollToBottom = directMessages.isEmpty())
+                }
+                return
+            }
+            try {
+                val nearBottom = directMessages.isEmpty() ||
+                    (directListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= (directMessages.lastIndex - 2)
+                val sync = repo.api.chatSync(
+                    directSince = dCursor,
+                    threadId = if (isAdmin) activeDirectThreadId else null,
+                )
+                isMuted = sync.is_muted
+                unreadSummary = sync.unread
+                directLastTs = CommunityChatLogic.normalizeCursor(sync.direct_last_ts, dCursor)
+                if (sync.direct_messages.isNotEmpty()) {
+                    val prevCount = directMessages.size
+                    directMessages = CommunityChatLogic.applyIncrementalDelta(directMessages, sync.direct_messages)
+                    lastActivityAtMs = nowMs
+                    if (nearBottom && directMessages.isNotEmpty() && directMessages.size >= prevCount) {
+                        directListState.animateScrollToItem(directMessages.lastIndex)
+                    }
+                    val newestTs = sync.direct_messages.lastOrNull { !it.is_me }?.created_at
+                    val effThread = if (isAdmin) activeDirectThreadId else selfUserId
+                    if (!newestTs.isNullOrBlank() && !effThread.isNullOrBlank()) {
+                        runCatching { repo.api.markChatRead("direct", threadId = effThread, timestamp = newestTs) }
+                    }
+                }
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+            }
         }
     }
 
@@ -249,70 +412,6 @@ fun CommunityScreen(
             snackbarHostState.showSnackbar(CommunityChatLogic.sanitizeChatError(e, "Could not load older messages."))
         } finally {
             groupLoadingOlder = false
-        }
-    }
-
-    suspend fun loadDirectInitial(threadId: String?, scrollToBottom: Boolean = true) {
-        if (isAdmin && threadId.isNullOrBlank()) return
-        directLoading = true
-        try {
-            val res = repo.api.chatDirectMessages(threadId = if (isAdmin) threadId else null, limit = 50)
-            directMessages = res.messages
-            directHasOlder = res.has_older
-            directOldestTs = res.oldest_timestamp
-            directLastTs = res.last_timestamp
-            directStartedByAdmin = res.thread_started_by_admin
-            isMuted = res.is_muted
-            if (!res.thread_title.isNullOrBlank()) {
-                activeDirectTitle = res.thread_title
-            }
-            if (scrollToBottom && res.messages.isNotEmpty()) {
-                directListState.scrollToItem(res.messages.lastIndex)
-            }
-            refreshThreadsMetadata()
-        } catch (e: Throwable) {
-            snackbarHostState.showSnackbar(CommunityChatLogic.sanitizeChatError(e, "Could not load conversation."))
-        } finally {
-            directLoading = false
-        }
-    }
-
-    suspend fun pollDirectSince(threadId: String?) {
-        if (isAdmin && threadId.isNullOrBlank()) {
-            refreshThreadsMetadata()
-            return
-        }
-        val cursor = directLastTs
-        if (cursor.isNullOrBlank()) {
-            loadDirectInitial(threadId, scrollToBottom = directMessages.isEmpty())
-            return
-        }
-        try {
-            val nearBottom = directMessages.isEmpty() ||
-                (directListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= (directMessages.lastIndex - 2)
-            val res = repo.api.chatDirectMessages(
-                threadId = if (isAdmin) threadId else null,
-                since = cursor,
-                limit = 50,
-            )
-            directStartedByAdmin = res.thread_started_by_admin
-            isMuted = res.is_muted
-            if (res.messages.isNotEmpty() || res.deleted_ids.isNotEmpty()) {
-                directMessages = CommunityChatLogic.applyIncrementalDelta(
-                    existing = directMessages,
-                    incoming = res.messages,
-                    deletedIds = res.deleted_ids,
-                )
-                if (!res.last_timestamp.isNullOrBlank()) {
-                    directLastTs = res.last_timestamp
-                }
-                if (nearBottom && res.messages.isNotEmpty() && directMessages.isNotEmpty()) {
-                    directListState.animateScrollToItem(directMessages.lastIndex)
-                }
-                refreshThreadsMetadata()
-            }
-        } catch (e: Throwable) {
-            if (e is CancellationException) throw e
         }
     }
 
@@ -369,6 +468,120 @@ fun CommunityScreen(
         }
     }
 
+    suspend fun sendGroupOptimistic(
+        text: String,
+        replyTarget: ChatMessageDto?,
+        existingClientId: String? = null,
+    ) {
+        val cid = existingClientId ?: UUID.randomUUID().toString()
+        val optimistic = if (existingClientId == null) {
+            CommunityChatLogic.createOptimisticMessage(
+                clientMsgId = cid,
+                channelType = "group",
+                threadId = null,
+                senderId = selfUserId,
+                authorName = selfName,
+                authorRole = selfRole,
+                text = text,
+                replyTo = replyTarget,
+            ).also { msg ->
+                groupMessages = groupMessages + msg
+                CommunityChatLogic.toPendingOutgoing(msg)?.let { PendingChatStore.upsert(repo.session, it) }
+                if (groupMessages.isNotEmpty()) {
+                    groupListState.animateScrollToItem(groupMessages.lastIndex)
+                }
+            }
+        } else {
+            groupMessages = CommunityChatLogic.markOptimisticRetrying(groupMessages, cid)
+            groupMessages.firstOrNull { it.client_msg_id == cid }
+        }
+        lastActivityAtMs = System.currentTimeMillis()
+        try {
+            val replyId = replyTarget?.id ?: optimistic?.reply_to?.id
+            val res = repo.api.sendGroupMessage(text = text, replyToId = replyId, clientMsgId = cid)
+            PendingChatStore.remove(repo.session, cid)
+            res.message?.let { sent ->
+                groupMessages = CommunityChatLogic.markOptimisticSent(groupMessages, cid, sent)
+                groupLastTs = CommunityChatLogic.normalizeCursor(sent.created_at, groupLastTs)
+            }
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            val errMsg = CommunityChatLogic.sanitizeChatError(e, "Failed to send")
+            groupMessages = CommunityChatLogic.markOptimisticFailed(groupMessages, cid, errMsg)
+        }
+    }
+
+    suspend fun sendDirectOptimistic(
+        text: String,
+        targetThreadId: String?,
+        replyTarget: ChatMessageDto?,
+        existingClientId: String? = null,
+    ) {
+        val cid = existingClientId ?: UUID.randomUUID().toString()
+        val effectiveThreadId = if (isAdmin) targetThreadId else selfUserId.ifBlank { null }
+        val optimistic = if (existingClientId == null) {
+            CommunityChatLogic.createOptimisticMessage(
+                clientMsgId = cid,
+                channelType = "direct",
+                threadId = effectiveThreadId,
+                senderId = selfUserId,
+                authorName = selfName,
+                authorRole = selfRole,
+                text = text,
+                replyTo = replyTarget,
+            ).also { msg ->
+                directMessages = directMessages + msg
+                CommunityChatLogic.toPendingOutgoing(msg)?.let { PendingChatStore.upsert(repo.session, it) }
+                if (directMessages.isNotEmpty()) {
+                    directListState.animateScrollToItem(directMessages.lastIndex)
+                }
+            }
+        } else {
+            directMessages = CommunityChatLogic.markOptimisticRetrying(directMessages, cid)
+            directMessages.firstOrNull { it.client_msg_id == cid }
+        }
+        lastActivityAtMs = System.currentTimeMillis()
+        try {
+            val replyId = replyTarget?.id ?: optimistic?.reply_to?.id
+            val res = repo.api.sendDirectMessage(
+                text = text,
+                targetUserId = if (isAdmin) effectiveThreadId else null,
+                replyToId = replyId,
+                clientMsgId = cid,
+            )
+            PendingChatStore.remove(repo.session, cid)
+            res.message?.let { sent ->
+                directMessages = CommunityChatLogic.markOptimisticSent(directMessages, cid, sent)
+                directLastTs = CommunityChatLogic.normalizeCursor(sent.created_at, directLastTs)
+            }
+            refreshThreadsMetadata()
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            val errMsg = CommunityChatLogic.sanitizeChatError(e, "Failed to send")
+            directMessages = CommunityChatLogic.markOptimisticFailed(directMessages, cid, errMsg)
+        }
+    }
+
+    fun jumpToMessage(
+        messages: List<ChatMessageDto>,
+        listState: androidx.compose.foundation.lazy.LazyListState,
+        replyToId: String,
+    ) {
+        val idx = CommunityChatLogic.findReplyTargetIndex(messages, replyToId)
+        scope.launch {
+            if (idx >= 0) {
+                listState.animateScrollToItem(idx)
+                highlightedMessageId = replyToId
+                delay(1_600L)
+                if (highlightedMessageId == replyToId) {
+                    highlightedMessageId = null
+                }
+            } else {
+                snackbarHostState.showSnackbar("Original message is older — tap 'Load older messages' above.")
+            }
+        }
+    }
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -378,54 +591,74 @@ fun CommunityScreen(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            ActiveChatForegroundTracker.activeChannel = null
+            ActiveChatForegroundTracker.activeThreadId = null
+        }
     }
 
-    // Initial load when screen opens
+    // Track active thread for foreground notification suppression (k7)
+    LaunchedEffect(isResumed, selectedTab, activeDirectThreadId) {
+        if (!isResumed) {
+            ActiveChatForegroundTracker.activeChannel = null
+            ActiveChatForegroundTracker.activeThreadId = null
+        } else when (selectedTab) {
+            0 -> {
+                ActiveChatForegroundTracker.activeChannel = "group"
+                ActiveChatForegroundTracker.activeThreadId = null
+            }
+            1 -> {
+                ActiveChatForegroundTracker.activeChannel = "direct"
+                ActiveChatForegroundTracker.activeThreadId = if (isAdmin) activeDirectThreadId else selfUserId
+            }
+            else -> {
+                ActiveChatForegroundTracker.activeChannel = null
+                ActiveChatForegroundTracker.activeThreadId = null
+            }
+        }
+    }
+
+    // Initial load on open
     LaunchedEffect(Unit) {
-        launch { refreshThreadsMetadata() }
-        launch { loadGroupInitial(scrollToBottom = true) }
+        launch { refreshThreadsMetadata(userInitiated = true) }
+        launch { loadGroupInitial(scrollToBottom = true, userInitiated = true) }
         if (!isAdmin) {
-            launch { loadDirectInitial(null, scrollToBottom = true) }
+            launch { loadDirectInitial(null, scrollToBottom = true, userInitiated = true) }
         }
         launch { loadReflectionsInitial() }
     }
 
-    // Load active direct thread whenever selected
+    // Load direct thread when switched to Direct tab or selected member thread changes
     LaunchedEffect(selectedTab, activeDirectThreadId) {
+        lastActivityAtMs = System.currentTimeMillis()
         if (selectedTab == 1) {
             if (isAdmin) {
                 if (!activeDirectThreadId.isNullOrBlank()) {
-                    loadDirectInitial(activeDirectThreadId, scrollToBottom = true)
+                    loadDirectInitial(activeDirectThreadId, scrollToBottom = true, userInitiated = true)
                 } else {
-                    refreshThreadsMetadata()
+                    refreshThreadsMetadata(userInitiated = true)
                 }
-            } else {
-                loadDirectInitial(null, scrollToBottom = directMessages.isEmpty())
+            } else if (!directLoadState.hasLoadedOnce) {
+                loadDirectInitial(null, scrollToBottom = directMessages.isEmpty(), userInitiated = true)
             }
         } else if (selectedTab == 0) {
             refreshThreadsMetadata()
         }
     }
 
-    // Foreground-only cursor polling while CommunityScreen is visible & RESUMED
+    // Adaptive foreground-only /sync polling while CommunityScreen is visible & RESUMED (k1)
     LaunchedEffect(isResumed, selectedTab, activeDirectThreadId) {
         if (!isResumed) return@LaunchedEffect
-        // Immediate catch-up refresh on resume
-        if (selectedTab == 0 && !groupLoading) {
-            pollGroupSince()
-            refreshThreadsMetadata()
-        } else if (selectedTab == 1 && !directLoading) {
-            pollDirectSince(activeDirectThreadId)
+        if (selectedTab == 0 && !groupLoadState.isLoading) {
+            syncForegroundTick()
+        } else if (selectedTab == 1 && !directLoadState.isLoading) {
+            syncForegroundTick()
         }
         while (isActive && isResumed) {
-            delay(CommunityChatLogic.FOREGROUND_POLL_INTERVAL_MS)
-            if (selectedTab == 0) {
-                pollGroupSince()
-                refreshThreadsMetadata()
-            } else if (selectedTab == 1) {
-                pollDirectSince(activeDirectThreadId)
-            }
+            val idleMs = (System.currentTimeMillis() - lastActivityAtMs).coerceAtLeast(0L)
+            delay(CommunityChatLogic.nextForegroundPollDelayMs(idleMs))
+            syncForegroundTick()
         }
     }
 
@@ -446,26 +679,39 @@ fun CommunityScreen(
             onDismissRequest = { deleteConfirmTarget = null },
             title = { Text("Delete message?") },
             text = {
-                Text("Remove this message by ${target.author_name} for everyone in the conversation?")
+                Text(
+                    if (target.is_me) {
+                        "Delete this message for everyone in the conversation?"
+                    } else {
+                        "Remove this message by ${target.author_name} for everyone in the conversation?"
+                    }
+                )
             },
             confirmButton = {
                 Button(
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                     onClick = {
+                        val toDelete = target
                         deleteConfirmTarget = null
                         scope.launch {
                             try {
-                                repo.api.adminDeleteChatMessage(target.id)
-                                groupMessages = CommunityChatLogic.applyIncrementalDelta(
-                                    groupMessages,
-                                    emptyList(),
-                                    listOf(target.id),
+                                val res = repo.api.deleteChatMessage(toDelete.id)
+                                val deletedAt = res.deleted_at ?: toDelete.deleted_at ?: ""
+                                groupMessages = CommunityChatLogic.applyLocalSoftDelete(
+                                    existing = groupMessages,
+                                    messageId = toDelete.id,
+                                    serverMessage = res.message,
+                                    isAdminViewer = isAdmin,
+                                    deletedAt = deletedAt,
                                 )
-                                directMessages = CommunityChatLogic.applyIncrementalDelta(
-                                    directMessages,
-                                    emptyList(),
-                                    listOf(target.id),
+                                directMessages = CommunityChatLogic.applyLocalSoftDelete(
+                                    existing = directMessages,
+                                    messageId = toDelete.id,
+                                    serverMessage = res.message,
+                                    isAdminViewer = isAdmin,
+                                    deletedAt = deletedAt,
                                 )
-                                snackbarHostState.showSnackbar("Message deleted")
+                                refreshThreadsMetadata()
                             } catch (e: Throwable) {
                                 snackbarHostState.showSnackbar(
                                     CommunityChatLogic.sanitizeChatError(e, "Could not delete message.")
@@ -473,16 +719,14 @@ fun CommunityScreen(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
                 ) {
                     Text("Delete")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { deleteConfirmTarget = null }) { Text("Cancel") }
+                TextButton(onClick = { deleteConfirmTarget = null }) {
+                    Text("Cancel")
+                }
             },
         )
     }
@@ -490,13 +734,17 @@ fun CommunityScreen(
     if (showMemberPicker && isAdmin) {
         AdminMemberPickerDialog(
             members = memberDirectory,
+            loading = threadsLoadState.isLoading,
+            errorMessage = threadsLoadState.errorMessage,
             sessionToken = sessionToken,
+            onRetry = { scope.launch { refreshThreadsMetadata(userInitiated = true) } },
             onDismiss = { showMemberPicker = false },
             onSelectMember = { member ->
                 showMemberPicker = false
                 directMessages = emptyList()
                 directLastTs = null
                 directOldestTs = null
+                directLoadState = CommunityChatLogic.ThreadLoadState(isLoading = true)
                 activeDirectTitle = member.title
                 activeDirectThreadId = member.user_id
                 selectedTab = 1
@@ -527,10 +775,10 @@ fun CommunityScreen(
                     IconButton(
                         onClick = {
                             scope.launch {
-                                refreshThreadsMetadata()
+                                refreshThreadsMetadata(userInitiated = true)
                                 when (selectedTab) {
-                                    0 -> loadGroupInitial(scrollToBottom = false)
-                                    1 -> loadDirectInitial(activeDirectThreadId, scrollToBottom = false)
+                                    0 -> loadGroupInitial(scrollToBottom = false, userInitiated = true)
+                                    1 -> loadDirectInitial(activeDirectThreadId, scrollToBottom = false, userInitiated = true)
                                     2 -> loadReflectionsInitial()
                                 }
                             }
@@ -581,11 +829,15 @@ fun CommunityScreen(
                 0 -> {
                     ChatConversationPane(
                         messages = groupMessages,
-                        loading = groupLoading,
+                        loading = groupLoadState.isLoading,
+                        loadError = groupLoadState.errorMessage,
+                        onRetryLoad = { scope.launch { loadGroupInitial(scrollToBottom = true, userInitiated = true) } },
                         hasOlder = groupHasOlder,
                         loadingOlder = groupLoadingOlder,
                         onLoadOlder = { scope.launch { loadGroupOlder() } },
                         listState = groupListState,
+                        highlightedMessageId = highlightedMessageId,
+                        onJumpToReply = { replyId -> jumpToMessage(groupMessages, groupListState, replyId) },
                         emptyTitle = "Community Group Chat",
                         emptySubtitle = "Encourage one another and discuss what you are reading today.",
                         draft = groupDraft,
@@ -599,41 +851,27 @@ fun CommunityScreen(
                         } else {
                             ""
                         },
-                        sending = groupSending,
                         onSend = {
                             val trimmed = groupDraft.trim()
-                            if (trimmed.isEmpty() || groupSending) return@ChatConversationPane
-                            groupSending = true
-                            val replyId = groupReplyTarget?.id
-                            scope.launch {
-                                try {
-                                    val res = repo.api.sendGroupMessage(trimmed, replyId)
-                                    groupDraft = ""
-                                    groupReplyTarget = null
-                                    res.message?.let { sent ->
-                                        groupMessages = CommunityChatLogic.applyIncrementalDelta(
-                                            groupMessages,
-                                            listOf(sent),
-                                            emptyList(),
-                                        )
-                                        groupLastTs = sent.created_at
-                                        if (groupMessages.isNotEmpty()) {
-                                            groupListState.animateScrollToItem(groupMessages.lastIndex)
-                                        }
-                                    }
-                                } catch (e: Throwable) {
-                                    snackbarHostState.showSnackbar(
-                                        CommunityChatLogic.sanitizeChatError(e, "Could not send message.")
-                                    )
-                                } finally {
-                                    groupSending = false
-                                }
-                            }
+                            if (trimmed.isEmpty()) return@ChatConversationPane
+                            val reply = groupReplyTarget
+                            groupDraft = ""
+                            groupReplyTarget = null
+                            scope.launch { sendGroupOptimistic(trimmed, reply) }
+                        },
+                        onRetrySend = { failedMsg ->
+                            val cid = failedMsg.client_msg_id ?: return@ChatConversationPane
+                            scope.launch { sendGroupOptimistic(failedMsg.text, null, existingClientId = cid) }
+                        },
+                        onCancelFailedSend = { failedMsg ->
+                            val cid = failedMsg.client_msg_id ?: return@ChatConversationPane
+                            PendingChatStore.remove(repo.session, cid)
+                            groupMessages = CommunityChatLogic.removeOptimisticMessage(groupMessages, cid)
                         },
                         isAdmin = isAdmin,
                         mutedUserIds = mutedUserIds,
                         sessionToken = sessionToken,
-                        onAdminDelete = { deleteConfirmTarget = it },
+                        onDeleteMessage = { deleteConfirmTarget = it },
                         onAdminToggleMute = { senderId, targetName, currentlyMuted ->
                             scope.launch {
                                 try {
@@ -654,6 +892,7 @@ fun CommunityScreen(
                                 directMessages = emptyList()
                                 directLastTs = null
                                 directOldestTs = null
+                                directLoadState = CommunityChatLogic.ThreadLoadState(isLoading = true)
                                 activeDirectTitle = msg.author_name
                                 activeDirectThreadId = msg.sender_id
                                 selectedTab = 1
@@ -666,48 +905,22 @@ fun CommunityScreen(
                     if (isAdmin && activeDirectThreadId == null) {
                         AdminDirectThreadsOverview(
                             threads = threads,
-                            loading = threadsLoading,
+                            loading = threadsLoadState.isLoading,
+                            errorMessage = threadsLoadState.errorMessage,
+                            onRetry = { scope.launch { refreshThreadsMetadata(userInitiated = true) } },
                             sessionToken = sessionToken,
                             onStartNewMessage = { showMemberPicker = true },
                             onOpenThread = { thread ->
                                 directMessages = emptyList()
                                 directLastTs = null
                                 directOldestTs = null
+                                directLoadState = CommunityChatLogic.ThreadLoadState(isLoading = true)
                                 activeDirectTitle = thread.title
                                 activeDirectThreadId = thread.thread_id
                             },
                         )
-                    } else if (!isAdmin && !directLoading && !directStartedByAdmin && directMessages.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    Icons.Filled.MailOutline,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(48.dp),
-                                )
-                                Spacer(Modifier.height(12.dp))
-                                Text(
-                                    "No direct messages yet",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                                Spacer(Modifier.height(6.dp))
-                                Text(
-                                    "Private messages from Pastor Dave or programme leadership will appear here so you can reply privately.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
                     } else {
                         Column(Modifier.fillMaxSize()) {
-                            // Private thread header banner
                             Surface(
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                                 modifier = Modifier.fillMaxWidth(),
@@ -727,12 +940,16 @@ fun CommunityScreen(
                                     Spacer(Modifier.width(8.dp))
                                     Column(Modifier.weight(1f)) {
                                         Text(
-                                            text = if (isAdmin) "Private thread with $activeDirectTitle" else "Private thread with $activeDirectTitle",
+                                            text = if (isAdmin) "Private thread with $activeDirectTitle" else activeDirectTitle,
                                             style = MaterialTheme.typography.labelLarge,
                                             fontWeight = FontWeight.SemiBold,
                                         )
                                         Text(
-                                            text = "Visible only to leadership and this member",
+                                            text = if (isAdmin) {
+                                                "Shared leadership inbox · visible to leaders and this member"
+                                            } else {
+                                                activeDirectSubtitle
+                                            },
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -771,66 +988,61 @@ fun CommunityScreen(
                             HorizontalDivider()
                             ChatConversationPane(
                                 messages = directMessages,
-                                loading = directLoading,
+                                loading = directLoadState.isLoading,
+                                loadError = directLoadState.errorMessage,
+                                onRetryLoad = {
+                                    scope.launch { loadDirectInitial(activeDirectThreadId, scrollToBottom = true, userInitiated = true) }
+                                },
                                 hasOlder = directHasOlder,
                                 loadingOlder = directLoadingOlder,
                                 onLoadOlder = { scope.launch { loadDirectOlder(activeDirectThreadId) } },
                                 listState = directListState,
-                                emptyTitle = "Start private conversation",
-                                emptySubtitle = "Send a private pastoral note to $activeDirectTitle.",
+                                highlightedMessageId = highlightedMessageId,
+                                onJumpToReply = { replyId -> jumpToMessage(directMessages, directListState, replyId) },
+                                emptyTitle = if (isAdmin) "Start private conversation" else "Message ForgeHouse Leadership",
+                                emptySubtitle = if (isAdmin) {
+                                    "Send a private pastoral note to $activeDirectTitle."
+                                } else {
+                                    "Send a private message to pastors and leaders. Any leader can reply here."
+                                },
                                 draft = directDraft,
                                 onDraftChange = { if (it.length <= CommunityChatLogic.MAX_MESSAGE_CHARS) directDraft = it },
                                 replyTarget = directReplyTarget,
                                 onClearReply = { directReplyTarget = null },
                                 onReplyClick = { directReplyTarget = it },
-                                canCompose = CommunityChatLogic.canComposeDirect(isAdmin, isMuted, directStartedByAdmin),
-                                disabledReason = when {
-                                    !isAdmin && isMuted -> "You have been muted by an administrator and can read messages only."
-                                    !isAdmin && !directStartedByAdmin -> "Direct conversations are started by an administrator."
-                                    else -> ""
+                                canCompose = CommunityChatLogic.canComposeDirect(
+                                    isAdmin = isAdmin,
+                                    isMuted = isMuted,
+                                    hasActiveThread = !isAdmin || !activeDirectThreadId.isNullOrBlank(),
+                                ),
+                                disabledReason = if (!isAdmin && isMuted) {
+                                    "You have been muted by an administrator and can read messages only."
+                                } else {
+                                    ""
                                 },
-                                sending = directSending,
                                 onSend = {
                                     val trimmed = directDraft.trim()
-                                    if (trimmed.isEmpty() || directSending) return@ChatConversationPane
-                                    directSending = true
-                                    val replyId = directReplyTarget?.id
+                                    if (trimmed.isEmpty()) return@ChatConversationPane
+                                    val reply = directReplyTarget
                                     val targetId = if (isAdmin) activeDirectThreadId else null
-                                    scope.launch {
-                                        try {
-                                            val res = repo.api.sendDirectMessage(
-                                                text = trimmed,
-                                                targetUserId = targetId,
-                                                replyToId = replyId,
-                                            )
-                                            directDraft = ""
-                                            directReplyTarget = null
-                                            directStartedByAdmin = true
-                                            res.message?.let { sent ->
-                                                directMessages = CommunityChatLogic.applyIncrementalDelta(
-                                                    directMessages,
-                                                    listOf(sent),
-                                                    emptyList(),
-                                                )
-                                                directLastTs = sent.created_at
-                                                if (directMessages.isNotEmpty()) {
-                                                    directListState.animateScrollToItem(directMessages.lastIndex)
-                                                }
-                                            }
-                                            refreshThreadsMetadata()
-                                        } catch (e: Throwable) {
-                                            snackbarHostState.showSnackbar(
-                                                CommunityChatLogic.sanitizeChatError(e, "Could not send direct message.")
-                                            )
-                                        } finally {
-                                            directSending = false
-                                        }
-                                    }
+                                    directDraft = ""
+                                    directReplyTarget = null
+                                    scope.launch { sendDirectOptimistic(trimmed, targetId, reply) }
+                                },
+                                onRetrySend = { failedMsg ->
+                                    val cid = failedMsg.client_msg_id ?: return@ChatConversationPane
+                                    val targetId = if (isAdmin) activeDirectThreadId else null
+                                    scope.launch { sendDirectOptimistic(failedMsg.text, targetId, null, existingClientId = cid) }
+                                },
+                                onCancelFailedSend = { failedMsg ->
+                                    val cid = failedMsg.client_msg_id ?: return@ChatConversationPane
+                                    PendingChatStore.remove(repo.session, cid)
+                                    directMessages = CommunityChatLogic.removeOptimisticMessage(directMessages, cid)
                                 },
                                 isAdmin = isAdmin,
                                 mutedUserIds = mutedUserIds,
                                 sessionToken = sessionToken,
-                                onAdminDelete = { deleteConfirmTarget = it },
+                                onDeleteMessage = { deleteConfirmTarget = it },
                                 onAdminToggleMute = null,
                                 onAdminMessagePrivately = null,
                             )
@@ -877,10 +1089,14 @@ private fun TabLabelWithBadge(label: String, badge: String?) {
 private fun ChatConversationPane(
     messages: List<ChatMessageDto>,
     loading: Boolean,
+    loadError: String?,
+    onRetryLoad: () -> Unit,
     hasOlder: Boolean,
     loadingOlder: Boolean,
     onLoadOlder: () -> Unit,
     listState: androidx.compose.foundation.lazy.LazyListState,
+    highlightedMessageId: String?,
+    onJumpToReply: (String) -> Unit,
     emptyTitle: String,
     emptySubtitle: String,
     draft: String,
@@ -890,86 +1106,113 @@ private fun ChatConversationPane(
     onReplyClick: (ChatMessageDto) -> Unit,
     canCompose: Boolean,
     disabledReason: String,
-    sending: Boolean,
     onSend: () -> Unit,
+    onRetrySend: (ChatMessageDto) -> Unit,
+    onCancelFailedSend: (ChatMessageDto) -> Unit,
     isAdmin: Boolean,
     mutedUserIds: Set<String>,
     sessionToken: String?,
-    onAdminDelete: (ChatMessageDto) -> Unit,
+    onDeleteMessage: (ChatMessageDto) -> Unit,
     onAdminToggleMute: ((senderId: String, authorName: String, currentlyMuted: Boolean) -> Unit)?,
     onAdminMessagePrivately: ((ChatMessageDto) -> Unit)?,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .imePadding()
-            .navigationBarsPadding(),
-    ) {
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            if (loading && messages.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    ExpressiveLoading()
-                }
-            } else if (messages.isEmpty()) {
-                Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Filled.ChatBubbleOutline,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(44.dp),
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        Text(
-                            emptyTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            emptySubtitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+    Column(Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+        ) {
+            when {
+                loading && messages.isEmpty() -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        ExpressiveLoading()
                     }
                 }
-            } else {
-                LazyColumn(
-                    state = listState,
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    if (hasOlder) {
-                        item(key = "load_older_header") {
-                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                OutlinedButton(
-                                    onClick = onLoadOlder,
-                                    enabled = !loadingOlder,
-                                ) {
-                                    Icon(Icons.Filled.History, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(if (loadingOlder) "Loading..." else "Load older messages")
-                                }
+                loadError != null && messages.isEmpty() -> {
+                    Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Filled.ErrorOutline,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(44.dp),
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                loadError,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(14.dp))
+                            FilledTonalButton(onClick = onRetryLoad) {
+                                Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Retry")
                             }
                         }
                     }
+                }
+                messages.isEmpty() -> {
+                    Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Filled.ChatBubbleOutline,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(48.dp),
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(emptyTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                emptySubtitle,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        state = listState,
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        if (hasOlder) {
+                            item(key = "load_older_header") {
+                                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    OutlinedButton(onClick = onLoadOlder, enabled = !loadingOlder) {
+                                        Icon(Icons.Filled.History, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(if (loadingOlder) "Loading..." else "Load older messages")
+                                    }
+                                }
+                            }
+                        }
 
-                    items(messages, key = { it.id }) { msg ->
-                        ChatMessageBubble(
-                            msg = msg,
-                            isAdminViewer = isAdmin,
-                            isSenderMuted = msg.sender_id in mutedUserIds,
-                            sessionToken = sessionToken,
-                            onReply = { onReplyClick(msg) },
-                            onDelete = { onAdminDelete(msg) },
-                            onToggleMute = if (onAdminToggleMute != null && msg.author_role != "admin" && msg.sender_id.isNotBlank()) {
-                                { onAdminToggleMute(msg.sender_id, msg.author_name, msg.sender_id in mutedUserIds) }
-                            } else null,
-                            onMessagePrivately = if (onAdminMessagePrivately != null && msg.author_role != "admin" && msg.sender_id.isNotBlank()) {
-                                { onAdminMessagePrivately(msg) }
-                            } else null,
-                        )
+                        items(messages, key = { it.id }) { msg ->
+                            ChatMessageBubble(
+                                msg = msg,
+                                isAdminViewer = isAdmin,
+                                isHighlighted = msg.id == highlightedMessageId,
+                                isSenderMuted = msg.sender_id in mutedUserIds,
+                                sessionToken = sessionToken,
+                                onReply = { onReplyClick(msg) },
+                                onJumpToReply = onJumpToReply,
+                                onDelete = if (CommunityChatLogic.canDeleteMessage(msg, isAdmin)) {
+                                    { onDeleteMessage(msg) }
+                                } else null,
+                                onRetrySend = { onRetrySend(msg) },
+                                onCancelFailedSend = { onCancelFailedSend(msg) },
+                                onToggleMute = if (onAdminToggleMute != null && isAdmin && msg.author_role != "admin" && msg.sender_id.isNotBlank()) {
+                                    { onAdminToggleMute(msg.sender_id, msg.author_name, msg.sender_id in mutedUserIds) }
+                                } else null,
+                                onMessagePrivately = if (onAdminMessagePrivately != null && isAdmin && msg.author_role != "admin" && msg.sender_id.isNotBlank()) {
+                                    { onAdminMessagePrivately(msg) }
+                                } else null,
+                            )
+                        }
                     }
                 }
             }
@@ -1031,16 +1274,13 @@ private fun ChatConversationPane(
                                         color = MaterialTheme.colorScheme.primary,
                                     )
                                     Text(
-                                        text = replyTarget.text,
+                                        text = CommunityChatLogic.displayMessageText(replyTarget, isAdmin),
                                         style = MaterialTheme.typography.bodySmall,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                 }
-                                IconButton(
-                                    onClick = onClearReply,
-                                    modifier = Modifier.size(28.dp),
-                                ) {
+                                IconButton(onClick = onClearReply, modifier = Modifier.size(28.dp)) {
                                     Icon(Icons.Filled.Close, contentDescription = "Cancel reply", modifier = Modifier.size(16.dp))
                                 }
                             }
@@ -1062,12 +1302,12 @@ private fun ChatConversationPane(
                         Spacer(Modifier.width(8.dp))
                         IconButton(
                             onClick = onSend,
-                            enabled = draft.isNotBlank() && !sending,
+                            enabled = draft.isNotBlank(),
                         ) {
                             Icon(
                                 Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Send",
-                                tint = if (draft.isNotBlank() && !sending) {
+                                tint = if (draft.isNotBlank()) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
                                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -1085,177 +1325,308 @@ private fun ChatConversationPane(
 private fun ChatMessageBubble(
     msg: ChatMessageDto,
     isAdminViewer: Boolean,
+    isHighlighted: Boolean,
     isSenderMuted: Boolean,
     sessionToken: String?,
     onReply: () -> Unit,
-    onDelete: () -> Unit,
+    onJumpToReply: (String) -> Unit,
+    onDelete: (() -> Unit)?,
+    onRetrySend: () -> Unit,
+    onCancelFailedSend: () -> Unit,
     onToggleMute: (() -> Unit)?,
     onMessagePrivately: (() -> Unit)?,
 ) {
     val isLeader = msg.author_role == "admin"
     val timeLabel = remember(msg.created_at) { WatTimeFormatter.formatWatTime(msg.created_at) }
+    val canSwipe = CommunityChatLogic.canSwipeToReply(msg)
+    val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val maxDragPx = with(density) { 72.dp.toPx() }
+    val triggerThresholdPx = with(density) { 48.dp.toPx() }
+    val offsetX = remember(msg.id) { Animatable(0f) }
+    var hapticFired by remember(msg.id) { mutableStateOf(false) }
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = when {
-                msg.is_me -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.42f)
-                isLeader -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
-                else -> MaterialTheme.colorScheme.surfaceContainerLow
-            },
-        ),
-        border = BorderStroke(
-            1.dp,
-            if (isLeader) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)
-            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                if (isLeader) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        if (offsetX.value > 8f) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 10.dp),
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Reply,
+                    contentDescription = "Swipe to reply",
+                    tint = if (offsetX.value >= triggerThresholdPx) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = when {
+                    isHighlighted -> MaterialTheme.colorScheme.secondaryContainer
+                    msg.is_me -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.42f)
+                    isLeader -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
+                    else -> MaterialTheme.colorScheme.surfaceContainerLow
+                },
+            ),
+            border = BorderStroke(
+                width = if (isHighlighted) 2.dp else 1.dp,
+                color = when {
+                    isHighlighted -> MaterialTheme.colorScheme.primary
+                    isLeader -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)
+                    else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                },
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .then(
+                    if (canSwipe) {
+                        Modifier.pointerInput(msg.id) {
+                            detectHorizontalDragGestures(
+                                onDragStart = { hapticFired = false },
+                                onHorizontalDrag = { _, dragAmount ->
+                                    val next = (offsetX.value + dragAmount).coerceIn(0f, maxDragPx)
+                                    scope.launch { offsetX.snapTo(next) }
+                                    if (!hapticFired && next >= triggerThresholdPx) {
+                                        hapticFired = true
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    }
+                                },
+                                onDragEnd = {
+                                    val triggered = offsetX.value >= triggerThresholdPx
+                                    scope.launch {
+                                        offsetX.animateTo(
+                                            0f,
+                                            spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                        )
+                                    }
+                                    if (triggered) onReply()
+                                },
+                                onDragCancel = {
+                                    scope.launch { offsetX.animateTo(0f) }
+                                },
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
+                ),
+        ) {
+            Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    if (isLeader) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(34.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Filled.Shield,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onTertiary,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                    } else {
+                        UserAvatar(
+                            avatarId = msg.avatar_id,
+                            userId = msg.sender_id,
+                            pictureVersion = msg.picture_version,
+                            sessionToken = sessionToken,
+                            size = 34.dp,
+                        )
+                    }
+
+                    Spacer(Modifier.width(10.dp))
+
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = msg.author_name,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            if (isLeader) {
+                                Spacer(Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                                ) {
+                                    Text(
+                                        text = "Leader",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                    )
+                                }
+                            } else if (isAdminViewer && isSenderMuted) {
+                                Spacer(Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = MaterialTheme.colorScheme.errorContainer,
+                                ) {
+                                    Text(
+                                        text = "Muted",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                    )
+                                }
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (timeLabel.isNotBlank()) {
+                                Text(
+                                    text = timeLabel,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            if (msg.is_me && !msg.is_deleted) {
+                                Spacer(Modifier.width(6.dp))
+                                when (msg.delivery_state) {
+                                    ChatDeliveryState.SENDING -> Icon(
+                                        Icons.Filled.Schedule,
+                                        contentDescription = "Sending",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                    ChatDeliveryState.SENT -> Icon(
+                                        Icons.Filled.Done,
+                                        contentDescription = "Sent",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                    ChatDeliveryState.FAILED -> Icon(
+                                        Icons.Filled.ErrorOutline,
+                                        contentDescription = "Failed",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (canSwipe) {
+                        IconButton(onClick = onReply, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Reply,
+                                contentDescription = "Reply",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                    if (isAdminViewer) {
+                        if (onMessagePrivately != null) {
+                            IconButton(onClick = onMessagePrivately, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    Icons.Filled.MailOutline,
+                                    contentDescription = "Direct message member",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                        if (onToggleMute != null) {
+                            IconButton(onClick = onToggleMute, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    if (isSenderMuted) Icons.Filled.VolumeUp else Icons.Filled.VolumeOff,
+                                    contentDescription = if (isSenderMuted) "Unmute member" else "Mute member",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                    }
+                    if (onDelete != null) {
+                        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                Icons.Filled.DeleteOutline,
+                                contentDescription = "Delete message",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                }
+
+                if (msg.reply_to != null && !msg.is_deleted) {
+                    Spacer(Modifier.height(8.dp))
                     Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(34.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = msg.reply_to.id.isNotBlank()) {
+                                onJumpToReply(msg.reply_to.id)
+                            },
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Filled.Shield,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onTertiary,
-                                modifier = Modifier.size(18.dp),
+                        Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                            Text(
+                                text = msg.reply_to.author_name,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(
+                                text = CommunityChatLogic.displayReplyPreviewText(msg.reply_to, isAdminViewer),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontStyle = if (msg.reply_to.is_deleted) FontStyle.Italic else FontStyle.Normal,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                } else {
-                    UserAvatar(
-                        avatarId = msg.avatar_id,
-                        userId = msg.sender_id,
-                        pictureVersion = msg.picture_version,
-                        sessionToken = sessionToken,
-                        size = 34.dp,
-                    )
                 }
 
-                Spacer(Modifier.width(10.dp))
-
-                Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = msg.author_name,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        if (isLeader) {
-                            Spacer(Modifier.width(6.dp))
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = MaterialTheme.colorScheme.tertiaryContainer,
-                            ) {
-                                Text(
-                                    text = "Leader",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
-                                )
-                            }
-                        } else if (isAdminViewer && isSenderMuted) {
-                            Spacer(Modifier.width(6.dp))
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = MaterialTheme.colorScheme.errorContainer,
-                            ) {
-                                Text(
-                                    text = "Muted",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
-                                )
-                            }
-                        }
-                    }
-                    if (timeLabel.isNotBlank()) {
-                        Text(
-                            text = timeLabel,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
-                IconButton(onClick = onReply, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Reply,
-                        contentDescription = "Reply",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-                if (isAdminViewer) {
-                    if (onMessagePrivately != null) {
-                        IconButton(onClick = onMessagePrivately, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                Icons.Filled.MailOutline,
-                                contentDescription = "Direct message member",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
-                    if (onToggleMute != null) {
-                        IconButton(onClick = onToggleMute, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                if (isSenderMuted) Icons.Filled.VolumeUp else Icons.Filled.VolumeOff,
-                                contentDescription = if (isSenderMuted) "Unmute member" else "Mute member",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
-                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            Icons.Filled.DeleteOutline,
-                            contentDescription = "Delete message",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                }
-            }
-
-            if (msg.reply_to != null) {
                 Spacer(Modifier.height(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                Text(
+                    text = CommunityChatLogic.displayMessageText(msg, isAdminViewer),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontStyle = if (msg.is_deleted) FontStyle.Italic else FontStyle.Normal,
+                    color = if (msg.is_deleted) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+
+                if (msg.delivery_state == ChatDeliveryState.FAILED) {
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
                         Text(
-                            text = msg.reply_to.author_name,
+                            text = msg.local_error ?: "Not sent",
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.weight(1f),
                         )
-                        Text(
-                            text = msg.reply_to.text,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        TextButton(onClick = onRetrySend, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                            Text("Retry")
+                        }
+                        TextButton(onClick = onCancelFailedSend, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                            Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
-
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = msg.text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
         }
     }
 }
@@ -1264,6 +1635,8 @@ private fun ChatMessageBubble(
 private fun AdminDirectThreadsOverview(
     threads: List<ChatThreadDto>,
     loading: Boolean,
+    errorMessage: String?,
+    onRetry: () -> Unit,
     sessionToken: String?,
     onStartNewMessage: () -> Unit,
     onOpenThread: (ChatThreadDto) -> Unit,
@@ -1275,7 +1648,7 @@ private fun AdminDirectThreadsOverview(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "Private Member Threads",
+                "Leadership Inbox",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -1288,111 +1661,131 @@ private fun AdminDirectThreadsOverview(
 
         Spacer(Modifier.height(12.dp))
 
-        if (loading && threads.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                ExpressiveLoading()
-            }
-        } else if (threads.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.MailOutline,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.size(44.dp),
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        "No private threads yet",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Tap 'Message member' to send a private pastoral message to any participant.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        when {
+            loading && threads.isEmpty() -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    ExpressiveLoading()
                 }
             }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                items(threads, key = { it.thread_id }) { thread ->
-                    val timeLabel = remember(thread.latest_timestamp) {
-                        WatTimeFormatter.formatWatTime(thread.latest_timestamp)
+            errorMessage != null && threads.isEmpty() -> {
+                Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Filled.ErrorOutline,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(44.dp),
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            errorMessage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        FilledTonalButton(onClick = onRetry) {
+                            Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Retry")
+                        }
                     }
-                    Card(
-                        onClick = { onOpenThread(thread) },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                }
+            }
+            threads.isEmpty() -> {
+                Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Filled.MailOutline,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(44.dp),
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "No private threads yet",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Tap 'Message member' to send a private pastoral message to any participant.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            else -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(threads, key = { it.thread_id }) { thread ->
+                        val timeLabel = remember(thread.latest_timestamp) {
+                            WatTimeFormatter.formatWatTime(thread.latest_timestamp)
+                        }
+                        Card(
+                            onClick = { onOpenThread(thread) },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            UserAvatar(
-                                avatarId = thread.avatar_id,
-                                userId = thread.user_id,
-                                pictureVersion = thread.picture_version,
-                                sessionToken = sessionToken,
-                                size = 42.dp,
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Column(Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        thread.title,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                    )
-                                    if (thread.is_muted) {
-                                        Spacer(Modifier.width(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                UserAvatar(
+                                    avatarId = thread.avatar_id,
+                                    userId = thread.user_id,
+                                    pictureVersion = thread.picture_version,
+                                    sessionToken = sessionToken,
+                                    size = 42.dp,
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            "(Muted)",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.error,
+                                            text = thread.title,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.weight(1f),
                                         )
-                                    }
-                                    Spacer(Modifier.weight(1f))
-                                    if (timeLabel.isNotBlank()) {
-                                        Text(
-                                            timeLabel,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                                Spacer(Modifier.height(4.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = thread.latest_message ?: "",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    val badge = CommunityChatLogic.formatUnreadBadge(thread.unread_count)
-                                    if (badge != null) {
-                                        Spacer(Modifier.width(8.dp))
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = MaterialTheme.colorScheme.primary,
-                                        ) {
+                                        if (timeLabel.isNotBlank()) {
                                             Text(
-                                                text = badge,
+                                                text = timeLabel,
                                                 style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onPrimary,
-                                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
+                                        }
+                                    }
+                                    Spacer(Modifier.height(3.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = thread.latest_message ?: "No messages yet",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                        val badge = CommunityChatLogic.formatUnreadBadge(thread.unread_count)
+                                        if (badge != null) {
+                                            Spacer(Modifier.width(8.dp))
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = MaterialTheme.colorScheme.primary,
+                                            ) {
+                                                Text(
+                                                    text = badge,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onPrimary,
+                                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -1408,7 +1801,10 @@ private fun AdminDirectThreadsOverview(
 @Composable
 private fun AdminMemberPickerDialog(
     members: List<ChatDirectoryMemberDto>,
+    loading: Boolean,
+    errorMessage: String?,
     sessionToken: String?,
+    onRetry: () -> Unit,
     onDismiss: () -> Unit,
     onSelectMember: (ChatDirectoryMemberDto) -> Unit,
 ) {
@@ -1432,42 +1828,60 @@ private fun AdminMemberPickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(10.dp))
-                if (filtered.isEmpty()) {
-                    Text(
-                        "No matching members found.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    LazyColumn(modifier = Modifier.height(300.dp)) {
-                        items(filtered, key = { it.user_id }) { m ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onSelectMember(m) }
-                                    .padding(vertical = 8.dp, horizontal = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                UserAvatar(
-                                    avatarId = m.avatar_id,
-                                    userId = m.user_id,
-                                    pictureVersion = m.picture_version,
-                                    sessionToken = sessionToken,
-                                    size = 34.dp,
-                                )
-                                Spacer(Modifier.width(10.dp))
-                                Text(
-                                    m.title,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                if (m.is_muted) {
-                                    Text(
-                                        "Muted",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.error,
+                when {
+                    loading && members.isEmpty() -> {
+                        Box(Modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
+                            ExpressiveLoading()
+                        }
+                    }
+                    errorMessage != null && members.isEmpty() -> {
+                        Column(
+                            Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(errorMessage, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.height(8.dp))
+                            TextButton(onClick = onRetry) { Text("Retry") }
+                        }
+                    }
+                    filtered.isEmpty() -> {
+                        Text(
+                            "No matching members found.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    else -> {
+                        LazyColumn(modifier = Modifier.height(300.dp)) {
+                            items(filtered, key = { it.user_id }) { m ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onSelectMember(m) }
+                                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    UserAvatar(
+                                        avatarId = m.avatar_id,
+                                        userId = m.user_id,
+                                        pictureVersion = m.picture_version,
+                                        sessionToken = sessionToken,
+                                        size = 34.dp,
                                     )
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        m.title,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    if (m.is_muted) {
+                                        Text(
+                                            "Muted",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                    }
                                 }
                             }
                         }

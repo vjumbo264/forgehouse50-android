@@ -118,7 +118,7 @@ class ApiClient(private val session: SessionStore) {
             404 -> msg ?: "The requested item could not be found."
             405 -> "Could not save your note. Please try again."
             429 -> "Rate limit reached. Please wait a moment and try again."
-            500, 502, 503, 504 -> "Could not save your note. Please try again."
+            500, 502, 503, 504 -> "Something went wrong on the server. Please try again."
             else -> msg ?: "Request failed. Please try again."
         }
         throw ApiException(res.status.value, friendlyMessage)
@@ -479,9 +479,11 @@ class ApiClient(private val session: SessionStore) {
     suspend fun sendGroupMessage(
         text: String,
         replyToId: String? = null,
+        clientMsgId: String? = null,
     ): ChatSendResponse = post("/community/chat/messages", buildJsonObject {
         put("text", text)
         if (!replyToId.isNullOrBlank()) put("reply_to_id", replyToId)
+        if (!clientMsgId.isNullOrBlank()) put("client_msg_id", clientMsgId)
     })
 
     suspend fun chatDirectMessages(
@@ -500,13 +502,42 @@ class ApiClient(private val session: SessionStore) {
         text: String,
         targetUserId: String? = null,
         replyToId: String? = null,
+        clientMsgId: String? = null,
     ): ChatSendResponse = post("/community/chat/direct", buildJsonObject {
         put("text", text)
         if (!targetUserId.isNullOrBlank()) put("target_user_id", targetUserId)
         if (!replyToId.isNullOrBlank()) put("reply_to_id", replyToId)
+        if (!clientMsgId.isNullOrBlank()) put("client_msg_id", clientMsgId)
     })
 
     suspend fun chatThreads(): ChatThreadsResponse = get("/community/chat/threads")
+
+    suspend fun chatSync(
+        groupSince: String? = null,
+        directSince: String? = null,
+        threadId: String? = null,
+        unreadOnly: Boolean = false,
+        background: Boolean = false,
+    ): ChatSyncResponse = get("/community/chat/sync") {
+        if (unreadOnly) parameter("unread_only", "1")
+        if (background) parameter("bg", "1")
+        if (!groupSince.isNullOrBlank()) parameter("group_since", groupSince)
+        if (!directSince.isNullOrBlank()) parameter("direct_since", directSince)
+        if (!threadId.isNullOrBlank()) parameter("thread_id", threadId)
+    }
+
+    suspend fun markChatRead(
+        channelType: String,
+        threadId: String? = null,
+        timestamp: String? = null,
+    ): GenericOk = post("/community/chat/read", buildJsonObject {
+        put("channel_type", channelType)
+        if (!threadId.isNullOrBlank()) put("thread_id", threadId)
+        if (!timestamp.isNullOrBlank()) put("timestamp", timestamp)
+    })
+
+    suspend fun deleteChatMessage(messageId: String): ChatDeleteResponse =
+        del("/community/chat/messages/$messageId")
 
     suspend fun adminDeleteChatMessage(messageId: String): GenericOk =
         del("/admin/community/chat/messages/$messageId")

@@ -61,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.forgebuild.forgehouse50.data.Announcement
 import com.forgebuild.forgehouse50.data.AppCache
+import com.forgebuild.forgehouse50.data.ChatUnreadSummary
 import com.forgebuild.forgehouse50.data.CommunityPost
 import com.forgebuild.forgehouse50.ui.community.CommunityChatLogic
 import com.forgebuild.forgehouse50.data.ReadingSession
@@ -81,6 +82,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.forgebuild.forgehouse50.ui.announcements.PastAnnouncementsLinkCard
 import com.forgebuild.forgehouse50.ui.announcements.TodayAnnouncementCard
 import com.forgebuild.forgehouse50.ui.announcements.formatAnnouncementDate
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import com.forgebuild.forgehouse50.update.UpdateChecker
 import com.forgebuild.forgehouse50.update.UpdateManager
@@ -165,6 +168,10 @@ fun HomeScreen(
     var latestAnnouncementResp by remember { mutableStateOf(AppCache.getLatestAnnouncement(context)) }
     val latestAnnouncement = latestAnnouncementResp?.announcement
     val totalAnnouncementsCount = latestAnnouncementResp?.total_all ?: 0
+    var liveUnread by remember { mutableStateOf<ChatUnreadSummary?>(today?.chat_unread) }
+    var isHomeResumed by remember {
+        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+    }
 
     suspend fun refreshLatestAnnouncement() {
         runCatching { repo.api.announcementLatest() }.onSuccess { fresh ->
@@ -173,15 +180,35 @@ fun HomeScreen(
         }
     }
 
-    // Re-fetch latest announcement immediately on every ON_RESUME (zero stale cache delay)
+    suspend fun refreshChatUnread() {
+        runCatching { repo.api.chatSync(unreadOnly = true) }.onSuccess { sync ->
+            liveUnread = sync.unread
+        }
+    }
+
+    // Re-fetch latest announcement + chat unread badge immediately on every ON_RESUME
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                scope.launch { refreshLatestAnnouncement() }
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    isHomeResumed = true
+                    scope.launch { refreshLatestAnnouncement() }
+                    scope.launch { refreshChatUnread() }
+                }
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> isHomeResumed = false
+                else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(isHomeResumed, reloadTick) {
+        if (!isHomeResumed) return@LaunchedEffect
+        while (isActive && isHomeResumed) {
+            delay(CommunityChatLogic.NON_CHAT_UNREAD_POLL_MS)
+            refreshChatUnread()
+        }
     }
 
     val block = today?.today
@@ -202,6 +229,7 @@ fun HomeScreen(
         refreshing = (today == null)
         runCatching { repo.api.today() }.onSuccess { fresh ->
             today = fresh
+            if (fresh.chat_unread != null) liveUnread = fresh.chat_unread
             AppCache.saveToday(context, fresh)
         }
         runCatching { repo.api.me() }.onSuccess { fresh ->
@@ -273,7 +301,7 @@ fun HomeScreen(
                 if (refreshing) {
                     ExpressiveButtonLoader()
                 }
-                val headerUnread = today?.chat_unread?.total_unread ?: 0
+                val headerUnread = (liveUnread ?: today?.chat_unread)?.total_unread ?: 0
                 Surface(
                     onClick = onOpenCommunity,
                     shape = CircleShape,
@@ -822,7 +850,7 @@ fun HomeScreen(
 
         // Priority 5b: Action row - Community chat & direct messages (i9)
         item(key = "community_chat_action") {
-            val unread = today?.chat_unread
+            val unread = liveUnread ?: today?.chat_unread
             val directUnread = unread?.direct_unread ?: 0
             val totalUnread = unread?.total_unread ?: 0
             val badgeText = when {

@@ -902,7 +902,13 @@ data class AdminReleaseUpdateResponse(
 )
 
 
-// ── Item i9: Community Chat & Admin Direct Messages ─────────────────────
+// ── Item i9 + k1..k7: Community Chat & Leadership Direct Messages ─────────
+
+enum class ChatDeliveryState {
+    SENT,
+    SENDING,
+    FAILED,
+}
 
 @Serializable
 data class ChatUnreadSummary(
@@ -917,6 +923,7 @@ data class ChatReplyPreviewDto(
     val author_name: String = "",
     val author_role: String = "member",
     val text: String = "",
+    val is_deleted: Boolean = false,
 )
 
 @Serializable
@@ -931,8 +938,16 @@ data class ChatMessageDto(
     val avatar_id: String? = null,
     val picture_version: Int? = null,
     val text: String = "",
+    val is_deleted: Boolean = false,
+    val deleted_at: String? = null,
+    val deleted_by: String? = null,
+    val client_msg_id: String? = null,
     val reply_to: ChatReplyPreviewDto? = null,
     val created_at: String = "",
+    val updated_at: String = "",
+    val thread_title: String? = null,
+    @kotlinx.serialization.Transient val delivery_state: ChatDeliveryState = ChatDeliveryState.SENT,
+    @kotlinx.serialization.Transient val local_error: String? = null,
 )
 
 @Serializable
@@ -952,7 +967,41 @@ data class ChatMessagesResponse(
 @Serializable
 data class ChatSendResponse(
     val ok: Boolean = true,
+    val deduplicated: Boolean = false,
     val message: ChatMessageDto? = null,
+)
+
+@Serializable
+data class ChatSyncResponse(
+    val ok: Boolean = true,
+    val is_muted: Boolean = false,
+    val unread: ChatUnreadSummary = ChatUnreadSummary(),
+    val server_time: String = "",
+    val group_messages: List<ChatMessageDto> = emptyList(),
+    val group_last_ts: String? = null,
+    val direct_messages: List<ChatMessageDto> = emptyList(),
+    val direct_last_ts: String? = null,
+)
+
+@Serializable
+data class ChatDeleteResponse(
+    val ok: Boolean = true,
+    val id: String = "",
+    val deleted_at: String? = null,
+    val message: ChatMessageDto? = null,
+)
+
+@Serializable
+data class PendingChatOutgoing(
+    val client_msg_id: String,
+    val channel_type: String,
+    val thread_id: String? = null,
+    val text: String,
+    val reply_to_id: String? = null,
+    val reply_preview: ChatReplyPreviewDto? = null,
+    val created_at: String,
+    val author_name: String = "You",
+    val author_role: String = "member",
 )
 
 @Serializable
