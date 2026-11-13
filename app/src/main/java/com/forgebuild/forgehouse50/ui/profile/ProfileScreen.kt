@@ -109,6 +109,7 @@ fun ProfileScreen(
     onSignedOut: () -> Unit,
     onManageTranslations: () -> Unit,
     onOpenChangelog: () -> Unit = {},
+    openPhotoSheetTick: Int = 0,
 ) {
     val context = LocalContext.current
     var showUpdateChoiceDialog by remember { mutableStateOf(false) }
@@ -147,6 +148,12 @@ fun ProfileScreen(
         val list = repo.downloadedTranslations()
         translations = list
         totalBytes = repo.translationsTotalSizeBytes()
+    }
+
+    LaunchedEffect(openPhotoSheetTick) {
+        if (openPhotoSheetTick > 0) {
+            showPhotoOptionsSheet = true
+        }
     }
 
     LaunchedEffect(Unit) {

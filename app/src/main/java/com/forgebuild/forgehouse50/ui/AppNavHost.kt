@@ -205,6 +205,7 @@ fun AppNavHost(
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val rootPagerState = rememberPagerState(initialPage = 0) { 4 }
+    var openPhotoSheetTick by remember { mutableStateOf(0) }
     val areAnimatorsEnabled = remember {
         try {
             ValueAnimator.areAnimatorsEnabled()
@@ -269,6 +270,12 @@ fun AppNavHost(
                             onOpenAdmin = { nav.navigate(Routes.ADMIN) },
                             onOpenCommunity = { nav.navigate(Routes.community()) },
                             onOpenAnnouncements = { nav.navigate(Routes.ANNOUNCEMENTS) },
+                            onAddProfilePhoto = {
+                                openPhotoSheetTick++
+                                scope.launch {
+                                    if (areAnimatorsEnabled) rootPagerState.animateScrollToPage(3) else rootPagerState.scrollToPage(3)
+                                }
+                            },
                         )
                         1 -> LeaderboardScreen(repo)
                         2 -> ProgressScreen(repo, onOpenDay = { nav.navigate(Routes.read(it)) })
@@ -277,6 +284,7 @@ fun AppNavHost(
                             onSignedOut = { onAuthChanged(false) },
                             onManageTranslations = { nav.navigate(Routes.TRANSLATIONS) },
                             onOpenChangelog = { nav.navigate(Routes.CHANGELOG) },
+                            openPhotoSheetTick = openPhotoSheetTick,
                         )
                     }
                 }

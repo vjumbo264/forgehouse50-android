@@ -7,6 +7,7 @@ import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
+import com.forgebuild.forgehouse50.data.MeResponse
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import kotlin.math.max
@@ -137,5 +138,24 @@ object ProfilePictureProcessor {
         }
 
         return ProcessedPicture(outputBytes, mimeType, scaled)
+    }
+}
+
+
+/**
+ * Pure decision logic for asking members without a custom profile photo to add one (k10 / FH-001).
+ */
+object ProfilePicturePromptLogic {
+    const val DISMISS_COOLDOWN_MS = 14L * 24 * 60 * 60 * 1000L
+
+    fun shouldShowPrompt(
+        me: MeResponse?,
+        dismissedAtMs: Long,
+        nowMs: Long,
+    ): Boolean {
+        if (me == null) return false
+        if (me.picture_version != null) return false
+        if (dismissedAtMs > 0L && (nowMs - dismissedAtMs) < DISMISS_COOLDOWN_MS) return false
+        return true
     }
 }

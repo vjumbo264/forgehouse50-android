@@ -6,6 +6,7 @@ import com.forgebuild.forgehouse50.data.MeResponse
 import com.forgebuild.forgehouse50.data.Participant
 import com.forgebuild.forgehouse50.data.ParticipantDetail
 import com.forgebuild.forgehouse50.ui.profile.ProfilePictureProcessor
+import com.forgebuild.forgehouse50.ui.profile.ProfilePicturePromptLogic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -79,5 +80,27 @@ class ProfilePictureLogicTest {
         )
         assertEquals(4, entry.picture_version)
         assertEquals("flame", entry.avatar_id)
+    }
+
+    @Test
+    fun testProfilePicturePromptShownOnlyWhenMissingAndNotRecentlyDismissed() {
+        val now = 2_000_000_000_000L
+        assertFalse(ProfilePicturePromptLogic.shouldShowPrompt(null, 0L, now))
+
+        val withoutPhoto = MeResponse(id = "u_1", name = "Ada", avatar_id = "lion", picture_version = null)
+        assertTrue(ProfilePicturePromptLogic.shouldShowPrompt(withoutPhoto, 0L, now))
+
+        // Dismissed 1 day ago -> suppressed
+        val oneDayAgo = now - 24L * 60 * 60 * 1000L
+        assertFalse(ProfilePicturePromptLogic.shouldShowPrompt(withoutPhoto, oneDayAgo, now))
+
+        // Dismissed 15 days ago -> gently shows again
+        val fifteenDaysAgo = now - 15L * 24 * 60 * 60 * 1000L
+        assertTrue(ProfilePicturePromptLogic.shouldShowPrompt(withoutPhoto, fifteenDaysAgo, now))
+
+        // Once user uploads a photo -> never shows
+        val withPhoto = withoutPhoto.copy(picture_version = 1)
+        assertFalse(ProfilePicturePromptLogic.shouldShowPrompt(withPhoto, 0L, now))
+        assertFalse(ProfilePicturePromptLogic.shouldShowPrompt(withPhoto, fifteenDaysAgo, now))
     }
 }

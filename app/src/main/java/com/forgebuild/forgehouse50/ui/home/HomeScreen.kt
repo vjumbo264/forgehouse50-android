@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Chat
@@ -82,6 +83,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.forgebuild.forgehouse50.ui.announcements.PastAnnouncementsLinkCard
 import com.forgebuild.forgehouse50.ui.announcements.TodayAnnouncementCard
 import com.forgebuild.forgehouse50.ui.announcements.formatAnnouncementDate
+import com.forgebuild.forgehouse50.ui.profile.ProfilePicturePromptLogic
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -116,6 +118,7 @@ fun HomeScreen(
     onOpenAdmin: () -> Unit,
     onOpenCommunity: () -> Unit = {},
     onOpenAnnouncements: () -> Unit = {},
+    onAddProfilePhoto: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -217,6 +220,7 @@ fun HomeScreen(
         mutableStateOf(if (d != null) AppCache.isQuizDone(context, d) ?: false else false)
     }
     var refreshing by remember { mutableStateOf(false) }
+    var photoPromptDismissedAt by remember { mutableStateOf(repo.session.profilePhotoPromptDismissedAt) }
 
     // Background refresh & reconcile — announcement launches immediately in parallel!
     LaunchedEffect(reloadTick) {
@@ -845,6 +849,78 @@ fun HomeScreen(
                     value = "${stats?.streak_current ?: me?.stats?.streak_current ?: 0}",
                     label = "Streak",
                 )
+            }
+        }
+
+        // Priority 5a: Gentle dismissible profile photo prompt (k10 / FH-001)
+        item(key = "profile_photo_prompt") {
+            val showPhotoPrompt = ProfilePicturePromptLogic.shouldShowPrompt(
+                me = me,
+                dismissedAtMs = photoPromptDismissedAt,
+                nowMs = System.currentTimeMillis(),
+            )
+            AnimatedVisibility(
+                visible = showPhotoPrompt,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+                modifier = Modifier.animateItem(),
+            ) {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Filled.AddAPhoto,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondary,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "Add your profile photo",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    "Help your church community and leaders recognise you in chat and on the leaderboard.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    val now = System.currentTimeMillis()
+                                    repo.session.profilePhotoPromptDismissedAt = now
+                                    photoPromptDismissedAt = now
+                                }
+                            ) { Text("Not now") }
+                            Spacer(Modifier.width(8.dp))
+                            FilledTonalButton(onClick = onAddProfilePhoto) {
+                                Text("Add photo")
+                            }
+                        }
+                    }
+                }
             }
         }
 

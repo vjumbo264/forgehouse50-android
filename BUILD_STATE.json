@@ -353,8 +353,8 @@
       {
         "id": "k10",
         "title": "Ask members to add their own profile picture (FH-001)",
-        "status": "pending",
-        "notes": "Not started."
+        "status": "done",
+        "notes": "Added ProfilePicturePromptLogic (14-day cooldown on Not now, hidden when picture_version != null) and gentle Add your profile photo card on HomeScreen that opens Profile photo options sheet in one tap, verified in ProfilePictureLogicTest."
       },
       {
         "id": "k11",
@@ -431,7 +431,7 @@
     "next_steps": [
       "Diagnose and fix k1 (chat latency + free-tier budget doc) and k2 (DM send failure + member-to-admin infinite load loop)."
     ],
-    "last_updated": "2026-11-13T13:37:09.650Z",
-    "last_session_note": "Completed k9 Forgot password (backend role fix + Android validation/cooldown/tests); moving to k10 profile picture prompt."
+    "last_updated": "2026-11-13T13:37:57.431Z",
+    "last_session_note": "Completed k10 profile picture prompt; moving to k11 floating audio control."
   }
 }
