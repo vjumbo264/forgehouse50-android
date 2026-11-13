@@ -96,7 +96,8 @@ private fun App(
                     context,
                     Manifest.permission.POST_NOTIFICATIONS,
                 ) == PackageManager.PERMISSION_GRANTED
-                if (!granted && !repo.session.keepAliveExplained) {
+                if (!granted && !repo.session.notificationPermissionPrompted) {
+                    repo.session.notificationPermissionPrompted = true
                     showNotificationRationale = true
                 }
             }

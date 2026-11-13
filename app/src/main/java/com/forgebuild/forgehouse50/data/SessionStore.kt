@@ -181,6 +181,11 @@ class SessionStore(context: Context) {
         get() = prefs.getBoolean(KEY_OEM_BG_TIP_DISMISSED, false)
         set(value) = prefs.edit().putBoolean(KEY_OEM_BG_TIP_DISMISSED, value).apply()
 
+    /** Whether Android 13+ notification permission rationale was shown once (k7). */
+    var notificationPermissionPrompted: Boolean
+        get() = prefs.getBoolean(KEY_NOTIF_PERMISSION_PROMPTED, false)
+        set(value) = prefs.edit().putBoolean(KEY_NOTIF_PERMISSION_PROMPTED, value).apply()
+
     /** Dismissed profile picture reminder timestamp (k10). */
     var profilePhotoPromptDismissedAt: Long
         get() = prefs.getLong(KEY_PHOTO_PROMPT_DISMISSED_AT, 0L)
@@ -216,6 +221,7 @@ class SessionStore(context: Context) {
         const val KEY_HOURLY_QUOTES_ENABLED = "hourly_quotes_enabled"
         const val KEY_LAST_QUOTE_INDEX = "last_quote_index"
         const val KEY_OEM_BG_TIP_DISMISSED = "oem_bg_tip_dismissed"
+        const val KEY_NOTIF_PERMISSION_PROMPTED = "notif_permission_prompted"
         const val KEY_PHOTO_PROMPT_DISMISSED_AT = "photo_prompt_dismissed_at"
     }
 }

@@ -36,6 +36,9 @@ class HourlyQuoteLogicTest {
         val evening21 = ZonedDateTime.of(2026, 11, 13, 21, 45, 0, 0, lagos).toInstant().toEpochMilli()
         val night22 = ZonedDateTime.of(2026, 11, 13, 22, 0, 0, 0, lagos).toInstant().toEpochMilli()
         val night05 = ZonedDateTime.of(2026, 11, 13, 5, 30, 0, 0, lagos).toInstant().toEpochMilli()
+        val boundary0659 = ZonedDateTime.of(2026, 11, 13, 6, 59, 0, 0, lagos).toInstant().toEpochMilli()
+        val boundary0700 = ZonedDateTime.of(2026, 11, 13, 7, 0, 0, 0, lagos).toInstant().toEpochMilli()
+        val boundary2159 = ZonedDateTime.of(2026, 11, 13, 21, 59, 0, 0, lagos).toInstant().toEpochMilli()
 
         assertTrue(QuoteLibrary.shouldShowQuoteNotification(isLoggedIn = true, enabled = true, nowMs = day09))
         assertTrue(QuoteLibrary.shouldShowQuoteNotification(isLoggedIn = true, enabled = true, nowMs = evening21))
@@ -43,5 +46,8 @@ class HourlyQuoteLogicTest {
         assertFalse(QuoteLibrary.shouldShowQuoteNotification(isLoggedIn = true, enabled = true, nowMs = night05))
         assertFalse(QuoteLibrary.shouldShowQuoteNotification(isLoggedIn = true, enabled = false, nowMs = day09))
         assertFalse(QuoteLibrary.shouldShowQuoteNotification(isLoggedIn = false, enabled = true, nowMs = day09))
+        assertFalse(QuoteLibrary.isWithinWakingHours(boundary0659))
+        assertTrue(QuoteLibrary.isWithinWakingHours(boundary0700))
+        assertTrue(QuoteLibrary.isWithinWakingHours(boundary2159))
     }
 }

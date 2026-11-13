@@ -475,7 +475,7 @@ fun ProfileScreen(
                 val next = !hourlyQuotesEnabled
                 hourlyQuotesEnabled = next
                 repo.session.hourlyQuotesEnabled = next
-                if (next) QuoteWorker.schedule(context) else QuoteWorker.cancel(context)
+                if (next) QuoteWorker.schedule(context, forceReset = true) else QuoteWorker.cancel(context)
             },
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -519,7 +519,7 @@ fun ProfileScreen(
                     onCheckedChange = { next ->
                         hourlyQuotesEnabled = next
                         repo.session.hourlyQuotesEnabled = next
-                        if (next) QuoteWorker.schedule(context) else QuoteWorker.cancel(context)
+                        if (next) QuoteWorker.schedule(context, forceReset = true) else QuoteWorker.cancel(context)
                     },
                 )
             }

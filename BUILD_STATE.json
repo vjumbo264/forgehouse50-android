@@ -335,14 +335,14 @@
       {
         "id": "k7",
         "title": "WhatsApp-style notifications for chat, with reply from the notification (FH-009)",
-        "status": "in_progress",
-        "notes": "Implementing KeepAliveService background sync, grouped MessagingStyle + RemoteInput inline reply, 4 channels, foreground suppression, group mute, deleted-message scrub, reboot/swipe-away/logout handling, and OEM tip (no Firebase)."
+        "status": "done",
+        "notes": "No Firebase: reused KeepAliveService for tuned cursor-based /api/community/chat/sync?bg=1 (5m day / 15m night Africa/Lagos / 30s active burst), grouped MessagingStyle + RemoteInput inline reply + Mark Read actions, 4 channels (chat_group, chat_direct, daily_reading, app_updates), dedicated notificationPermissionPrompted flag for Android 13+, foreground active-thread suppression, group mute toggle in Profile, deleted-message scrubbing, BootCompletedReceiver + onTaskRemoved + logout clear, OEM tip, docs/CHAT_ARCHITECTURE.md budget (72.3k reqs/day for 150 active members), and ChatNotificationLogicTest."
       },
       {
         "id": "k8",
         "title": "Hourly quotes to bring people back to the app",
-        "status": "in_progress",
-        "notes": "Added QuoteLibrary (36 non-repeating spiritual quotes, waking hours 07:00-21:59 Lagos), QuoteWorker (1h periodic WorkManager), Profile toggle, BootCompletedReceiver/MainActivity scheduling, and HourlyQuoteLogicTest."
+        "status": "done",
+        "notes": "QuoteLibrary (36 non-repeating spiritual quotes, waking hours 07:00-21:59 Africa/Lagos), QuoteWorker (1h periodic with KEEP policy so app launches do not reset delay), Profile toggle, tap-to-Today deep link (fh50://home), BootCompletedReceiver/logout lifecycle, and HourlyQuoteLogicTest."
       },
       {
         "id": "k9",
@@ -431,7 +431,7 @@
     "next_steps": [
       "Diagnose and fix k1 (chat latency + free-tier budget doc) and k2 (DM send failure + member-to-admin infinite load loop)."
     ],
-    "last_updated": "2026-11-13T13:35:33.519Z",
-    "last_session_note": "Step A resume audit complete: k0-k6 verified done (CI 43419942985 & backend c40c558); k7-k8 implemented in v42 (CI 43421105829) with minor fixes pending; k9 & k12 backend deployed (53f8bd0, ddfe29f); k9-k12 Android + k13 remaining."
+    "last_updated": "2026-11-13T13:36:00.204Z",
+    "last_session_note": "Completed k7 and k8 refinements; moving to k9 Forgot password."
   }
 }

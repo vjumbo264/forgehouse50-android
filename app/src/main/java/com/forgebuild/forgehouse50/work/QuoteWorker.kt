@@ -71,13 +71,13 @@ class QuoteWorker(
         private const val WORK_NAME = "fh50_hourly_quotes"
         private const val NOTIFICATION_ID = 4202
 
-        fun schedule(context: Context) {
+        fun schedule(context: Context, forceReset: Boolean = false) {
             val request = PeriodicWorkRequestBuilder<QuoteWorker>(1, TimeUnit.HOURS)
                 .setInitialDelay(1, TimeUnit.HOURS)
                 .build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.UPDATE,
+                if (forceReset) ExistingPeriodicWorkPolicy.UPDATE else ExistingPeriodicWorkPolicy.KEEP,
                 request,
             )
         }
