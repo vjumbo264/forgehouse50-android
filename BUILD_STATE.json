@@ -240,7 +240,7 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-10-31T13:37:25.105Z",
+  "last_updated": "2026-11-13T10:47:12.808509+00:00",
   "last_session_note": "Starting fixes_oct31_v1 contract: j0-j9 queue initialized.",
   "nt_scripture_counts": {
     "KJV": {
@@ -284,5 +284,103 @@
       "vjumbo264/versewell:docs/AUDIO.md",
       "vjumbo264/versewell:docs/DATA_CONTRACT.md"
     ]
+  },
+  "fix_round_nov13": {
+    "goal": "Fix Round Nov 13: chat latency/realtime, private messaging both ways, optimistic send & delivery ticks, swipe-to-reply, member message soft-delete, member-to-leaders shared inbox, WhatsApp-style chat notifications with inline reply, hourly local reminder quotes, forgot-password flow, profile picture reminder, floating audio control with progress ring, admin rollout verification, and held signed APK release.",
+    "status": "in_progress",
+    "current_phase": "k0",
+    "queue": [
+      {
+        "id": "k0",
+        "title": "Reconcile with the last contract",
+        "status": "in_progress",
+        "notes": ""
+      },
+      {
+        "id": "k1",
+        "title": "Chat messages arrive late even on good network (FH-008) [BUG]",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k2",
+        "title": "Private messages broken both ways: pastor cannot send to member (FH-007) and members cannot reach admin (FH-014) [BUG]",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k3",
+        "title": "Messages send instantly with a sending icon, then a tick (FH-006)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k4",
+        "title": "Swipe right on a message to reply (FH-005)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k5",
+        "title": "Members can delete their own messages (FH-004)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k6",
+        "title": "Members can start a direct chat with the leaders",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k7",
+        "title": "WhatsApp-style notifications for chat, with reply from the notification (FH-009)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k8",
+        "title": "Hourly quotes to bring people back to the app",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k9",
+        "title": "Forgot password",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k10",
+        "title": "Ask members to add their own profile picture (FH-001)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k11",
+        "title": "Floating audio control with progress ring, replacing inline box and bottom player (FH-011)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k12",
+        "title": "Admin push update button for all admins, and first push reaching old ForgeBuild users (FH-002)",
+        "status": "pending",
+        "notes": ""
+      },
+      {
+        "id": "k13",
+        "title": "Build, release (held) and final report",
+        "status": "pending",
+        "notes": ""
+      }
+    ],
+    "decisions": [],
+    "known_issues": [],
+    "next_steps": [
+      "Complete k0 reconciliation against fixes_oct30_v1 and fixes_oct31_v1"
+    ],
+    "last_updated": "2026-11-13T10:47:12.808509+00:00",
+    "last_session_note": "Initialized fix_round_nov13 in BUILD_STATE.json and saved docs/BUILD_PROMPT_NOV13.md."
   }
 }
