@@ -104,7 +104,9 @@ object Routes {
     const val ADMIN = "admin"
     const val TRANSLATIONS = "translations"
     const val CHANGELOG = "changelog"
-    const val COMMUNITY = "community"
+    const val COMMUNITY = "community?tab={tab}&threadId={threadId}"
+    fun community(tab: Int = 0, threadId: String? = null): String =
+        "community?tab=$tab&threadId=${android.net.Uri.encode(threadId ?: "")}"
     const val ANNOUNCEMENTS = "announcements"
     fun read(day: Int) = "read/$day"
     fun readSession(days: List<Int>) = "readsession/${days.joinToString(",")}"
@@ -137,6 +139,7 @@ fun AppNavHost(
     loggedIn: Boolean,
     authenticatedTick: Int,
     deepLink: String? = null,
+    onConsumeDeepLink: () -> Unit = {},
     onAuthChanged: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
@@ -264,7 +267,7 @@ fun AppNavHost(
                             onOpenQuiz = { nav.navigate(Routes.quiz(it)) },
                             onOpenNotes = { nav.navigate(Routes.NOTES) },
                             onOpenAdmin = { nav.navigate(Routes.ADMIN) },
-                            onOpenCommunity = { nav.navigate(Routes.COMMUNITY) },
+                            onOpenCommunity = { nav.navigate(Routes.community()) },
                             onOpenAnnouncements = { nav.navigate(Routes.ANNOUNCEMENTS) },
                         )
                         1 -> LeaderboardScreen(repo)
@@ -371,26 +374,53 @@ fun AppNavHost(
                     onBack = { nav.popBackStack() },
                 )
             }
-            composable(Routes.ADMIN) { AdminScreen(repo, onBack = { nav.popBackStack() }, onOpenCommunity = { nav.navigate(Routes.COMMUNITY) }) }
-            composable(Routes.COMMUNITY) { CommunityScreen(repo = repo, onBack = { nav.popBackStack() }) }
+            composable(Routes.ADMIN) { AdminScreen(repo, onBack = { nav.popBackStack() }, onOpenCommunity = { nav.navigate(Routes.community()) }) }
+            composable(
+                Routes.COMMUNITY,
+                arguments = listOf(
+                    navArgument("tab") { type = NavType.IntType; defaultValue = 0 },
+                    navArgument("threadId") { type = NavType.StringType; defaultValue = "" },
+                ),
+            ) { entry ->
+                val tabArg = entry.arguments?.getInt("tab") ?: 0
+                val threadArg = entry.arguments?.getString("threadId")?.takeIf { it.isNotBlank() }
+                CommunityScreen(
+                    repo = repo,
+                    onBack = { nav.popBackStack() },
+                    initialTab = tabArg,
+                    initialThreadId = threadArg,
+                )
+            }
             composable(Routes.ANNOUNCEMENTS) { AnnouncementsScreen(repo = repo, onBack = { nav.popBackStack() }) }
         }
 
         // catchup_widget_links_v1 / ISSUE 3: consume a widget deep link once,
         // when logged in (fh50://read/N opens the session flow; fh50://notes?day=N
         // opens Notes as the post-completion "Reflect" target).
-        var deepLinkHandled by remember { mutableStateOf(false) }
         LaunchedEffect(deepLink, loggedIn) {
-            if (!deepLinkHandled && loggedIn && !deepLink.isNullOrBlank()) {
-                deepLinkHandled = true
+            if (loggedIn && !deepLink.isNullOrBlank()) {
+                val targetUri = deepLink
+                onConsumeDeepLink()
                 runCatching {
-                    val u = android.net.Uri.parse(deepLink)
+                    val u = android.net.Uri.parse(targetUri)
                     when (u.host) {
                         "read" -> u.pathSegments?.firstOrNull()?.toIntOrNull()?.let {
                             nav.navigate(Routes.read(it))
                         }
                         "notes" -> nav.navigate(Routes.NOTES)
                         "home" -> nav.navigate(Routes.HOME)
+                        "community" -> {
+                            val tabParam = u.getQueryParameter("tab")?.lowercase()
+                            val tabIdx = when (tabParam) {
+                                "direct" -> 1
+                                "reflections" -> 2
+                                else -> tabParam?.toIntOrNull()?.coerceIn(0, 2) ?: 0
+                            }
+                            val tId = u.getQueryParameter("thread_id")?.takeIf { it.isNotBlank() }
+                            nav.navigate(Routes.community(tabIdx, tId)) {
+                                launchSingleTop = true
+                            }
+                        }
                         else -> {}
                     }
                 }

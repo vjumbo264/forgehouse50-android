@@ -83,6 +83,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontStyle
@@ -104,6 +105,7 @@ import com.forgebuild.forgehouse50.data.WatTimeFormatter
 import com.forgebuild.forgehouse50.ui.ExpressiveLoading
 import com.forgebuild.forgehouse50.ui.UserAvatar
 import com.forgebuild.forgehouse50.ui.noteTypeLabel
+import com.forgebuild.forgehouse50.work.ChatNotificationManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -128,6 +130,7 @@ fun CommunityScreen(
     initialTab: Int = 0,
     initialThreadId: String? = null,
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val isAdmin = repo.session.isAdmin
@@ -607,10 +610,15 @@ fun CommunityScreen(
             0 -> {
                 ActiveChatForegroundTracker.activeChannel = "group"
                 ActiveChatForegroundTracker.activeThreadId = null
+                ChatNotificationManager.clearConversation(context, "group")
             }
             1 -> {
+                val effTid = if (isAdmin) activeDirectThreadId else selfUserId
                 ActiveChatForegroundTracker.activeChannel = "direct"
-                ActiveChatForegroundTracker.activeThreadId = if (isAdmin) activeDirectThreadId else selfUserId
+                ActiveChatForegroundTracker.activeThreadId = effTid
+                if (!effTid.isNullOrBlank()) {
+                    ChatNotificationManager.clearConversation(context, "direct:$effTid")
+                }
             }
             else -> {
                 ActiveChatForegroundTracker.activeChannel = null

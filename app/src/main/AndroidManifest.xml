@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
     <!--
       FORGEBUILD PERMISSION MODEL: no sensitive permission is declared here by
       default. The generating AI enables ONLY what the app needs by setting the
@@ -13,6 +14,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:label="@string/app_name"
@@ -21,13 +23,15 @@
         android:theme="@style/Theme.ForgeBuild"
         android:supportsRtl="true"
         tools:targetApi="34">
+
         <activity android:name=".MainActivity" android:exported="true"
             android:configChanges="orientation|screenSize|uiMode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- catchup_widget_links_v1 / ISSUE 3: widget deep links. -->
+
+            <!-- catchup_widget_links_v1 / ISSUE 3: widget & notification deep links. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -35,7 +39,21 @@
                 <data android:scheme="fh50" />
             </intent-filter>
         </activity>
+
         <service android:name=".work.KeepAliveService" android:exported="false" android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".work.ChatNotificationActionReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".work.BootCompletedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <!-- catchup_widget_links_v1 / ISSUE 3: genuine home-screen App Widget. -->
         <receiver
@@ -50,6 +68,7 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/forgehouse_widget_info" />
         </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

@@ -75,7 +75,7 @@ class ReminderWorker(
     private fun ensureChannel() {
         val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Daily reading reminder", NotificationManager.IMPORTANCE_DEFAULT)
+            NotificationChannel(CHANNEL_ID, "Daily Reading & Quotes", NotificationManager.IMPORTANCE_DEFAULT)
         )
     }
 

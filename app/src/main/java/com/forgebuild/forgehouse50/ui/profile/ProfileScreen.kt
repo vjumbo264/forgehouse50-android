@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.NewReleases
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -48,6 +49,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -85,6 +87,7 @@ import com.forgebuild.forgehouse50.ui.AvatarAssets
 import com.forgebuild.forgehouse50.ui.UserAvatar
 import com.forgebuild.forgehouse50.ui.formatBytes
 import com.forgebuild.forgehouse50.ui.formatDurationShort
+import com.forgebuild.forgehouse50.work.ChatNotificationManager
 import com.forgebuild.forgehouse50.work.KeepAliveService
 import com.forgebuild.forgehouse50.work.ReminderWorker
 import kotlinx.coroutines.launch
@@ -117,6 +120,7 @@ fun ProfileScreen(
 
     var translations by remember { mutableStateOf<List<DownloadedTranslation>>(emptyList()) }
     var totalBytes by remember { mutableStateOf(0L) }
+    var muteGroupNotifs by remember { mutableStateOf(repo.session.muteGroupChatNotifications) }
 
     val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
@@ -404,6 +408,62 @@ fun ProfileScreen(
         }
         Spacer(Modifier.height(12.dp))
 
+        // Chat notification preference (k7)
+        Surface(
+            onClick = {
+                val next = !muteGroupNotifs
+                muteGroupNotifs = next
+                repo.session.muteGroupChatNotifications = next
+            },
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 2.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Filled.NotificationsOff,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Mute group chat notifications",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        "Private messages from pastors & leaders always notify",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = muteGroupNotifs,
+                    onCheckedChange = { next ->
+                        muteGroupNotifs = next
+                        repo.session.muteGroupChatNotifications = next
+                    },
+                )
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
         // Action row: Manage translations
         Surface(
             onClick = onManageTranslations,
@@ -495,6 +555,7 @@ fun ProfileScreen(
             onClick = {
                 scope.launch {
                     runCatching { repo.api.logout() }
+                    ChatNotificationManager.cancelAll(context)
                     ReminderWorker.cancel(context)
                     KeepAliveService.stop(context)
                     repo.session.clear()

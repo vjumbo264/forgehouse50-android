@@ -288,7 +288,7 @@
   "fix_round_nov13": {
     "goal": "Fix Round Nov 13: chat latency/realtime, private messaging both ways, optimistic send & delivery ticks, swipe-to-reply, member message soft-delete, member-to-leaders shared inbox, WhatsApp-style chat notifications with inline reply, hourly local reminder quotes, forgot-password flow, profile picture reminder, floating audio control with progress ring, admin rollout verification, and held signed APK release.",
     "status": "in_progress",
-    "current_phase": "k1",
+    "current_phase": "k7",
     "queue": [
       {
         "id": "k0",
@@ -299,44 +299,44 @@
       {
         "id": "k1",
         "title": "Chat messages arrive late even on good network (FH-008) [BUG]",
-        "status": "in_progress",
-        "notes": "Backend partial done in forgehouse50 c40c558 (deployed): /api/community/chat/sync, composite D1 indexes, 15m last_seen_at throttle, non-null EPOCH_ISO cursor fallback, docs/CHAT_ARCHITECTURE.md, test/community_chat_test.mjs. Android /sync client, adaptive 1.5s->3s->6s cadence, and unread badge sync still pending."
+        "status": "done",
+        "notes": "Root cause: fixed 4s polling across 2 endpoints, null cursor fallback reloading 50 rows, and unthrottled last_seen_at writes. Fixed in forgehouse50 c40c558 (deployed) with /api/community/chat/sync + indexes + 15m throttle + non-null EPOCH_CURSOR, and Android 2757650/579a32e with adaptive 1.5s->3s->6s /sync polling, 15s HomeScreen unread badge sync, and CommunityChatLogicTest (CI 43419942985 green)."
       },
       {
         "id": "k2",
         "title": "Private messages broken both ways: pastor cannot send to member (FH-007) and members cannot reach admin (FH-014) [BUG]",
-        "status": "in_progress",
-        "notes": "Backend partial done in forgehouse50 c40c558: direct.mjs/threads.mjs/sync.mjs updated for member leadership thread + non-null cursor. Android endless load/stop loop fix, bounded backoff + Retry UI, pastor-to-member & member-to-admin verification + regression tests still pending."
+        "status": "done",
+        "notes": "Root cause: pollDirectSince looped infinitely calling loadDirectInitial whenever cursor was null, member Direct gated behind thread_started_by_admin, and AdminMemberPickerDialog lacked loading/error/Retry UI. Fixed in forgehouse50 c40c558 and Android 2757650/579a32e with EPOCH_CURSOR, bounded 3-attempt exponential backoff + Retry button, and CommunityChatLogicTest (CI 43419942985 green)."
       },
       {
         "id": "k3",
         "title": "Messages send instantly with a sending icon, then a tick (FH-006)",
-        "status": "in_progress",
-        "notes": "Backend partial done in forgehouse50 c40c558: client_msg_id column + unique index (applied on remote D1) and dedupe in messages.mjs/direct.mjs. Android optimistic send, sending/tick/failed UI, offline retry, and unit tests still pending."
+        "status": "done",
+        "notes": "Optimistic message insertion with Clock/Done/Error icons, client_msg_id idempotent dedupe in backend c40c558 + PendingChatStore offline retry queue on Android 2757650/579a32e, verified by CommunityChatLogicTest (CI 43419942985 green)."
       },
       {
         "id": "k4",
         "title": "Swipe right on a message to reply (FH-005)",
-        "status": "pending",
-        "notes": "Not started yet (swipe right to reply + tap reply to jump)."
+        "status": "done",
+        "notes": "Swipe-right-to-reply gesture with haptic trigger, quoted reply banner, and tap-quote-to-jump-and-highlight implemented in CommunityScreen.kt & CommunityChatLogic.kt (2757650/579a32e), verified by CommunityChatLogicTest (CI 43419942985 green)."
       },
       {
         "id": "k5",
         "title": "Members can delete their own messages (FH-004)",
-        "status": "in_progress",
-        "notes": "Backend partial done in forgehouse50 c40c558: DELETE /api/community/chat/messages/[id], deleted_at column on remote D1, DELETED_MESSAGE_PLACEHOLDER masking. Android delete action, confirmation, tombstone UI, and tests still pending."
+        "status": "done",
+        "notes": "Member soft-delete endpoint DELETE /api/community/chat/messages/[id] in forgehouse50 c40c558 + Android confirmation dialog, tombstone masking (DELETED_MESSAGE_PLACEHOLDER for non-admins), and CommunityChatLogicTest (CI 43419942985 green)."
       },
       {
         "id": "k6",
         "title": "Members can start a direct chat with the leaders",
-        "status": "in_progress",
-        "notes": "Backend partial done in forgehouse50 c40c558: threads.mjs & direct.mjs route members to shared ForgeHouse Leadership inbox. Android composer unlock, direct-to-inbox flow, and Leader badge on replies still pending."
+        "status": "done",
+        "notes": "Shared ForgeHouse Leadership inbox (direct_thread_id=member_user_id) in forgehouse50 c40c558 + Android composer unlocked immediately, Leader badges, and CommunityChatLogicTest (CI 43419942985 green)."
       },
       {
         "id": "k7",
         "title": "WhatsApp-style notifications for chat, with reply from the notification (FH-009)",
-        "status": "pending",
-        "notes": "Not started on Android (amended: no Firebase; reuse KeepAliveService + /sync?bg=1 + MessagingStyle + RemoteInput + 4 channels + mute + reboot/logout)."
+        "status": "in_progress",
+        "notes": "Implementing KeepAliveService background sync, grouped MessagingStyle + RemoteInput inline reply, 4 channels, foreground suppression, group mute, deleted-message scrub, reboot/swipe-away/logout handling, and OEM tip (no Firebase)."
       },
       {
         "id": "k8",
@@ -406,7 +406,7 @@
     "next_steps": [
       "Diagnose and fix k1 (chat latency + free-tier budget doc) and k2 (DM send failure + member-to-admin infinite load loop)."
     ],
-    "last_updated": "2026-11-13T11:39:04.402993+00:00",
-    "last_session_note": "Step A progress audit complete (docs/PROGRESS_NOV13.md); reconciled backend partial work (c40c558) and amendments; continuing Android + remaining backend work from k1."
+    "last_updated": "2026-11-13T11:55:18.729826+00:00",
+    "last_session_note": "k1-k6 verified green in CI 43419942985 (pre-release v41). Pushed k7 WhatsApp-style notifications via KeepAliveService."
   }
 }
