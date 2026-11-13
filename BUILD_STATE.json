@@ -288,18 +288,18 @@
   "fix_round_nov13": {
     "goal": "Fix Round Nov 13: chat latency/realtime, private messaging both ways, optimistic send & delivery ticks, swipe-to-reply, member message soft-delete, member-to-leaders shared inbox, WhatsApp-style chat notifications with inline reply, hourly local reminder quotes, forgot-password flow, profile picture reminder, floating audio control with progress ring, admin rollout verification, and held signed APK release.",
     "status": "in_progress",
-    "current_phase": "k0",
+    "current_phase": "k1",
     "queue": [
       {
         "id": "k0",
         "title": "Reconcile with the last contract",
-        "status": "in_progress",
-        "notes": ""
+        "status": "done",
+        "notes": "Reconciled fixes_oct30_v1 (i0-i11: all 12 verified done in repos and backend/Android test suites) and fixes_oct31_v1 (j0-j2 done; j3/j3b/j4/j9 still pending and deferred outside this round in known_issues; j5 tap-reply-jump, j6 DM loading glitches, j7 floating audio control, j8 ForgeBuild bridge automation overlap k4, k2, k11, k12 and are handled there)."
       },
       {
         "id": "k1",
         "title": "Chat messages arrive late even on good network (FH-008) [BUG]",
-        "status": "pending",
+        "status": "in_progress",
         "notes": ""
       },
       {
@@ -375,12 +375,31 @@
         "notes": ""
       }
     ],
-    "decisions": [],
-    "known_issues": [],
-    "next_steps": [
-      "Complete k0 reconciliation against fixes_oct30_v1 and fixes_oct31_v1"
+    "decisions": [
+      {
+        "k0_reconciliation_table": {
+          "fixes_oct30_v1_i0_to_i11": "done (verified in forgehouse50 & forgehouse50-android)",
+          "j0_apk_findable": "done (verified in docs/RELEASE_RUNBOOK.md)",
+          "j1_audio_fast_ui": "done (verified in AudioLogic.kt / AudioDownloadManager.kt)",
+          "j2_scroll_to_end_gate": "done (verified in ReadScreen.kt / ReadingCompletionLogicTest.kt)",
+          "j3_verse_intros": "pending (out of Nov 13 scope -> known_issues)",
+          "j3b_audio_intro_audit": "pending (out of Nov 13 scope -> known_issues)",
+          "j4_persuasive_update_copy": "pending (out of Nov 13 scope -> known_issues)",
+          "j5_tap_reply_jump": "pending -> folded into k4",
+          "j6_dm_loading_glitches": "pending -> folded into k1/k2/k6",
+          "j7_floating_audio_control": "pending -> superseded by k11",
+          "j8_forgebuild_bridge": "pending -> verified/completed in k12 (dry-run only)",
+          "j9_website_download_button": "pending (out of Nov 13 scope -> known_issues)"
+        }
+      }
     ],
-    "last_updated": "2026-11-13T10:47:12.808509+00:00",
-    "last_session_note": "Initialized fix_round_nov13 in BUILD_STATE.json and saved docs/BUILD_PROMPT_NOV13.md."
+    "known_issues": [
+      "Unfinished fixes_oct31_v1 items left outside Nov 13 scope per k0: j3 (verse-level intros), j3b (audio intro audit), j4 (persuasive update copy), j9 (website download button)."
+    ],
+    "next_steps": [
+      "Diagnose and fix k1 (chat latency + free-tier budget doc) and k2 (DM send failure + member-to-admin infinite load loop)."
+    ],
+    "last_updated": "2026-11-13T10:47:44.468802+00:00",
+    "last_session_note": "Completed k0 reconciliation against fixes_oct30_v1 and fixes_oct31_v1; starting k1/k2 investigation."
   }
 }
