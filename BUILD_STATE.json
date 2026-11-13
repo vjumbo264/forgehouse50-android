@@ -240,8 +240,8 @@
     ]
   },
   "release_hold": true,
-  "last_updated": "2026-11-13T10:47:12.808509+00:00",
-  "last_session_note": "Starting fixes_oct31_v1 contract: j0-j9 queue initialized.",
+  "last_updated": "2026-11-13T11:39:04.402993+00:00",
+  "last_session_note": "Step A progress audit complete (docs/PROGRESS_NOV13.md); reconciled backend partial work (c40c558) and amendments; continuing Android + remaining backend work from k1.",
   "nt_scripture_counts": {
     "KJV": {
       "chapters": 260,
@@ -294,85 +294,85 @@
         "id": "k0",
         "title": "Reconcile with the last contract",
         "status": "done",
-        "notes": "Reconciled fixes_oct30_v1 (i0-i11: all 12 verified done in repos and backend/Android test suites) and fixes_oct31_v1 (j0-j2 done; j3/j3b/j4/j9 still pending and deferred outside this round in known_issues; j5 tap-reply-jump, j6 DM loading glitches, j7 floating audio control, j8 ForgeBuild bridge automation overlap k4, k2, k11, k12 and are handled there)."
+        "notes": "Reconciled fixes_oct30_v1 (i0-i11 verified done) and fixes_oct31_v1 (j0-j2 done; j5->k4, j6->k1/k2/k6, j7->k11, j8->k12; j3/j3b/j4/j9 deferred in known_issues)."
       },
       {
         "id": "k1",
         "title": "Chat messages arrive late even on good network (FH-008) [BUG]",
         "status": "in_progress",
-        "notes": ""
+        "notes": "Backend partial done in forgehouse50 c40c558 (deployed): /api/community/chat/sync, composite D1 indexes, 15m last_seen_at throttle, non-null EPOCH_ISO cursor fallback, docs/CHAT_ARCHITECTURE.md, test/community_chat_test.mjs. Android /sync client, adaptive 1.5s->3s->6s cadence, and unread badge sync still pending."
       },
       {
         "id": "k2",
         "title": "Private messages broken both ways: pastor cannot send to member (FH-007) and members cannot reach admin (FH-014) [BUG]",
-        "status": "pending",
-        "notes": ""
+        "status": "in_progress",
+        "notes": "Backend partial done in forgehouse50 c40c558: direct.mjs/threads.mjs/sync.mjs updated for member leadership thread + non-null cursor. Android endless load/stop loop fix, bounded backoff + Retry UI, pastor-to-member & member-to-admin verification + regression tests still pending."
       },
       {
         "id": "k3",
         "title": "Messages send instantly with a sending icon, then a tick (FH-006)",
-        "status": "pending",
-        "notes": ""
+        "status": "in_progress",
+        "notes": "Backend partial done in forgehouse50 c40c558: client_msg_id column + unique index (applied on remote D1) and dedupe in messages.mjs/direct.mjs. Android optimistic send, sending/tick/failed UI, offline retry, and unit tests still pending."
       },
       {
         "id": "k4",
         "title": "Swipe right on a message to reply (FH-005)",
         "status": "pending",
-        "notes": ""
+        "notes": "Not started yet (swipe right to reply + tap reply to jump)."
       },
       {
         "id": "k5",
         "title": "Members can delete their own messages (FH-004)",
-        "status": "pending",
-        "notes": ""
+        "status": "in_progress",
+        "notes": "Backend partial done in forgehouse50 c40c558: DELETE /api/community/chat/messages/[id], deleted_at column on remote D1, DELETED_MESSAGE_PLACEHOLDER masking. Android delete action, confirmation, tombstone UI, and tests still pending."
       },
       {
         "id": "k6",
         "title": "Members can start a direct chat with the leaders",
-        "status": "pending",
-        "notes": ""
+        "status": "in_progress",
+        "notes": "Backend partial done in forgehouse50 c40c558: threads.mjs & direct.mjs route members to shared ForgeHouse Leadership inbox. Android composer unlock, direct-to-inbox flow, and Leader badge on replies still pending."
       },
       {
         "id": "k7",
         "title": "WhatsApp-style notifications for chat, with reply from the notification (FH-009)",
         "status": "pending",
-        "notes": ""
+        "notes": "Not started on Android (amended: no Firebase; reuse KeepAliveService + /sync?bg=1 + MessagingStyle + RemoteInput + 4 channels + mute + reboot/logout)."
       },
       {
         "id": "k8",
         "title": "Hourly quotes to bring people back to the app",
         "status": "pending",
-        "notes": ""
+        "notes": "Not started."
       },
       {
         "id": "k9",
         "title": "Forgot password",
         "status": "pending",
-        "notes": ""
+        "notes": "Not started."
       },
       {
         "id": "k10",
         "title": "Ask members to add their own profile picture (FH-001)",
         "status": "pending",
-        "notes": ""
+        "notes": "Not started."
       },
       {
         "id": "k11",
         "title": "Floating audio control with progress ring, replacing inline box and bottom player (FH-011)",
         "status": "pending",
-        "notes": ""
+        "notes": "Not started."
       },
       {
         "id": "k12",
         "title": "Admin push update button for all admins, and first push reaching old ForgeBuild users (FH-002)",
         "status": "pending",
-        "notes": ""
+        "notes": "Not started."
       },
       {
         "id": "k13",
         "title": "Build, release (held) and final report",
         "status": "pending",
-        "notes": ""
+        "notes": "Not started."
       }
     ],
     "decisions": [
@@ -391,6 +391,13 @@
           "j8_forgebuild_bridge": "pending -> verified/completed in k12 (dry-run only)",
           "j9_website_download_button": "pending (out of Nov 13 scope -> known_issues)"
         }
+      },
+      {
+        "step_a_audit_2026_11_13": {
+          "previous_session_work": "Initialized fix_round_nov13 (fb00024) in forgehouse50-android; implemented & deployed backend k1/k2/k3/k5/k6 changes (c40c558, workflow 43412674104) and applied community_chat_v3.sql to remote D1. Zero Android feature code committed.",
+          "red_flags": "None. No out-of-scope code, no Firebase/Telegram code, all releases v33..v40 remain held/prerelease, bridge runs = 0.",
+          "amendments_applied": "Appended A1-A3 to docs/BUILD_PROMPT_NOV13.md and saved docs/RESUME_PROMPT_NOV13.md."
+        }
       }
     ],
     "known_issues": [
@@ -399,7 +406,7 @@
     "next_steps": [
       "Diagnose and fix k1 (chat latency + free-tier budget doc) and k2 (DM send failure + member-to-admin infinite load loop)."
     ],
-    "last_updated": "2026-11-13T10:47:44.468802+00:00",
-    "last_session_note": "Completed k0 reconciliation against fixes_oct30_v1 and fixes_oct31_v1; starting k1/k2 investigation."
+    "last_updated": "2026-11-13T11:39:04.402993+00:00",
+    "last_session_note": "Step A progress audit complete (docs/PROGRESS_NOV13.md); reconciled backend partial work (c40c558) and amendments; continuing Android + remaining backend work from k1."
   }
 }
