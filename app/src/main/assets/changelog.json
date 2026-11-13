@@ -1,5 +1,17 @@
 [
   {
+    "version": "v43",
+    "date": "2026-11-13",
+    "items": [
+      "Faster Community Chat & Direct Messages: Instant optimistic sending with delivery ticks, swipe-right to reply with jump-to-quote, and delete your own messages anytime",
+      "Chat Notifications & Inline Reply: Receive community and pastoral direct message alerts with quick Reply and Mark as Read actions, plus a group mute toggle in Profile",
+      "Hourly Encouraging Quotes: Gentle Scripture and reading reminders during waking hours (toggleable in Profile)",
+      "Forgot Password Recovery: Reset your password right from the sign-in screen using a 6-digit email verification code",
+      "Floating Reader Audio Control: Compact floating audio button with a live circular progress ring and expandable speed & seek controls",
+      "Profile Photo Reminder: Quick prompt on Today to help you add your profile picture"
+    ]
+  },
+  {
     "version": "v38",
     "date": "2026-10-31",
     "items": [
