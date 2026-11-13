@@ -371,8 +371,8 @@
       {
         "id": "k13",
         "title": "Build, release (held) and final report",
-        "status": "pending",
-        "notes": "Not started."
+        "status": "done",
+        "notes": "Aligned changelog.json & assets/changelog.json to v44, fixed AudioFeatureTest missing imports (9b044d9), verified Actions run 43436808506 green (:app:testDebugUnitTest, :app:assembleRelease, apksigner SHA-256 80:DA:9D:1C:A9:4A:E7:94:2D:7D:9C:BA:C2:F6:B9:5D:85:68:60:43:C9:EA:B5:EE:04:78:BB:2A:B6:2C:03:F0, pre-release v44 held with SHA-256 d4f71ded591e6c2af524b6e4c251454b43925a2fdbdab768d6efb2fa92595faa). Verified all 6 backend SQLite tests pass, forgehouse50 c3a0518 deployed green (43435173340), D1 app_releases all hold, publish-bridge-release.yml runs = 0, and vjumbo264/forgebuild untouched at forgehouse50-v32."
       }
     ],
     "decisions": [
@@ -423,15 +423,26 @@
           ],
           "red_flags": "None. No Firebase/FCM, no Telegram, no out-of-scope UI polish, all releases v33..v42 held, bridge runs = 0, vjumbo264/forgebuild frozen at forgehouse50-v32."
         }
+      },
+      {
+        "k13_final_release_2026_11_13": {
+          "final_commit_android": "9b044d9",
+          "final_actions_run_android": "43436808506 (success)",
+          "final_held_release": "v44 (versionCode=44, prerelease=true, draft=false)",
+          "apk_sha256": "d4f71ded591e6c2af524b6e4c251454b43925a2fdbdab768d6efb2fa92595faa",
+          "signing_cert_sha256": "80:DA:9D:1C:A9:4A:E7:94:2D:7D:9C:BA:C2:F6:B9:5D:85:68:60:43:C9:EA:B5:EE:04:78:BB:2A:B6:2C:03:F0",
+          "final_commit_backend": "c3a0518 (Actions 43435173340 success)",
+          "backend_test_suites_passed": 6,
+          "bridge_workflow_runs": 0,
+          "forgebuild_latest_tag": "forgehouse50-v32"
+        }
       }
     ],
     "known_issues": [
       "Unfinished fixes_oct31_v1 items left outside Nov 13 scope per k0: j3 (verse-level intros), j3b (audio intro audit), j4 (persuasive update copy), j9 (website download button)."
     ],
-    "next_steps": [
-      "Diagnose and fix k1 (chat latency + free-tier budget doc) and k2 (DM send failure + member-to-admin infinite load loop)."
-    ],
-    "last_updated": "2026-11-13T13:42:01.125Z",
-    "last_session_note": "Completed k12 admin push update & ForgeBuild bridge UI; moving to k13 final changelog, build, held release, and verification."
+    "next_steps": [],
+    "last_updated": "2026-11-13T13:53:25.284Z",
+    "last_session_note": "Fix round Nov 13 complete (k0-k13 done). Held pre-release v44 (versionCode 44) published in forgehouse50-android; all D1 releases remain on hold and forgebuild remains frozen at forgehouse50-v32."
   }
 }

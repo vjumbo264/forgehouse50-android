@@ -43,7 +43,7 @@ Every APK can be downloaded directly without navigating GitHub menus:
 ## Step-by-Step: Testing as Admin First (Before Public Rollout)
 1. Sign into the ForgeHouse 50 app (or web admin) with an Admin account.
 2. Open **Admin Dashboard -> App Releases**.
-3. Locate the target build (e.g. `v39`, `versionCode = 39`) and tap **Release to admins** (if currently `hold`).
+3. Locate the target build (e.g. `v44`, `versionCode = 44`) and tap **Release to admins** (if currently `hold`).
 4. Admin phones checking for updates will see the update, can test installing it over `v32` (same signing key), or tap **Not now** to dismiss.
 5. If an issue is discovered, tap **Pull back to hold** in the Admin Dashboard immediately.
 
