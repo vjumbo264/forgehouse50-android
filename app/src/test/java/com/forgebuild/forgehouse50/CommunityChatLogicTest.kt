@@ -194,6 +194,19 @@ class CommunityChatLogicTest {
             "With Pastor Dave & leaders",
             CommunityChatLogic.memberLeadershipSubtitle(listOf(ChatThreadDto(subtitle = "With Pastor Dave & leaders"))),
         )
+        assertEquals("ForgeHouse Leadership", CommunityChatLogic.memberDirectHeaderTitle())
+        // Empty thread or after manual retry resets attemptCount so member can recover from failed load (FH-014)
+        var failed = CommunityChatLogic.onLoadFailure(
+            CommunityChatLogic.ThreadLoadState(),
+            "Network error",
+            nowMs = 1_000L,
+        )
+        failed = CommunityChatLogic.onLoadFailure(failed, "Network error", nowMs = 3_000L)
+        failed = CommunityChatLogic.onLoadFailure(failed, "Network error", nowMs = 7_000L)
+        assertFalse(CommunityChatLogic.shouldAttemptInitialOnPoll(null, failed, 999_999L))
+        val recovered = CommunityChatLogic.onLoadSuccess(failed)
+        assertEquals(0, recovered.attemptCount)
+        assertNull(recovered.errorMessage)
     }
 
     @Test

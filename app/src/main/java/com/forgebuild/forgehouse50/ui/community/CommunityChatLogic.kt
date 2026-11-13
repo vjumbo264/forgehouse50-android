@@ -379,6 +379,8 @@ object CommunityChatLogic {
         return !isMuted
     }
 
+    fun memberDirectHeaderTitle(): String = "ForgeHouse Leadership"
+
     fun memberLeadershipSubtitle(threads: List<ChatThreadDto>): String =
         threads.firstOrNull()?.subtitle?.takeIf { it.isNotBlank() }
             ?: "Private chat with pastors & leaders"

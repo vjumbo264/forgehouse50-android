@@ -639,7 +639,7 @@ fun CommunityScreen(
                 } else {
                     refreshThreadsMetadata(userInitiated = true)
                 }
-            } else if (!directLoadState.hasLoadedOnce) {
+            } else if (!directLoadState.hasLoadedOnce && !directLoadState.isLoading) {
                 loadDirectInitial(null, scrollToBottom = directMessages.isEmpty(), userInitiated = true)
             }
         } else if (selectedTab == 0) {
