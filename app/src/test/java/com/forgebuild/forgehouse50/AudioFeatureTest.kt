@@ -316,4 +316,76 @@ class AudioFeatureTest {
         assertFalse("Playing audio untouched must NEVER reach the 5-minute completion threshold", timer.hasReachedMinimum())
         assertEquals("Zero reading seconds may sync to server while audio plays on an untouched screen", 0, totalServerSyncedDuringIdle)
     }
+
+    @Test
+    fun testFloatingAudioLogicResolvesAllStatesAndProgressRing() {
+        val hidden = FloatingAudioLogic.resolve(
+            isAudioSupported = false,
+            currentBook = "Genesis",
+            currentChapter = 1,
+            activeAudioCode = "ESV",
+            currentChapterKey = "ESV:genesis:1",
+            isCurrentDownloaded = false,
+            currentDownloadState = ChapterAudioDownloadState.Idle,
+            manifestMeta = null,
+            localRow = null,
+            playerState = AudioPlayerUiState(),
+        )
+        assertEquals(FloatingAudioMode.HIDDEN, hidden.mode)
+
+        val needsDl = FloatingAudioLogic.resolve(
+            isAudioSupported = true,
+            currentBook = "Genesis",
+            currentChapter = 1,
+            activeAudioCode = "KJV",
+            currentChapterKey = "KJV:genesis:1",
+            isCurrentDownloaded = false,
+            currentDownloadState = ChapterAudioDownloadState.Idle,
+            manifestMeta = AudioChapterMeta(file = "genesis-001.m4a", book = "Genesis", chapter = 1, bytes = 1_200_000L),
+            localRow = null,
+            playerState = AudioPlayerUiState(),
+        )
+        assertEquals(FloatingAudioMode.NEEDS_DOWNLOAD, needsDl.mode)
+        assertEquals(0f, needsDl.ringProgress, 0.001f)
+
+        val downloading = FloatingAudioLogic.resolve(
+            isAudioSupported = true,
+            currentBook = "Genesis",
+            currentChapter = 1,
+            activeAudioCode = "KJV",
+            currentChapterKey = "KJV:genesis:1",
+            isCurrentDownloaded = false,
+            currentDownloadState = ChapterAudioDownloadState.Downloading(500L, 1000L),
+            manifestMeta = null,
+            localRow = null,
+            playerState = AudioPlayerUiState(),
+        )
+        assertEquals(FloatingAudioMode.DOWNLOADING, downloading.mode)
+        assertEquals(0.5f, downloading.ringProgress, 0.001f)
+
+        val playing = FloatingAudioLogic.resolve(
+            isAudioSupported = true,
+            currentBook = "Genesis",
+            currentChapter = 1,
+            activeAudioCode = "KJV",
+            currentChapterKey = "KJV:genesis:1",
+            isCurrentDownloaded = true,
+            currentDownloadState = ChapterAudioDownloadState.Downloaded,
+            manifestMeta = null,
+            localRow = null,
+            playerState = AudioPlayerUiState(
+                activeChapterKey = "KJV:genesis:1",
+                versionCode = "KJV",
+                book = "Genesis",
+                chapter = 1,
+                isPlaying = true,
+                positionMs = 30_000L,
+                durationMs = 120_000L,
+                speed = 1.25f,
+            ),
+        )
+        assertEquals(FloatingAudioMode.PLAYING, playing.mode)
+        assertEquals(0.25f, playing.ringProgress, 0.001f)
+        assertEquals("1.25x", playing.speedLabel)
+    }
 }

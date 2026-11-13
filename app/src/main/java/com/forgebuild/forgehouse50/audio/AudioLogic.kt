@@ -836,3 +836,131 @@ class AudioDownloadEngine(
         indexStore.deleteVersion(codeLower)
     }
 }
+
+enum class FloatingAudioMode {
+    HIDDEN,
+    NEEDS_DOWNLOAD,
+    DOWNLOAD_FAILED,
+    DOWNLOADING,
+    READY,
+    PLAYING,
+    PAUSED,
+}
+
+data class FloatingAudioUiState(
+    val mode: FloatingAudioMode = FloatingAudioMode.HIDDEN,
+    val ringProgress: Float = 0f,
+    val isIndeterminate: Boolean = false,
+    val title: String = "",
+    val subtitle: String = "",
+    val speedLabel: String = "1.0x",
+    val hasActivePlayer: Boolean = false,
+    val errorMessage: String? = null,
+)
+
+/**
+ * Pure JVM state resolver for the compact floating reader audio button + progress ring (k11 / FH-011).
+ */
+object FloatingAudioLogic {
+    fun formatSpeedLabel(speed: Float): String =
+        if (speed % 1f == 0f) String.format(Locale.US, "%.1fx", speed) else "${speed}x"
+
+    fun resolve(
+        isAudioSupported: Boolean,
+        currentBook: String?,
+        currentChapter: Int?,
+        activeAudioCode: String,
+        currentChapterKey: String?,
+        isCurrentDownloaded: Boolean,
+        currentDownloadState: ChapterAudioDownloadState,
+        manifestMeta: AudioChapterMeta?,
+        localRow: DownloadedAudioChapter?,
+        playerState: AudioPlayerUiState,
+    ): FloatingAudioUiState {
+        val hasActive = playerState.activeChapterKey != null
+        if (!isAudioSupported && !hasActive) {
+            return FloatingAudioUiState(mode = FloatingAudioMode.HIDDEN)
+        }
+        val speedLabel = formatSpeedLabel(playerState.speed)
+        if (hasActive && (playerState.isPlaying || playerState.activeChapterKey == currentChapterKey || !isAudioSupported)) {
+            val mode = if (playerState.isPlaying) FloatingAudioMode.PLAYING else FloatingAudioMode.PAUSED
+            val title = "${playerState.book} ${playerState.chapter}"
+            val subtitle = "${AudioLogic.formatDurationMs(playerState.positionMs)} / ${AudioLogic.formatDurationMs(playerState.durationMs)} · ${playerState.versionCode}"
+            return FloatingAudioUiState(
+                mode = mode,
+                ringProgress = playerState.progressFraction.coerceIn(0f, 1f),
+                isIndeterminate = false,
+                title = title,
+                subtitle = subtitle,
+                speedLabel = speedLabel,
+                hasActivePlayer = true,
+                errorMessage = playerState.error,
+            )
+        }
+        val chapterTitle = if (!currentBook.isNullOrBlank() && currentChapter != null) {
+            "$currentBook $currentChapter"
+        } else {
+            "Chapter audio"
+        }
+        return when (currentDownloadState) {
+            is ChapterAudioDownloadState.Connecting -> FloatingAudioUiState(
+                mode = FloatingAudioMode.DOWNLOADING,
+                ringProgress = 0f,
+                isIndeterminate = true,
+                title = chapterTitle,
+                subtitle = "Preparing audio ($activeAudioCode)…",
+                speedLabel = speedLabel,
+                hasActivePlayer = hasActive,
+            )
+            is ChapterAudioDownloadState.Downloading -> FloatingAudioUiState(
+                mode = FloatingAudioMode.DOWNLOADING,
+                ringProgress = currentDownloadState.fraction.coerceIn(0f, 1f),
+                isIndeterminate = currentDownloadState.totalBytes <= 0L,
+                title = chapterTitle,
+                subtitle = "Downloading ${(currentDownloadState.fraction * 100).toInt()}%",
+                speedLabel = speedLabel,
+                hasActivePlayer = hasActive,
+            )
+            is ChapterAudioDownloadState.Failed -> FloatingAudioUiState(
+                mode = FloatingAudioMode.DOWNLOAD_FAILED,
+                ringProgress = 0f,
+                isIndeterminate = false,
+                title = chapterTitle,
+                subtitle = currentDownloadState.message,
+                speedLabel = speedLabel,
+                hasActivePlayer = hasActive,
+                errorMessage = currentDownloadState.message,
+            )
+            else -> {
+                if (isCurrentDownloaded) {
+                    val durMs = localRow?.durationMs?.takeIf { it > 0L } ?: manifestMeta?.duration_ms ?: 0L
+                    val bytes = localRow?.sizeBytes ?: manifestMeta?.bytes ?: 0L
+                    val parts = buildList {
+                        if (durMs > 0L) add(AudioLogic.formatDurationMs(durMs))
+                        if (bytes > 0L) add(AudioLogic.formatAudioBytes(bytes))
+                    }
+                    FloatingAudioUiState(
+                        mode = FloatingAudioMode.READY,
+                        ringProgress = 1f,
+                        isIndeterminate = false,
+                        title = chapterTitle,
+                        subtitle = if (parts.isNotEmpty()) parts.joinToString(" · ") else "Ready to play ($activeAudioCode)",
+                        speedLabel = speedLabel,
+                        hasActivePlayer = hasActive,
+                    )
+                } else {
+                    val sizeHint = (manifestMeta?.bytes ?: 0L).takeIf { it > 0L }?.let { AudioLogic.formatAudioBytes(it) }
+                    FloatingAudioUiState(
+                        mode = FloatingAudioMode.NEEDS_DOWNLOAD,
+                        ringProgress = 0f,
+                        isIndeterminate = false,
+                        title = chapterTitle,
+                        subtitle = if (sizeHint != null) "Tap to download ($sizeHint)" else "Tap to download audio",
+                        speedLabel = speedLabel,
+                        hasActivePlayer = hasActive,
+                    )
+                }
+            }
+        }
+    }
+}
