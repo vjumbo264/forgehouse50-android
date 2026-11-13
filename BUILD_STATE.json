@@ -288,7 +288,7 @@
   "fix_round_nov13": {
     "goal": "Fix Round Nov 13: chat latency/realtime, private messaging both ways, optimistic send & delivery ticks, swipe-to-reply, member message soft-delete, member-to-leaders shared inbox, WhatsApp-style chat notifications with inline reply, hourly local reminder quotes, forgot-password flow, profile picture reminder, floating audio control with progress ring, admin rollout verification, and held signed APK release.",
     "status": "in_progress",
-    "current_phase": "k7",
+    "current_phase": "k8",
     "queue": [
       {
         "id": "k0",
@@ -341,8 +341,8 @@
       {
         "id": "k8",
         "title": "Hourly quotes to bring people back to the app",
-        "status": "pending",
-        "notes": "Not started."
+        "status": "in_progress",
+        "notes": "Added QuoteLibrary (36 non-repeating spiritual quotes, waking hours 07:00-21:59 Lagos), QuoteWorker (1h periodic WorkManager), Profile toggle, BootCompletedReceiver/MainActivity scheduling, and HourlyQuoteLogicTest."
       },
       {
         "id": "k9",
@@ -406,7 +406,7 @@
     "next_steps": [
       "Diagnose and fix k1 (chat latency + free-tier budget doc) and k2 (DM send failure + member-to-admin infinite load loop)."
     ],
-    "last_updated": "2026-11-13T11:55:18.729826+00:00",
+    "last_updated": "2026-11-13T11:56:57.147962+00:00",
     "last_session_note": "k1-k6 verified green in CI 43419942985 (pre-release v41). Pushed k7 WhatsApp-style notifications via KeepAliveService."
   }
 }

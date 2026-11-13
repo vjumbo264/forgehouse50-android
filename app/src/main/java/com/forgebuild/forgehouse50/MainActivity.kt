@@ -35,6 +35,7 @@ import com.forgebuild.forgehouse50.widget.WidgetRefreshWorker
 import com.forgebuild.forgehouse50.work.ChatNotificationLogic
 import com.forgebuild.forgehouse50.work.ChatNotificationManager
 import com.forgebuild.forgehouse50.work.KeepAliveService
+import com.forgebuild.forgehouse50.work.QuoteWorker
 import com.forgebuild.forgehouse50.work.ReminderWorker
 
 class MainActivity : ComponentActivity() {
@@ -100,12 +101,14 @@ private fun App(
                 }
             }
             ReminderWorker.schedule(context)
+            if (repo.session.hourlyQuotesEnabled) QuoteWorker.schedule(context) else QuoteWorker.cancel(context)
             KeepAliveService.start(context)
             WidgetRefreshWorker.schedule(context)
             UpdateWorker.schedule(context)
         } else {
             ChatNotificationManager.cancelAll(context)
             ReminderWorker.cancel(context)
+            QuoteWorker.cancel(context)
             KeepAliveService.stop(context)
             WidgetRefreshWorker.cancel(context)
             UpdateWorker.cancel(context)

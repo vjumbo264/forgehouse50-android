@@ -20,6 +20,7 @@ class BootCompletedReceiver : BroadcastReceiver() {
         if (!session.isLoggedIn) return
         KeepAliveService.start(context)
         ReminderWorker.schedule(context)
+        if (session.hourlyQuotesEnabled) QuoteWorker.schedule(context)
         WidgetRefreshWorker.schedule(context)
         UpdateWorker.schedule(context)
     }

@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -34,6 +35,7 @@ import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.NewReleases
+import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
@@ -89,6 +91,7 @@ import com.forgebuild.forgehouse50.ui.formatBytes
 import com.forgebuild.forgehouse50.ui.formatDurationShort
 import com.forgebuild.forgehouse50.work.ChatNotificationManager
 import com.forgebuild.forgehouse50.work.KeepAliveService
+import com.forgebuild.forgehouse50.work.QuoteWorker
 import com.forgebuild.forgehouse50.work.ReminderWorker
 import kotlinx.coroutines.launch
 
@@ -121,6 +124,7 @@ fun ProfileScreen(
     var translations by remember { mutableStateOf<List<DownloadedTranslation>>(emptyList()) }
     var totalBytes by remember { mutableStateOf(0L) }
     var muteGroupNotifs by remember { mutableStateOf(repo.session.muteGroupChatNotifications) }
+    var hourlyQuotesEnabled by remember { mutableStateOf(repo.session.hourlyQuotesEnabled) }
 
     val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
@@ -462,6 +466,65 @@ fun ProfileScreen(
             }
         }
 
+
+        Spacer(Modifier.height(12.dp))
+
+        // Hourly spiritual quotes toggle (k8)
+        Surface(
+            onClick = {
+                val next = !hourlyQuotesEnabled
+                hourlyQuotesEnabled = next
+                repo.session.hourlyQuotesEnabled = next
+                if (next) QuoteWorker.schedule(context) else QuoteWorker.cancel(context)
+            },
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 2.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Filled.FormatQuote,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Hourly encouraging quotes",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        "Gentle Scripture & reading reminders during waking hours",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Switch(
+                    checked = hourlyQuotesEnabled,
+                    onCheckedChange = { next ->
+                        hourlyQuotesEnabled = next
+                        repo.session.hourlyQuotesEnabled = next
+                        if (next) QuoteWorker.schedule(context) else QuoteWorker.cancel(context)
+                    },
+                )
+            }
+        }
+
         Spacer(Modifier.height(12.dp))
 
         // Action row: Manage translations
@@ -557,6 +620,7 @@ fun ProfileScreen(
                     runCatching { repo.api.logout() }
                     ChatNotificationManager.cancelAll(context)
                     ReminderWorker.cancel(context)
+                    QuoteWorker.cancel(context)
                     KeepAliveService.stop(context)
                     repo.session.clear()
                     AppCache.clear(context)
