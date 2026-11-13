@@ -365,8 +365,8 @@
       {
         "id": "k12",
         "title": "Admin push update button for all admins, and first push reaching old ForgeBuild users (FH-002)",
-        "status": "pending",
-        "notes": "Not started."
+        "status": "done",
+        "notes": "Verified all admins (requireAdmin + AdminScreen top-bar Push update shortcut + Releases tab) can access rollout controls; wired publish_to_forgebuild & bridged fields in Models/ApiClient/AdminReleasesTab with first-rollout ForgeBuild bridge checkbox (defaults on when no release is bridged yet), backend ddfe29f (update_rollout_test.mjs), and UpdateLogicTest. Bridge workflow never triggered during build."
       },
       {
         "id": "k13",
@@ -431,7 +431,7 @@
     "next_steps": [
       "Diagnose and fix k1 (chat latency + free-tier budget doc) and k2 (DM send failure + member-to-admin infinite load loop)."
     ],
-    "last_updated": "2026-11-13T13:40:33.963Z",
-    "last_session_note": "Completed k11 floating audio control with progress ring; moving to k12 admin push update + ForgeBuild bridge."
+    "last_updated": "2026-11-13T13:42:01.125Z",
+    "last_session_note": "Completed k12 admin push update & ForgeBuild bridge UI; moving to k13 final changelog, build, held release, and verification."
   }
 }

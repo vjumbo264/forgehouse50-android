@@ -1,5 +1,6 @@
 package com.forgebuild.forgehouse50.ui.admin
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -50,6 +52,7 @@ import com.forgebuild.forgehouse50.data.AdminReleaseAuditEntry
 import com.forgebuild.forgehouse50.data.AdminReleaseItem
 import com.forgebuild.forgehouse50.data.Repository
 import com.forgebuild.forgehouse50.data.runSuspendCatching
+import com.forgebuild.forgehouse50.update.AdminRolloutLogic
 import com.forgebuild.forgehouse50.update.UpdateManager
 import kotlinx.coroutines.launch
 
@@ -65,6 +68,7 @@ fun AdminReleasesTab(
     var loading by remember { mutableStateOf(true) }
     var busyVersion by remember { mutableStateOf<Int?>(null) }
     var confirmEveryoneTarget by remember { mutableStateOf<AdminReleaseItem?>(null) }
+    var publishToForgebuildChecked by remember { mutableStateOf(false) }
 
     suspend fun loadReleases() {
         loading = true
@@ -80,7 +84,12 @@ fun AdminReleasesTab(
             }
     }
 
-    fun applyRollout(versionCode: Int, action: String, confirmWord: String? = null) {
+    fun applyRollout(
+        versionCode: Int,
+        action: String,
+        confirmWord: String? = null,
+        publishToForgebuild: Boolean? = null,
+    ) {
         scope.launch {
             busyVersion = versionCode
             runSuspendCatching {
@@ -88,12 +97,17 @@ fun AdminReleasesTab(
                     versionCode = versionCode,
                     action = action,
                     confirm = confirmWord,
+                    publishToForgebuild = publishToForgebuild,
                 )
-            }.onSuccess {
+            }.onSuccess { res ->
                 busyVersion = null
                 val label = when (action) {
                     "admins_only" -> "Released v$versionCode to admins"
-                    "everyone" -> "Released v$versionCode to everyone"
+                    "everyone" -> if (res.bridged || res.publish_to_forgebuild) {
+                        "Released v$versionCode to everyone & ForgeBuild bridge triggered"
+                    } else {
+                        "Released v$versionCode to everyone"
+                    }
                     else -> "Pulled v$versionCode back to hold"
                 }
                 loadReleases()
@@ -118,12 +132,12 @@ fun AdminReleasesTab(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Controlled Update Rollouts",
+                    "Push Updates & Rollouts",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    "New builds start on hold. Test with admins first, then release to everyone.",
+                    "Available to all admins. New builds start on hold — test with admins first, then push to everyone.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -137,32 +151,25 @@ fun AdminReleasesTab(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+        } else if (releases.isEmpty()) {
+            Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    "No signed builds found yet. Push a build from GitHub Actions to manage rollout channels.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                if (releases.isEmpty()) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        ) {
-                            Text(
-                                "No builds synced yet. Tap Refresh to sync GitHub releases.",
-                                modifier = Modifier.padding(16.dp),
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
-                }
-
                 items(releases, key = { it.version_code }) { rel ->
                     val isBusy = busyVersion == rel.version_code
                     val (stateText, containerCol, contentCol) = when (rel.rollout_state) {
                         "everyone" -> Triple(
-                            "Released to everyone",
+                            "Live for everyone",
                             MaterialTheme.colorScheme.primaryContainer,
                             MaterialTheme.colorScheme.onPrimaryContainer,
                         )
@@ -216,7 +223,21 @@ fun AdminReleasesTab(
                                     )
                                 }
                             }
-
+                            if (rel.bridged || rel.publish_to_forgebuild) {
+                                Spacer(Modifier.height(6.dp))
+                                Surface(
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    shape = RoundedCornerShape(6.dp),
+                                ) {
+                                    Text(
+                                        if (rel.bridged) "Bridged to ForgeBuild (reaches v32 users)" else "ForgeBuild bridge requested",
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                }
+                            }
                             Spacer(Modifier.height(6.dp))
                             val metaParts = buildList {
                                 if (sizeMb.isNotBlank()) add(sizeMb)
@@ -230,7 +251,6 @@ fun AdminReleasesTab(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-
                             if (rel.changelog.isNotEmpty()) {
                                 Spacer(Modifier.height(8.dp))
                                 rel.changelog.take(4).forEach { line ->
@@ -241,7 +261,6 @@ fun AdminReleasesTab(
                                     )
                                 }
                             }
-
                             Spacer(Modifier.height(12.dp))
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Row(
@@ -264,17 +283,19 @@ fun AdminReleasesTab(
                                     }
                                 }
                                 Button(
-                                    onClick = { confirmEveryoneTarget = rel },
+                                    onClick = {
+                                        publishToForgebuildChecked = AdminRolloutLogic.defaultPublishToForgebuild(releases)
+                                        confirmEveryoneTarget = rel
+                                    },
                                     enabled = !isBusy && rel.rollout_state != "everyone",
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
-                                    Text("Release to everyone")
+                                    Text("Push update to everyone")
                                 }
                             }
                         }
                     }
                 }
-
                 if (auditLog.isNotEmpty()) {
                     item {
                         Spacer(Modifier.height(8.dp))
@@ -301,25 +322,56 @@ fun AdminReleasesTab(
     confirmEveryoneTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { confirmEveryoneTarget = null },
-            title = { Text("Release ${target.version_name} to everyone?") },
+            title = { Text("Push ${target.version_name} to everyone?") },
             text = {
-                Text(
-                    "Every ForgeHouse 50 participant will be prompted to download and install ${target.version_name} (code ${target.version_code}). Make sure admins have tested this build first.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "Every ForgeHouse 50 participant will be prompted to download and install ${target.version_name} (code ${target.version_code}). Make sure admins have tested this build first.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { publishToForgebuildChecked = !publishToForgebuildChecked },
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(
+                                checked = publishToForgebuildChecked,
+                                onCheckedChange = { publishToForgebuildChecked = it },
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "Also send this update to ForgeBuild so older versions update. Use this for the first rollout.",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         val vc = target.version_code
+                        val bridge = publishToForgebuildChecked
                         confirmEveryoneTarget = null
-                        applyRollout(vc, "everyone", confirmWord = "RELEASE_TO_EVERYONE")
+                        applyRollout(
+                            versionCode = vc,
+                            action = "everyone",
+                            confirmWord = "RELEASE_TO_EVERYONE",
+                            publishToForgebuild = bridge,
+                        )
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                     ),
                 ) {
-                    Text("Confirm release to everyone")
+                    Text("Confirm push to everyone")
                 }
             },
             dismissButton = {

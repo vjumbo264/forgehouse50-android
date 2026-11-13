@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -176,6 +177,9 @@ fun AdminScreen(repo: Repository, onBack: () -> Unit, onOpenCommunity: () -> Uni
                 },
                 actions = {
                     if (!selectionMode) {
+                        IconButton(onClick = { inspectingParticipantId = null; tab = 5 }) {
+                            Icon(Icons.Filled.SystemUpdate, contentDescription = "Push update")
+                        }
                         IconButton(onClick = onOpenCommunity) {
                             Icon(Icons.Filled.Chat, contentDescription = "Community chat")
                         }

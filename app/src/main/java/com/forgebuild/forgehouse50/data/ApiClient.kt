@@ -456,11 +456,13 @@ class ApiClient(private val session: SessionStore) {
         action: String,
         confirm: String? = null,
         mandatory: Boolean? = null,
+        publishToForgebuild: Boolean? = null,
     ): AdminReleaseUpdateResponse = post("/admin/releases", buildJsonObject {
         put("version_code", versionCode)
         put("action", action)
         if (confirm != null) put("confirm", confirm)
         if (mandatory != null) put("mandatory", mandatory)
+        if (publishToForgebuild != null) put("publish_to_forgebuild", publishToForgebuild)
     })
 
 

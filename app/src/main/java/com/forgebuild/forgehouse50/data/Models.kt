@@ -870,6 +870,8 @@ data class AdminReleaseItem(
     val changelog_text: String = "",
     val rollout_state: String = "hold",
     val mandatory: Boolean = false,
+    val publish_to_forgebuild: Boolean = false,
+    val bridged: Boolean = false,
     val updated_by: String? = null,
     val updated_at: String = "",
     val created_at: String = "",
@@ -898,6 +900,8 @@ data class AdminReleaseUpdateResponse(
     val version_code: Int = 0,
     val rollout_state: String = "hold",
     val mandatory: Boolean = false,
+    val publish_to_forgebuild: Boolean = false,
+    val bridged: Boolean = false,
     val updated_by: String? = null,
     val updated_at: String = "",
 )

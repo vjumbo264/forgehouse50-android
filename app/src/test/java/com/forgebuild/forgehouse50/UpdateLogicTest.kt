@@ -495,4 +495,24 @@ class UpdateLogicTest {
         )
         assertTrue(resolved is UpdateUiState.UpToDate)
     }
+
+    @Test
+    fun testAllAdminsCanManageReleasesAndFirstRolloutDefaultsBridgeOn() {
+        assertTrue(com.forgebuild.forgehouse50.update.AdminRolloutLogic.canManageReleases("admin"))
+        assertTrue(com.forgebuild.forgehouse50.update.AdminRolloutLogic.canManageReleases("ADMIN"))
+        assertFalse(com.forgebuild.forgehouse50.update.AdminRolloutLogic.canManageReleases("member"))
+        assertFalse(com.forgebuild.forgehouse50.update.AdminRolloutLogic.canManageReleases(null))
+
+        val unbridged = listOf(
+            com.forgebuild.forgehouse50.data.AdminReleaseItem(version_code = 43, version_name = "v43", bridged = false),
+            com.forgebuild.forgehouse50.data.AdminReleaseItem(version_code = 42, version_name = "v42", bridged = false),
+        )
+        assertTrue(com.forgebuild.forgehouse50.update.AdminRolloutLogic.defaultPublishToForgebuild(unbridged))
+
+        val alreadyBridged = listOf(
+            com.forgebuild.forgehouse50.data.AdminReleaseItem(version_code = 44, version_name = "v44", bridged = false),
+            com.forgebuild.forgehouse50.data.AdminReleaseItem(version_code = 43, version_name = "v43", bridged = true),
+        )
+        assertFalse(com.forgebuild.forgehouse50.update.AdminRolloutLogic.defaultPublishToForgebuild(alreadyBridged))
+    }
 }

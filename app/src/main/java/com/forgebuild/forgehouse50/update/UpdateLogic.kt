@@ -309,3 +309,18 @@ object UpdateLogic {
     }
 
 }
+
+/**
+ * Pure rollout / ForgeBuild bridge helpers for admin push-update controls (k12 / FH-002).
+ */
+object AdminRolloutLogic {
+    fun canManageReleases(role: String?): Boolean =
+        role.equals("admin", ignoreCase = true)
+
+    /**
+     * Defaults the ForgeBuild bridge toggle ON for the first public rollout when no
+     * release has been bridged yet, so existing <= v32 ForgeBuild users receive the update.
+     */
+    fun defaultPublishToForgebuild(releases: List<com.forgebuild.forgehouse50.data.AdminReleaseItem>): Boolean =
+        releases.none { it.bridged }
+}
