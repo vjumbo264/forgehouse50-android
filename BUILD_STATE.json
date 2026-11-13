@@ -398,6 +398,31 @@
           "red_flags": "None. No out-of-scope code, no Firebase/Telegram code, all releases v33..v40 remain held/prerelease, bridge runs = 0.",
           "amendments_applied": "Appended A1-A3 to docs/BUILD_PROMPT_NOV13.md and saved docs/RESUME_PROMPT_NOV13.md."
         }
+      },
+      {
+        "step_a_resume_audit_2026_11_13": {
+          "verified_done": [
+            "k0",
+            "k1",
+            "k2",
+            "k3",
+            "k4",
+            "k5",
+            "k6"
+          ],
+          "verified_partial": [
+            "k7",
+            "k8",
+            "k9",
+            "k12"
+          ],
+          "verified_not_started": [
+            "k10",
+            "k11",
+            "k13"
+          ],
+          "red_flags": "None. No Firebase/FCM, no Telegram, no out-of-scope UI polish, all releases v33..v42 held, bridge runs = 0, vjumbo264/forgebuild frozen at forgehouse50-v32."
+        }
       }
     ],
     "known_issues": [
@@ -406,7 +431,7 @@
     "next_steps": [
       "Diagnose and fix k1 (chat latency + free-tier budget doc) and k2 (DM send failure + member-to-admin infinite load loop)."
     ],
-    "last_updated": "2026-11-13T11:56:57.147962+00:00",
-    "last_session_note": "k1-k6 verified green in CI 43419942985 (pre-release v41). Pushed k7 WhatsApp-style notifications via KeepAliveService."
+    "last_updated": "2026-11-13T13:35:33.519Z",
+    "last_session_note": "Step A resume audit complete: k0-k6 verified done (CI 43419942985 & backend c40c558); k7-k8 implemented in v42 (CI 43421105829) with minor fixes pending; k9 & k12 backend deployed (53f8bd0, ddfe29f); k9-k12 Android + k13 remaining."
   }
 }
