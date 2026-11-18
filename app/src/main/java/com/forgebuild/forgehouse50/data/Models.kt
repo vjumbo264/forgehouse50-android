@@ -115,6 +115,7 @@ data class LoginResponse(
     val name: String? = null,
     val surname: String? = null,
     val role: String? = null,
+    val token: String? = null,
     val error: String? = null,
     val needs_verification: Boolean = false,
     val email: String? = null,

@@ -65,21 +65,21 @@ class ApiClient(private val session: SessionStore) {
 
     private suspend inline fun <reified T> get(path: String, crossinline params: HttpRequestBuilder.() -> Unit = {}): T {
         val res: HttpResponse = client.get("$BASE$path") { auth(); params() }
-        return decode(res)
+        return decode(res, path)
     }
 
     private suspend inline fun <reified T> post(path: String, body: JsonObject): T {
         val res: HttpResponse = client.post("$BASE$path") {
             auth(); contentType(ContentType.Application.Json); setBody(body.toString())
         }
-        return decode(res)
+        return decode(res, path)
     }
 
     private suspend inline fun <reified T> put(path: String, body: JsonObject): T {
         val res: HttpResponse = client.put("$BASE$path") {
             auth(); contentType(ContentType.Application.Json); setBody(body.toString())
         }
-        return decode(res)
+        return decode(res, path)
     }
 
     private suspend inline fun <reified T> del(path: String, body: JsonObject? = null): T {
@@ -87,10 +87,10 @@ class ApiClient(private val session: SessionStore) {
             auth()
             if (body != null) { contentType(ContentType.Application.Json); setBody(body.toString()) }
         }
-        return decode(res)
+        return decode(res, path)
     }
 
-    private suspend inline fun <reified T> decode(res: HttpResponse): T {
+    private suspend inline fun <reified T> decode(res: HttpResponse, path: String = ""): T {
         val text = res.bodyAsText()
         val parsed = runCatching { json.decodeFromString<T>(text) }
         // Capture the session token from any Set-Cookie header that carries it.
@@ -107,20 +107,11 @@ class ApiClient(private val session: SessionStore) {
             throw ApiException(res.status.value,
                 "Could not read the server response (HTTP ${res.status.value}). Please update the app if this persists.")
         }
-        // Genuine failure: surface the backend's own message + the REAL status.
+        // Genuine failure: surface honest backend/status error without masking login/server faults.
         val msg = runCatching {
             json.decodeFromString<GenericOk>(text).error
         }.getOrNull()
-        val friendlyMessage = when (res.status.value) {
-            400 -> msg ?: "Invalid request details. Please check your input."
-            401 -> "Session expired. Please sign in again."
-            403 -> msg ?: "You do not have permission to perform this action."
-            404 -> msg ?: "The requested item could not be found."
-            405 -> "Could not save your note. Please try again."
-            429 -> msg ?: "Rate limit reached. Please wait a moment and try again."
-            500, 502, 503, 504 -> "Something went wrong on the server. Please try again."
-            else -> msg ?: "Request failed. Please try again."
-        }
+        val friendlyMessage = ApiErrorMapper.mapHttpError(path, res.status.value, msg)
         throw ApiException(res.status.value, friendlyMessage)
     }
 
@@ -207,7 +198,7 @@ class ApiClient(private val session: SessionStore) {
             auth(); contentType(ContentType.Application.Json)
             setBody(buildJsonObject { put("day_number", day); put("answers", arr) }.toString())
         }
-        return decode(res)
+        return decode(res, "/quiz/submit")
     }
 
     // ── Notes ─────────────────────────────────────────────────────────────
@@ -384,7 +375,7 @@ class ApiClient(private val session: SessionStore) {
         val res: HttpResponse = client.get("https://forgehouse50.pages.dev/bundles/manifest.json") {
             header(HttpHeaders.Accept, "application/json")
         }
-        return decode(res)
+        return decode(res, "/bundles/manifest.json")
     }
 
     /** Download one translation's single bundle file; reports real bytes read. */
@@ -437,7 +428,7 @@ class ApiClient(private val session: SessionStore) {
             header(HttpHeaders.ContentType, contentType)
             setBody(bytes)
         }
-        return decode(res)
+        return decode(res, "/profile/picture")
     }
 
     /** Remove user profile photo and revert to illustration avatar. */
@@ -552,5 +543,28 @@ class ApiClient(private val session: SessionStore) {
 
     companion object {
         const val BASE = "https://forgehouse50.pages.dev/api"
+    }
+}
+
+object ApiErrorMapper {
+    fun mapHttpError(path: String, status: Int, serverMessage: String?): String {
+        val trimmed = serverMessage?.trim()?.takeIf { it.isNotEmpty() }
+        val cleanPath = path.substringBefore('?')
+        return when (status) {
+            400 -> trimmed ?: "Invalid request details. Please check your input."
+            401 -> {
+                if (cleanPath == "/auth/login" || cleanPath == "/admin/login") {
+                    trimmed ?: "Invalid email or password."
+                } else {
+                    "Session expired. Please sign in again."
+                }
+            }
+            403 -> trimmed ?: "You do not have permission to perform this action."
+            404 -> trimmed ?: "The requested item could not be found."
+            405 -> "Could not save your note. Please try again."
+            429 -> trimmed ?: "Rate limit reached. Please wait a moment and try again."
+            in 500..599 -> "Server problem, please try again"
+            else -> trimmed ?: "Request failed. Please try again."
+        }
     }
 }

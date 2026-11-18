@@ -250,6 +250,7 @@ private fun LoginForm(
                         val res = repo.api.login(email.trim(), password)
                         if (res.ok) {
                             res.id?.let { repo.session.userId = it }
+                            res.token?.let { repo.session.sessionToken = it }
                             repo.session.userName = res.name
                             repo.session.userRole = res.role
                             onAuthenticated()
