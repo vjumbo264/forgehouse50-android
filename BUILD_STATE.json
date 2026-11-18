@@ -444,5 +444,54 @@
     "next_steps": [],
     "last_updated": "2026-11-13T13:53:25.284Z",
     "last_session_note": "Fix round Nov 13 complete (k0-k13 done). Held pre-release v44 (versionCode 44) published in forgehouse50-android; all D1 releases remain on hold and forgebuild remains frozen at forgehouse50-v32."
+  },
+  "emergency_login_nov18": {
+    "goal": "Restore ForgeHouse 50 member sign-in, fix root causes, make auth/server errors honest, add regression tests and post-deploy auth smoke check, verify live, and document state.",
+    "status": "done",
+    "queue": [
+      {
+        "id": "e0",
+        "title": "Reproduce and find the failing call",
+        "status": "done",
+        "notes": "Root causes identified: (1) Missing rolling 30-day session renewal in forgehouse50 functions/lib/auth.mjs getUser(): SESSION_TTL_MS is 30 days rolling, and Nov 13 commit c40c558 throttled last_seen_at updates to >=15 min, but neither old nor new code ever extended expires_at. All 19 verified members signed up Oct 12-17, so 13/19 member sessions hit their hard creation-date expires_at wall Nov 11-16 (Oct 17 cohort expired Nov 16, ~2 days before Nov 18 report). Admin sessions (admin_sessions) are intentionally fixed 12h with fresh username/password login on a separate button, so admin sign-in continued working. (2) Misleading 401 -> 'Session expired. Please sign in again.' on Login in Android ApiClient.kt (v40 and HEAD): decode() unconditionally mapped ALL 401 responses—including POST /api/auth/login returning 401 'Invalid email or password'—to 'Session expired. Please sign in again.', making members re-entering an outdated/forgotten password think sign-in was broken. Confirmed Nov 14 members who tapped 'Forgot password?' (2) or signed in cleanly (1) worked normally. Live metrics: D1 reads <=565,894/day (5M limit), writes <=14,514/day (100k limit), Pages Functions <=2,944/day (100k limit) with 0 runtime errors. Zero backend deployments occurred Nov 14-17; last deploy was c3a0518 (2026-11-13T13:37Z)."
+      },
+      {
+        "id": "e1",
+        "title": "Fix member sign-in root cause (server-side compatible with v40)",
+        "status": "done",
+        "notes": "Fixed in vjumbo264/forgehouse50 commit a4b9517 (CI run 44258111347 green, deployed to https://forgehouse50.pages.dev): (1) getUser()/resolveSession() in functions/lib/auth.mjs now extends participant sessions.expires_at = nowMs + 30 days alongside last_seen_at on the >=15-min throttled refresh, keeping active v40 members signed in without forcing password resets; (2) login.mjs now returns id, surname, token, expires_at alongside Set-Cookie; (3) resolveSession() uses env.NOW_MS consistently for expiry checks. Live-verified with a throwaway test member (deleted afterwards): login -> 200, /api/auth/me -> 200, /api/today -> 200."
+      },
+      {
+        "id": "e2",
+        "title": "Make server and app errors honest (401 vs 503/429)",
+        "status": "done",
+        "notes": "Backend (forgehouse50 a4b9517): resolveSession()/requireUser(), login.mjs, admin/login.mjs, me.mjs, forgot_password.mjs, reset_password.mjs, logout.mjs, picture.mjs, end_testing.mjs now wrap DB/crypto work in try/catch returning HTTP 503 {error:'Server problem, please try again', reason:'db_error'|'server_error', unavailable:true}, NEVER mapping caught exceptions to 401; verifyPassword() validates PBKDF2 format upfront without swallowing WebCrypto faults; 401/403/429 responses include machine-readable reason (invalid_credentials, session_missing, session_invalid, session_expired, email_not_verified, rate_limited). Android (forgehouse50-android e1268bd, CI run 44258182712 green, held pre-release v45): extracted ApiErrorMapper.mapHttpError(path, status, serverMessage) so 401 on /auth/login or /admin/login shows the credential error instead of 'Session expired. Please sign in again.', 5xx maps to 'Server problem, please try again', and added JUnit tests in ApiErrorMappingTest.kt."
+      },
+      {
+        "id": "e3",
+        "title": "Regression tests and post-deploy auth smoke check",
+        "status": "done",
+        "notes": "Added test/auth_login_session_test.mjs covering member login + /api/auth/me + /api/today, 30-day rolling extension past initial expiry, 30+ day inactivity expiry, user-scoped logout & password-reset revocation (other members and admins unaffected), admin + member concurrent auth, simulated D1 & WebCrypto faults returning 503 instead of 401, and smoke member exclusion. Updated .github/workflows/deploy.yml to run all 7 test/*_test.mjs suites pre-deploy and scripts/smoke_auth.mjs post-deploy. Added non-destructive is_smoke_test column (schema.sql + remote D1 ALTER TABLE) filtered out of leaderboard, points, chat threads/directory, admin participants, admin stats, and programme calculations; smoke_auth.mjs provisions an ephemeral hidden smoke user with random runtime password and deletes it in finally."
+      },
+      {
+        "id": "e4",
+        "title": "Re-verify live against deployed Worker and verify rollout state",
+        "status": "done",
+        "notes": "Re-verified live against https://forgehouse50.pages.dev after commit a4b9517 deployment (run 44258111347): wrong password -> 401 invalid_credentials; valid login -> 200 with Set-Cookie + token; /api/auth/me -> 200; /api/today -> 200; /api/leaderboard -> 200 (19 real members, throwaway/smoke excluded); invalid token -> 401 session_invalid; throwaway test member + sessions + user_reading_days deleted cleanly (0 smoke rows left). Verified /api/app-release remains at v40 rollout_state='everyone', D1 v33..v39='hold', Android CI run 44258182712 green with held pre-release v45 (prerelease=true, APK SHA-256 382735b46fe6e10ac9d7ebbeea98b0ae40379bfd4c9d70e55f6567b5a99a9bb7), and publish-bridge-release workflow runs = 0."
+      },
+      {
+        "id": "e5",
+        "title": "Final phone-friendly incident report",
+        "status": "done",
+        "notes": "All checks complete (forgehouse50 a4b9517 / CI 44258111347 green; forgehouse50-android e1268bd / CI 44258182712 green -> held pre-release v45; live Worker + D1 + rollout state verified). Concise summary delivered to Victor."
+      }
+    ],
+    "decisions": [
+      "Kept fix server-side compatible with public v40 so no forced app update is needed; shipped Android ApiErrorMapper fix cleanly as held pre-release v45 only (prerelease=true, bridge runs=0).",
+      "Used ephemeral hidden smoke test account (is_smoke_test=1) created at deploy time via existing GitHub Actions Cloudflare secrets and deleted in finally, avoiding hardcoded test credentials in git while preventing any impact on real member leaderboards, chat directory, or admin counts.",
+      "Never rotated secrets, wiped user data, set any new release to 'everyone', or triggered publish-bridge-release."
+    ],
+    "last_updated": "2026-11-18T07:26:50Z",
+    "last_session_note": "Nov 18 member login emergency resolved (e0-e5 done). Backend a4b9517 (CI 44258111347 green) deployed and verified live; Android e1268bd (CI 44258182712 green) held as pre-release v45; v40 remains the only public release."
   }
 }
